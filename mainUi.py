@@ -7,19 +7,19 @@ import sys
 from msilib.schema import File
 import sys
 import cv2
-from PyQt5.QtWidgets import  QApplication,QFileDialog
+import time
+from PyQt5.QtWidgets import  QApplication,QFileDialog,QTableWidgetItem,QHeaderView
 from PyQt5 import QtGui, QtCore
 from PyQt5.QtGui import QMovie
 from cv2 import QT_PUSH_BUTTON
 from matplotlib import widgets
-from PyQt5.QtCore import Qt,QDate,QTime,QTimer
+from PyQt5.QtCore import Qt,QDateTime,QDate,QTime,QTimer
 from sympy import false
-
-"""def cvImgtoQtImg(cvImg):  #Define the function of opencv image to PyQt image
+def cvImgtoQtImg(cvImg):  #Define the function of opencv image to PyQt image
     QtImgBuf = cv2.cvtColor(cvImg, cv2.COLOR_BGR2BGRA)
     QtImg = QtGui.QImage(QtImgBuf.data, QtImgBuf.shape[1], QtImgBuf.shape[0], QtGui.QImage.Format_RGB32)
     return QtImg 
-"""
+
 class FinishingUi(QtWidgets.QWidget):#Finishing Loading UI
     screenLabel=QtCore.pyqtSignal()
     def __init__(self):
@@ -99,44 +99,42 @@ class TableUi(QtWidgets.QMainWindow):
         super(TableUi, self).__init__()
         uic.loadUi('tableUi.ui', self)
         self.setWindowFlag(Qt.FramelessWindowHint)
+        self.tableWidget.horizontalHeader().setStretchLastSection(True)
+        self.tableWidget.horizontalHeader().setSectionResizeMode(
+            QHeaderView.Stretch)
         _translate = QtCore.QCoreApplication.translate
         data=[['01','Violated','San Felipe','5 minutes','01/26/22'],
               ['02','Violated','SM Area','7 minutes','01/29/22'],
               ['03','Violated','Terminal 2','10 minutes','01/27/22']
               ]
-        """for i in range(3):
+        #self.tableWidget.setRowCount(4) 
+        #self.tableWidget.setItem(0,0, QTableWidgetItem("Name"))
+        for i in range(3):
             for j in range(5):
-                print(data[i][j])
-                self.item = self.tableWidget.item(i, j)
-                self.item.setText(("MainWindow", data[i][j]))
-        """    
-
-        """
-        #Adding Button inside cell[0,5] cell[0,6]
-        self.newBtnPlay=QtWidgets.QPushButton(self.tableWidget)
-        self.newBtnDelete=QtWidgets.QPushButton(self.tableWidget)
-        self.newBtnPlay.setText("")
-        self.newBtnDelete.setText("")
-        self.newBtnPlay.setStyleSheet("background-color:none;border:none;color:white;")
-        self.newBtnDelete.setStyleSheet("background-color:none;border:none;color:white;")
+                self.tableWidget.setRowCount(3)
+                self.tableWidget.setItem(i,j, QTableWidgetItem(data[i][j]))
+                self.tableWidget.item(i,j).setTextAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
+            #Adding BUtton in each row  
+            self.newBtnPlay=QtWidgets.QPushButton(self.tableWidget)
+            self.newBtnDelete=QtWidgets.QPushButton(self.tableWidget)
+            self.newBtnPlay.setText("")
+            self.newBtnDelete.setText("")
+            self.newBtnPlay.setStyleSheet("background-color:none;border:none;color:white;")
+            self.newBtnDelete.setStyleSheet("background-color:none;border:none;color:white;")
         ##
         #Adding PLay icon and Delete icon 
-        icon1 = QtGui.QIcon()
-        icon2 = QtGui.QIcon()
-        icon1.addPixmap(QtGui.QPixmap("icon/playCircleArrow.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        icon2.addPixmap(QtGui.QPixmap("icon/deleteIcon.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        self.newBtnPlay.setIcon(icon1)
-        self.newBtnDelete.setIcon(icon2)
-        self.newBtnPlay.setIconSize(QtCore.QSize(19, 19))
-        self.newBtnDelete.setIconSize(QtCore.QSize(14,15))
-        ##
-        #add button inside cell [0,5] and cell[0,6]
-        self.tableWidget.setCellWidget(0,5,self.newBtnPlay)
-        self.tableWidget.setCellWidget(0,6,self.newBtnDelete)
-        self.btnDone.clicked.connect(self.close)#close Window
-    def clickHandle(self):
-        print("fasf") """
+            icon1 = QtGui.QIcon()
+            icon2 = QtGui.QIcon()
+            icon1.addPixmap(QtGui.QPixmap("icon/playCircleArrow.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+            icon2.addPixmap(QtGui.QPixmap("icon/deleteIcon.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+            self.newBtnPlay.setIcon(icon1)
+            self.newBtnDelete.setIcon(icon2)
+            self.newBtnPlay.setIconSize(QtCore.QSize(19, 19))
+            self.newBtnDelete.setIconSize(QtCore.QSize(14,15))
+            self.tableWidget.setCellWidget(i,j+1,self.newBtnPlay)
+            self.tableWidget.setCellWidget(i,j+2,self.newBtnDelete)
 
+        self.btnDone.clicked.connect(self.close)
 #main Window
 class MainUi(QtWidgets.QMainWindow):
     switch_window = QtCore.pyqtSignal()
@@ -184,9 +182,45 @@ class MainUi(QtWidgets.QMainWindow):
         self.stackedWidget.setCurrentWidget(self.watchingPage)
         self.btnPlayback.setStyleSheet('background-color:none;border:none')
         self.btnWatch.setStyleSheet("color:white;font-size:14px;background-color:#1D1F32;border-left:3px solid #678ADD;")
+
+
+
+    """def logoutPopup(self):
+        self.logout.emit()
+    def windowPopUp(self):
+        self.switch_window.emit()
+    def RoadPopUp(self):
+        self.roadSwitch.emit()"""
     #Function display Video    
     def setUpVideo(self): #Initialize click event
         self.roadSwitch.emit()
+        """file=QFileDialog.getOpenFileUrl()
+        
+        cap = cv2.VideoCapture(file[0].toString())  #get video object
+        fps = cap.get(cv2.CAP_PROP_FPS) 
+        if not cap.isOpened():
+            
+            return
+        self.verticalLayout_11.addWidget(self.frameWatch)
+        while True:
+            ret, frame = cap.read()  #Read the movie frame by frame
+            if not ret:
+                if frame is None:
+                    print("The video has end.")
+                else:
+                    print("Read video error!")
+                break
+
+            QtImg = cvImgtoQtImg(frame)  # Convert frame data to PyQt image format
+           
+            self.labelScreen.setPixmap(QtGui.QPixmap.fromImage(QtImg))  # Display image in ImgDisp
+               
+            self.btnAddVideo.hide()      # hide play button
+            self.labelScreen.show()        # refresh the interface
+            cv2.waitKey(int(500 / fps))  # Sleep for a while to make sure fps is played every second
+
+        # When everything is done, release the catcher
+        cap.release()"""
 
 class welcome(QtWidgets.QWidget):
     switch_window = QtCore.pyqtSignal()
@@ -220,6 +254,7 @@ class Controller:
     def showRoadSetup(self):
         self.road=RoadSetUp1()
         self.road.switch_window.connect(self.show_RoadPaint)
+        #self.road.selectImage.connect(self.select)
         self.road.settingUpRoad.connect(self.showSettingUproad)
         self.road.show()
     def show_RoadPaint(self):
@@ -241,7 +276,7 @@ class Controller:
     def showFinishingUi(self):
         self.windowFinishing=FinishingUi()
         self.windowFinishing.screenLabel.connect(self.showScreenImage)
-        
+        #self.windowRoadSettingUp.show()
     #this function whill display image    
     def showScreenImage(self):
         self.window.labelScreen.setPixmap(QtGui.QPixmap("images/image 1.jpg")) #setting image inside QLabel
@@ -250,6 +285,14 @@ class Controller:
         self.window.verticalLayout_11.addWidget(self.window.frameWatch)#removing center aligment of frameWatch
         self.window.btnAddVideo.hide()#hiding button Insert Video
         #Closing Road Setting 
+    def select(self):
+        print("Select Image")
+
+        
+
+
+
+
 
 
 if __name__ == '__main__':
