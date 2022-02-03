@@ -16,8 +16,8 @@
   <widget class="QWidget" name="mainWindow">
    <property name="maximumSize">
     <size>
-     <width>1440</width>
-     <height>783</height>
+     <width>16777215</width>
+     <height>16777215</height>
     </size>
    </property>
    <property name="styleSheet">
