@@ -133,8 +133,11 @@ class TableUi(QtWidgets.QMainWindow):
             self.newBtnDelete.setIconSize(QtCore.QSize(14,15))
             self.tableWidget.setCellWidget(i,j+1,self.newBtnPlay)
             self.tableWidget.setCellWidget(i,j+2,self.newBtnDelete)
-
+            self.newBtnPlay.clicked.connect(lambda ch, i=i: self.buttonSome())
         self.btnDone.clicked.connect(self.close)
+    
+    def buttonSome(self,i):
+        print(i)
 #main Window
 class MainUi(QtWidgets.QMainWindow):
     switch_window = QtCore.pyqtSignal()
@@ -143,6 +146,7 @@ class MainUi(QtWidgets.QMainWindow):
     def __init__(self):
         super(MainUi, self).__init__()
         uic.loadUi('frontEndUi.ui', self)
+        self.showMaximized()
         self.setWindowFlag(Qt.FramelessWindowHint) 
         self.btnRecord.clicked.connect(self.switch_window.emit)
         self.btnRoadSetup.clicked.connect(self.roadSwitch.emit)
@@ -150,8 +154,6 @@ class MainUi(QtWidgets.QMainWindow):
         self.btnAddVideo.clicked.connect(self.setUpVideo)
         self.btnPlayback.clicked.connect(self.activePlayback)
         self.btnWatch.clicked.connect(self.activeWatch)
-        #self.date=QDateTime.currentDateTime()
-        #self.dateDay.setDate(self.date.date()
         timer = QTimer(self)
 		# adding action to timer
         timer.timeout.connect(self.showTime)
@@ -182,45 +184,10 @@ class MainUi(QtWidgets.QMainWindow):
         self.stackedWidget.setCurrentWidget(self.watchingPage)
         self.btnPlayback.setStyleSheet('background-color:none;border:none')
         self.btnWatch.setStyleSheet("color:white;font-size:14px;background-color:#1D1F32;border-left:3px solid #678ADD;")
-
-
-
-    """def logoutPopup(self):
-        self.logout.emit()
-    def windowPopUp(self):
-        self.switch_window.emit()
-    def RoadPopUp(self):
-        self.roadSwitch.emit()"""
     #Function display Video    
     def setUpVideo(self): #Initialize click event
         self.roadSwitch.emit()
-        """file=QFileDialog.getOpenFileUrl()
-        
-        cap = cv2.VideoCapture(file[0].toString())  #get video object
-        fps = cap.get(cv2.CAP_PROP_FPS) 
-        if not cap.isOpened():
-            
-            return
-        self.verticalLayout_11.addWidget(self.frameWatch)
-        while True:
-            ret, frame = cap.read()  #Read the movie frame by frame
-            if not ret:
-                if frame is None:
-                    print("The video has end.")
-                else:
-                    print("Read video error!")
-                break
-
-            QtImg = cvImgtoQtImg(frame)  # Convert frame data to PyQt image format
-           
-            self.labelScreen.setPixmap(QtGui.QPixmap.fromImage(QtImg))  # Display image in ImgDisp
-               
-            self.btnAddVideo.hide()      # hide play button
-            self.labelScreen.show()        # refresh the interface
-            cv2.waitKey(int(500 / fps))  # Sleep for a while to make sure fps is played every second
-
-        # When everything is done, release the catcher
-        cap.release()"""
+       
 
 class welcome(QtWidgets.QWidget):
     switch_window = QtCore.pyqtSignal()
@@ -246,8 +213,9 @@ class Controller:
         self.window.switch_window.connect(self.showTable)
         self.window.roadSwitch.connect(self.showRoadSetup)
         self.window.logout.connect(self.show_logout)
+        self.window.show()
         self.login.close()
-        self.window.showMaximized()
+       
     def showTable(self):
         self.newWin=TableUi()
         self.newWin.show()
@@ -286,15 +254,7 @@ class Controller:
         self.window.btnAddVideo.hide()#hiding button Insert Video
         #Closing Road Setting 
     def select(self):
-        print("Select Image")
-
-        
-
-
-
-
-
-
+        print("Select Image")       
 if __name__ == '__main__':
     app=QApplication(sys.argv)
     controller = Controller()
