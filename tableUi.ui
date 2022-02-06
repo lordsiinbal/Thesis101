@@ -2,12 +2,15 @@
 <ui version="4.0">
  <class>MainWindow</class>
  <widget class="QMainWindow" name="MainWindow">
+  <property name="windowModality">
+   <enum>Qt::ApplicationModal</enum>
+  </property>
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
     <width>800</width>
-    <height>503</height>
+    <height>500</height>
    </rect>
   </property>
   <property name="maximumSize">
@@ -76,7 +79,7 @@ background-color:#4A4A6C;
           <enum>QAbstractItemView::NoSelection</enum>
          </property>
          <property name="selectionBehavior">
-          <enum>QAbstractItemView::SelectRows</enum>
+          <enum>QAbstractItemView::SelectColumns</enum>
          </property>
          <property name="textElideMode">
           <enum>Qt::ElideRight</enum>

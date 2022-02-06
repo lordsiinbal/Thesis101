@@ -69,6 +69,7 @@ class LogoutUi(QtWidgets.QWidget):#Logout Ui
         uic.loadUi('logoutUi.ui', self)
         self.setWindowFlag(Qt.FramelessWindowHint)#removing title bar
         self.btnLogout.clicked.connect(self.confirmLogout.emit)
+        self.btnCancel.clicked.connect(self.close)
    
         
 
@@ -195,6 +196,7 @@ class welcome(QtWidgets.QWidget):
         super(welcome, self).__init__()
         uic.loadUi('welcomeUi.ui', self)
         self.btnLogin.clicked.connect(self.goToLogin)
+        self.btnCancel.clicked.connect(self.close)
         self.setWindowFlag(Qt.FramelessWindowHint)      
     def goToLogin(self):
         self.switch_window.emit()
