@@ -106,13 +106,15 @@ class TableUi(QtWidgets.QMainWindow):
         _translate = QtCore.QCoreApplication.translate
         data=[['01','Violated','San Felipe','5 minutes','01/26/22'],
               ['02','Violated','SM Area','7 minutes','01/29/22'],
-              ['03','Violated','Terminal 2','10 minutes','01/27/22']
+              ['03','Violated','Terminal 2','10 minutes','01/27/22'],
+              ['04','Violated','Terminal 1','6 minutes','02/06/22']
               ]
+        
         #self.tableWidget.setRowCount(4) 
         #self.tableWidget.setItem(0,0, QTableWidgetItem("Name"))
-        for i in range(3):
+        self.tableWidget.setRowCount(len(data))
+        for i in range(len(data)):
             for j in range(5):
-                self.tableWidget.setRowCount(3)
                 self.tableWidget.setItem(i,j, QTableWidgetItem(data[i][j]))
                 self.tableWidget.item(i,j).setTextAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
             #Adding BUtton in each row  
@@ -134,7 +136,7 @@ class TableUi(QtWidgets.QMainWindow):
             self.newBtnDelete.setIconSize(QtCore.QSize(14,15))
             self.tableWidget.setCellWidget(i,j+1,self.newBtnPlay)
             self.tableWidget.setCellWidget(i,j+2,self.newBtnDelete)
-            self.newBtnPlay.clicked.connect(lambda ch, i=i: self.buttonSome())
+            self.newBtnPlay.clicked.connect(lambda ch, i=i: self.buttonSome(i))
         self.btnDone.clicked.connect(self.close)
     
     def buttonSome(self,i):
