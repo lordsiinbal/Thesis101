@@ -81,15 +81,46 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
         super(RoadSetUp1, self).__init__()
         uic.loadUi('roadSetUp_phase1.ui', self)
         self.setWindowFlag(Qt.FramelessWindowHint)      #removing Title bar
-        self.label.mousePressEvent = self.selectImage   #mouse Event for Qlabel
+        #self.label.mousePressEvent = self.selectImage   #mouse Event for Qlabel
         self.btnNew.clicked.connect(self.switch_window.emit)    #Showing Draw road Ui
         self.btnCancel.clicked.connect(self.close)          #close window
         self.btnConfirm.clicked.connect(self.loading)       #Loading Ui
+        for x in range(2):
+            for y in range(2):                
+                #button = QtWidgets.QPushButton(str(str(3*x+y)))
+                self.frame = QtWidgets.QFrame(self.mainArea)
+                self.frame.setMaximumSize(QtCore.QSize(301, 1000))
+                self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.verticalLayout = QtWidgets.QVBoxLayout(self.frame)
+                self.verticalLayout.setObjectName("verticalLayout")
+                self.labelImage = QtWidgets.QLabel(self.frame)
+                self.labelImage.setMaximumSize(QtCore.QSize(16777215, 167))
+                self.labelImage.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+                self.labelImage.setMouseTracking(True)
+                self.labelImage.setFocusPolicy(QtCore.Qt.ClickFocus)
+                self.labelImage.setText("")
+                self.labelImage.setPixmap(QtGui.QPixmap("images/image 1.jpg"))
+                self.labelImage.setScaledContents(True)
+                self.labelImage.setObjectName("label")
+                self.verticalLayout.addWidget(self.labelImage)
+                self.label = QtWidgets.QLabel(self.frame)
+                self.label.setText('Something')
+                self.labelImage.mousePressEvent = self.selectImage
+                self.verticalLayout.addWidget(self.label, 0, QtCore.Qt.AlignHCenter|QtCore.Qt.AlignTop)
+                self.gridLayout.addWidget(self.frame, x, y, 1, 1)
+                #self.gridLayout.addWidget(button, x, y)
+
+
     def loading(self):
         self.settingUpRoad.emit()
         self.close()
     def selectImage(self,event):                            #HighLight selected Image
-        self.label.setStyleSheet("border:3px solid white")  #border
+        #self.qt.setStyleSheet("border:3px solid white")    #border
+        #widget.QFrame.setStyleSheet("border:2px solid white")
+        #self.item=self.gridLayout.itemAtPosition(0,0)
+        #self.item.QLabel.setText("fasf")
+        #item.QLabel.setStyleSheet("border:2px solid white")
         self.btnConfirm.setEnabled(True)                    #btnConfirm enable
         self.btnConfirm.setStyleSheet("color:white;border:2px solid white") #add css on btnConfirm
 
@@ -105,6 +136,22 @@ class TableUi(QtWidgets.QMainWindow):
             QHeaderView.Stretch)
         _translate = QtCore.QCoreApplication.translate
         data=[['01','Violated','San Felipe','5 minutes','01/26/22'],
+              ['02','Violated','SM Area','7 minutes','01/29/22'],
+              ['03','Violated','Terminal 2','10 minutes','01/27/22'],
+              ['04','Violated','Terminal 1','6 minutes','02/06/22'],
+              ['01','Violated','San Felipe','5 minutes','01/26/22'],
+              ['02','Violated','SM Area','7 minutes','01/29/22'],
+              ['03','Violated','Terminal 2','10 minutes','01/27/22'],
+              ['04','Violated','Terminal 1','6 minutes','02/06/22'],
+              ['01','Violated','San Felipe','5 minutes','01/26/22'],
+              ['02','Violated','SM Area','7 minutes','01/29/22'],
+              ['03','Violated','Terminal 2','10 minutes','01/27/22'],
+              ['04','Violated','Terminal 1','6 minutes','02/06/22'],
+              ['01','Violated','San Felipe','5 minutes','01/26/22'],
+              ['02','Violated','SM Area','7 minutes','01/29/22'],
+              ['03','Violated','Terminal 2','10 minutes','01/27/22'],
+              ['04','Violated','Terminal 1','6 minutes','02/06/22'],
+              ['01','Violated','San Felipe','5 minutes','01/26/22'],
               ['02','Violated','SM Area','7 minutes','01/29/22'],
               ['03','Violated','Terminal 2','10 minutes','01/27/22'],
               ['04','Violated','Terminal 1','6 minutes','02/06/22']

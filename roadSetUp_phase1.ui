@@ -9,14 +9,20 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>717</width>
-    <height>527</height>
+    <width>800</width>
+    <height>600</height>
    </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>800</width>
+    <height>600</height>
+   </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>789</width>
-    <height>529</height>
+    <width>167899</width>
+    <height>167899</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -32,6 +38,14 @@ background: #4A4A6C;
 }
 #widget{
 background-color:#272741;
+}
+#mainArea{
+background-color:#272741;
+font-size:14px;
+}
+#mainArea QLabel{
+font-size:14px;
+color:white;
 }</string>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout">
@@ -109,26 +123,8 @@ background-color:#272741;
                <layout class="QVBoxLayout" name="verticalLayout_5">
                 <item>
                  <widget class="QScrollArea" name="scrollArea">
-                  <property name="styleSheet">
-                   <string notr="true">QLabel{
-color:white;
-font-size:14px;
-}</string>
-                  </property>
-                  <property name="frameShape">
-                   <enum>QFrame::NoFrame</enum>
-                  </property>
-                  <property name="lineWidth">
-                   <number>0</number>
-                  </property>
-                  <property name="verticalScrollBarPolicy">
-                   <enum>Qt::ScrollBarAlwaysOff</enum>
-                  </property>
                   <property name="horizontalScrollBarPolicy">
                    <enum>Qt::ScrollBarAlwaysOff</enum>
-                  </property>
-                  <property name="sizeAdjustPolicy">
-                   <enum>QAbstractScrollArea::AdjustToContentsOnFirstShow</enum>
                   </property>
                   <property name="widgetResizable">
                    <bool>true</bool>
@@ -138,220 +134,14 @@ font-size:14px;
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>637</width>
+                     <width>718</width>
                      <height>444</height>
                     </rect>
                    </property>
                    <property name="styleSheet">
-                    <string notr="true">#mainArea{
-background-color:#4A4A6C;
-border:5px solid #4A4A6C;
-font-size:14px;
-;
-}</string>
+                    <string notr="true"/>
                    </property>
-                   <layout class="QGridLayout" name="gridLayout">
-                    <item row="1" column="0">
-                     <widget class="QFrame" name="frame_4">
-                      <property name="maximumSize">
-                       <size>
-                        <width>301</width>
-                        <height>1000</height>
-                       </size>
-                      </property>
-                      <property name="frameShape">
-                       <enum>QFrame::StyledPanel</enum>
-                      </property>
-                      <property name="frameShadow">
-                       <enum>QFrame::Raised</enum>
-                      </property>
-                      <layout class="QVBoxLayout" name="verticalLayout_4">
-                       <item>
-                        <widget class="QLabel" name="label_5">
-                         <property name="maximumSize">
-                          <size>
-                           <width>16777215</width>
-                           <height>167</height>
-                          </size>
-                         </property>
-                         <property name="cursor">
-                          <cursorShape>PointingHandCursor</cursorShape>
-                         </property>
-                         <property name="text">
-                          <string/>
-                         </property>
-                         <property name="pixmap">
-                          <pixmap>images/image 1.jpg</pixmap>
-                         </property>
-                         <property name="scaledContents">
-                          <bool>true</bool>
-                         </property>
-                        </widget>
-                       </item>
-                       <item alignment="Qt::AlignHCenter|Qt::AlignTop">
-                        <widget class="QLabel" name="label_6">
-                         <property name="text">
-                          <string>San Felipe 3</string>
-                         </property>
-                        </widget>
-                       </item>
-                      </layout>
-                     </widget>
-                    </item>
-                    <item row="1" column="1">
-                     <widget class="QFrame" name="frame_5">
-                      <property name="maximumSize">
-                       <size>
-                        <width>301</width>
-                        <height>16777215</height>
-                       </size>
-                      </property>
-                      <property name="frameShape">
-                       <enum>QFrame::StyledPanel</enum>
-                      </property>
-                      <property name="frameShadow">
-                       <enum>QFrame::Raised</enum>
-                      </property>
-                      <layout class="QVBoxLayout" name="verticalLayout_8">
-                       <item>
-                        <widget class="QLabel" name="label_7">
-                         <property name="maximumSize">
-                          <size>
-                           <width>16777215</width>
-                           <height>167</height>
-                          </size>
-                         </property>
-                         <property name="cursor">
-                          <cursorShape>PointingHandCursor</cursorShape>
-                         </property>
-                         <property name="text">
-                          <string/>
-                         </property>
-                         <property name="pixmap">
-                          <pixmap>images/image 1.jpg</pixmap>
-                         </property>
-                         <property name="scaledContents">
-                          <bool>true</bool>
-                         </property>
-                        </widget>
-                       </item>
-                       <item alignment="Qt::AlignHCenter|Qt::AlignTop">
-                        <widget class="QLabel" name="label_8">
-                         <property name="text">
-                          <string>San Felipe 4</string>
-                         </property>
-                        </widget>
-                       </item>
-                      </layout>
-                     </widget>
-                    </item>
-                    <item row="0" column="0">
-                     <widget class="QFrame" name="frame_2">
-                      <property name="maximumSize">
-                       <size>
-                        <width>301</width>
-                        <height>1000</height>
-                       </size>
-                      </property>
-                      <property name="frameShape">
-                       <enum>QFrame::StyledPanel</enum>
-                      </property>
-                      <property name="frameShadow">
-                       <enum>QFrame::Raised</enum>
-                      </property>
-                      <layout class="QVBoxLayout" name="verticalLayout_6">
-                       <item>
-                        <widget class="QLabel" name="label">
-                         <property name="maximumSize">
-                          <size>
-                           <width>16777215</width>
-                           <height>167</height>
-                          </size>
-                         </property>
-                         <property name="cursor">
-                          <cursorShape>PointingHandCursor</cursorShape>
-                         </property>
-                         <property name="mouseTracking">
-                          <bool>true</bool>
-                         </property>
-                         <property name="focusPolicy">
-                          <enum>Qt::ClickFocus</enum>
-                         </property>
-                         <property name="text">
-                          <string/>
-                         </property>
-                         <property name="pixmap">
-                          <pixmap>images/image 1.jpg</pixmap>
-                         </property>
-                         <property name="scaledContents">
-                          <bool>true</bool>
-                         </property>
-                        </widget>
-                       </item>
-                       <item alignment="Qt::AlignHCenter|Qt::AlignTop">
-                        <widget class="QLabel" name="label_3">
-                         <property name="text">
-                          <string>San Felipe 1</string>
-                         </property>
-                         <property name="alignment">
-                          <set>Qt::AlignCenter</set>
-                         </property>
-                        </widget>
-                       </item>
-                      </layout>
-                     </widget>
-                    </item>
-                    <item row="0" column="1">
-                     <widget class="QFrame" name="frame_3">
-                      <property name="maximumSize">
-                       <size>
-                        <width>301</width>
-                        <height>1000</height>
-                       </size>
-                      </property>
-                      <property name="frameShape">
-                       <enum>QFrame::StyledPanel</enum>
-                      </property>
-                      <property name="frameShadow">
-                       <enum>QFrame::Raised</enum>
-                      </property>
-                      <layout class="QVBoxLayout" name="verticalLayout_7">
-                       <item>
-                        <widget class="QLabel" name="label_2">
-                         <property name="maximumSize">
-                          <size>
-                           <width>16777215</width>
-                           <height>167</height>
-                          </size>
-                         </property>
-                         <property name="cursor">
-                          <cursorShape>PointingHandCursor</cursorShape>
-                         </property>
-                         <property name="text">
-                          <string/>
-                         </property>
-                         <property name="pixmap">
-                          <pixmap>images/image 1.jpg</pixmap>
-                         </property>
-                         <property name="scaledContents">
-                          <bool>true</bool>
-                         </property>
-                        </widget>
-                       </item>
-                       <item alignment="Qt::AlignHCenter|Qt::AlignTop">
-                        <widget class="QLabel" name="label_4">
-                         <property name="text">
-                          <string>San Felipe 2</string>
-                         </property>
-                         <property name="alignment">
-                          <set>Qt::AlignCenter</set>
-                         </property>
-                        </widget>
-                       </item>
-                      </layout>
-                     </widget>
-                    </item>
-                   </layout>
+                   <layout class="QGridLayout" name="gridLayout"/>
                   </widget>
                  </widget>
                 </item>
