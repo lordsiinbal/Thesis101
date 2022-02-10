@@ -84,17 +84,90 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
         super(RoadSetUp1, self).__init__()
         uic.loadUi('roadSetUp_phase1.ui', self)
         self.setWindowFlag(Qt.FramelessWindowHint)      #removing Title bar
-        self.label.mousePressEvent = self.selectImage   #mouse Event for Qlabel
+        #self.label.mousePressEvent = self.selectImage   #mouse Event for Qlabel
         self.btnNew.clicked.connect(self.switch_window.emit)    #Showing Draw road Ui
         self.btnCancel.clicked.connect(self.close)          #close window
         self.btnConfirm.clicked.connect(self.loading)       #Loading Ui
+        res = requests.get(url = baseURL + "/RoadFetchAll")
+        data = res.json()
+        
+        
+        if ((len(data)%2)==0):
+            row = self.roadCard(data,len(data))
+        else:
+            
+            length=len(data)-1
+            print(length)
+            row = self.roadCard(data,length)
+            self.frame= QtWidgets.QFrame(self.mainArea)    #create a Qframe for container
+            #self.frame.setObjectName("id"+str(data[x][0]))       #set Qframe objectName or class
+            self.objName=self.frame.objectName() 
+            #print(self.objName)
+            self.frame.setMaximumSize(QtCore.QSize(301, 1000))  #maximum size of container
+            self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)  
+            self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
+            self.verticalLayout = QtWidgets.QVBoxLayout(self.frame)
+            self.verticalLayout.setObjectName("verticalLayout")
+            self.labelImage = QtWidgets.QLabel(self.frame)
+            self.labelImage.setMaximumSize(QtCore.QSize(16777215, 167))
+            self.labelImage.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+            self.labelImage.setMouseTracking(True)
+            self.labelImage.setFocusPolicy(QtCore.Qt.ClickFocus)
+            self.labelImage.setText("") #emptying text 
+            self.labelImage.setPixmap(QtGui.QPixmap(str(data[len(data)-1]['roadCaptured'])))   #get show Image inside labelImage
+            self.labelImage.setScaledContents(True)
+            self.labelImage.setObjectName("label")  #set 
+            self.verticalLayout.addWidget(self.labelImage)
+            self.label = QtWidgets.QLabel(self.frame)
+            self.label.setText(str(data[len(data)-1]['roadName']))#Assign file label
+            self.labelImage.mousePressEvent =lambda event, data=data: self.selectImage(event,data[len(data)-1]['roadID'])  #mouse Event 
+            self.verticalLayout.addWidget(self.label, 0, QtCore.Qt.AlignHCenter|QtCore.Qt.AlignTop)
+            self.gridLayout.addWidget(self.frame,row+1,0,1,1) #added the frame inside grid layout   
+                
+    
+    def roadCard(self,data,length):
+        print(length)
+        x=0     #initialize x for items in each row
+        row=0   #initialize row
+        while x < length:
+                for y in range(2):                
+                    self.frame= QtWidgets.QFrame(self.mainArea)    #create a Qframe for container
+                    #self.frame.setObjectName("id"+str(data[x][0]))       #set Qframe objectName or class
+                    self.objName=self.frame.objectName() 
+                    #print(self.objName)
+                    self.frame.setMaximumSize(QtCore.QSize(301, 1000))  #maximum size of container
+                    self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)  
+                    self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
+                    self.verticalLayout = QtWidgets.QVBoxLayout(self.frame)
+                    self.verticalLayout.setObjectName("verticalLayout")
+                    self.labelImage = QtWidgets.QLabel(self.frame)
+                    self.labelImage.setMaximumSize(QtCore.QSize(16777215, 167))
+                    self.labelImage.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+                    self.labelImage.setMouseTracking(True)
+                    self.labelImage.setFocusPolicy(QtCore.Qt.ClickFocus)
+                    self.labelImage.setText("") #emptying text 
+                    self.labelImage.setPixmap(QtGui.QPixmap(str(data[x]['roadCaptured'])))   #get show Image inside labelImage
+                    self.labelImage.setScaledContents(True)
+                    self.labelImage.setObjectName("label")  #set 
+                    self.verticalLayout.addWidget(self.labelImage)
+                    self.label = QtWidgets.QLabel(self.frame)
+                    self.label.setText(str(data[x]['roadName']))#Assign file label
+                    self.labelImage.mousePressEvent =lambda event, x=x: self.selectImage(event,data[x]['roadID'])  #mouse Event 
+                    self.verticalLayout.addWidget(self.label, 0, QtCore.Qt.AlignHCenter|QtCore.Qt.AlignTop)
+                    self.gridLayout.addWidget(self.frame,row,y,1,1) #added the frame inside grid layout
+                    x=x+1       #iterate x
+                row=row+1       #iterate row
+        return row
+
     def loading(self):
         self.settingUpRoad.emit()
         self.close()
-    def selectImage(self,event):                            #HighLight selected Image
-        self.label.setStyleSheet("border:3px solid white")  #border
+    def selectImage(self,event,x):
+        print(x)
         self.btnConfirm.setEnabled(True)                    #btnConfirm enable
         self.btnConfirm.setStyleSheet("color:white;border:2px solid white") #add css on btnConfirm
+        self.mainArea.setStyleSheet("QFrame 2{\n"
+            "border:5px solid white;}\n")
 
 #violation Record table
 class TableUi(QtWidgets.QMainWindow):
