@@ -10,7 +10,7 @@ def changePath():
     import os
 
     # change Directory
-    os.chdir(os.path.join(os.getcwd(), '../Yolov5_DeepSort_Pytorch\\'))
+    os.chdir(os.path.join(os.getcwd(), '../detection_module\\'))
     print(os.getcwd())
     # add to sys path
     sys.path.append(os.getcwd())
