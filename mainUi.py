@@ -128,7 +128,7 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
                 self.labelImage.setMouseTracking(True)
                 self.labelImage.setFocusPolicy(QtCore.Qt.ClickFocus)
                 self.labelImage.setText("")
-                self.labelImage.setPixmap(QtGui.QPixmap("images/image 1.jpg"))
+                self.labelImage.setPixmap(QtGui.QPixmap(PATH+"/images/image 1.jpg"))
                 self.labelImage.setScaledContents(True)
                 self.labelImage.setObjectName("label")
                 self.verticalLayout.addWidget(self.labelImage)
