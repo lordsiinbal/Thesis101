@@ -92,6 +92,7 @@ class LogoutUi(QtWidgets.QWidget):#Logout Ui
         uic.loadUi(PATH+'/logoutUi.ui', self)
         self.setWindowFlag(Qt.FramelessWindowHint)#removing title bar
         self.btnLogout.clicked.connect(self.confirmLogout.emit)
+        self.btnCancel.clicked.connect(self.close)
    
         
 
@@ -103,7 +104,7 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
         super(RoadSetUp1, self).__init__()
         uic.loadUi(PATH+'/roadSetUp_phase1.ui', self)
         self.setWindowFlag(Qt.FramelessWindowHint)      #removing Title bar
-        self.label.mousePressEvent = self.selectImage   #mouse Event for Qlabel
+        #self.label.mousePressEvent = self.selectImage   #mouse Event for Qlabel
         self.btnNew.clicked.connect(self.switch_window.emit)    #Showing Draw road Ui
         self.btnCancel.clicked.connect(self.close)          #close window
         self.btnConfirm.clicked.connect(self.loading)       #Loading Ui
@@ -112,11 +113,42 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
         else:
             self.btnNew.setEnabled(True)
             
+        for x in range(2):
+            for y in range(2):                
+                #button = QtWidgets.QPushButton(str(str(3*x+y)))
+                self.frame = QtWidgets.QFrame(self.mainArea)
+                self.frame.setMaximumSize(QtCore.QSize(301, 1000))
+                self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.verticalLayout = QtWidgets.QVBoxLayout(self.frame)
+                self.verticalLayout.setObjectName("verticalLayout")
+                self.labelImage = QtWidgets.QLabel(self.frame)
+                self.labelImage.setMaximumSize(QtCore.QSize(16777215, 167))
+                self.labelImage.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+                self.labelImage.setMouseTracking(True)
+                self.labelImage.setFocusPolicy(QtCore.Qt.ClickFocus)
+                self.labelImage.setText("")
+                self.labelImage.setPixmap(QtGui.QPixmap("images/image 1.jpg"))
+                self.labelImage.setScaledContents(True)
+                self.labelImage.setObjectName("label")
+                self.verticalLayout.addWidget(self.labelImage)
+                self.label = QtWidgets.QLabel(self.frame)
+                self.label.setText('Something')
+                self.labelImage.mousePressEvent = self.selectImage
+                self.verticalLayout.addWidget(self.label, 0, QtCore.Qt.AlignHCenter|QtCore.Qt.AlignTop)
+                self.gridLayout.addWidget(self.frame, x, y, 1, 1)
+                #self.gridLayout.addWidget(button, x, y)
+
+
     def loading(self):
         self.settingUpRoad.emit()
         self.close()
     def selectImage(self,event):                            #HighLight selected Image
-        self.label.setStyleSheet("border:3px solid white")  #border
+        #self.qt.setStyleSheet("border:3px solid white")    #border
+        #widget.QFrame.setStyleSheet("border:2px solid white")
+        #self.item=self.gridLayout.itemAtPosition(0,0)
+        #self.item.QLabel.setText("fasf")
+        #item.QLabel.setStyleSheet("border:2px solid white")
         self.btnConfirm.setEnabled(True)                    #btnConfirm enable
         self.btnConfirm.setStyleSheet("color:white;border:2px solid white") #add css on btnConfirm
 
@@ -133,13 +165,31 @@ class TableUi(QtWidgets.QMainWindow):
         _translate = QtCore.QCoreApplication.translate
         data=[['01','Violated','San Felipe','5 minutes','01/26/22'],
               ['02','Violated','SM Area','7 minutes','01/29/22'],
-              ['03','Violated','Terminal 2','10 minutes','01/27/22']
+              ['03','Violated','Terminal 2','10 minutes','01/27/22'],
+              ['04','Violated','Terminal 1','6 minutes','02/06/22'],
+              ['01','Violated','San Felipe','5 minutes','01/26/22'],
+              ['02','Violated','SM Area','7 minutes','01/29/22'],
+              ['03','Violated','Terminal 2','10 minutes','01/27/22'],
+              ['04','Violated','Terminal 1','6 minutes','02/06/22'],
+              ['01','Violated','San Felipe','5 minutes','01/26/22'],
+              ['02','Violated','SM Area','7 minutes','01/29/22'],
+              ['03','Violated','Terminal 2','10 minutes','01/27/22'],
+              ['04','Violated','Terminal 1','6 minutes','02/06/22'],
+              ['01','Violated','San Felipe','5 minutes','01/26/22'],
+              ['02','Violated','SM Area','7 minutes','01/29/22'],
+              ['03','Violated','Terminal 2','10 minutes','01/27/22'],
+              ['04','Violated','Terminal 1','6 minutes','02/06/22'],
+              ['01','Violated','San Felipe','5 minutes','01/26/22'],
+              ['02','Violated','SM Area','7 minutes','01/29/22'],
+              ['03','Violated','Terminal 2','10 minutes','01/27/22'],
+              ['04','Violated','Terminal 1','6 minutes','02/06/22']
               ]
+        
         #self.tableWidget.setRowCount(4) 
         #self.tableWidget.setItem(0,0, QTableWidgetItem("Name"))
-        for i in range(3):
+        self.tableWidget.setRowCount(len(data))
+        for i in range(len(data)):
             for j in range(5):
-                self.tableWidget.setRowCount(3)
                 self.tableWidget.setItem(i,j, QTableWidgetItem(data[i][j]))
                 self.tableWidget.item(i,j).setTextAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
             #Adding BUtton in each row  
@@ -161,8 +211,11 @@ class TableUi(QtWidgets.QMainWindow):
             self.newBtnDelete.setIconSize(QtCore.QSize(14,15))
             self.tableWidget.setCellWidget(i,j+1,self.newBtnPlay)
             self.tableWidget.setCellWidget(i,j+2,self.newBtnDelete)
-
+            self.newBtnPlay.clicked.connect(lambda ch, i=i: self.buttonSome(i))
         self.btnDone.clicked.connect(self.close)
+    
+    def buttonSome(self,i):
+        print(i)
 #main Window
 class MainUi(QtWidgets.QMainWindow):
     switch_window = QtCore.pyqtSignal()
@@ -171,6 +224,7 @@ class MainUi(QtWidgets.QMainWindow):
     def __init__(self, window):
         super(MainUi, self).__init__()
         uic.loadUi(PATH+'/frontEndUi.ui', self)
+        self.showMaximized()
         self.setWindowFlag(Qt.FramelessWindowHint) 
         self.btnRecord.clicked.connect(self.switch_window.emit)
         self.btnRoadSetup.clicked.connect(self.roadSwitch.emit)
@@ -214,15 +268,6 @@ class MainUi(QtWidgets.QMainWindow):
         self.stackedWidget.setCurrentWidget(self.watchingPage)
         self.btnPlayback.setStyleSheet('background-color:none;border:none')
         self.btnWatch.setStyleSheet("color:white;font-size:14px;background-color:#1D1F32;border-left:3px solid #678ADD;")
-
-
-
-    """def logoutPopup(self):
-        self.logout.emit()
-    def windowPopUp(self):
-        self.switch_window.emit()
-    def RoadPopUp(self):
-        self.roadSwitch.emit()"""
     #Function display Video    
     def setUpVideo(self): #Initialize click event
         
@@ -238,6 +283,7 @@ class welcome(QtWidgets.QWidget):
         super(welcome, self).__init__()
         uic.loadUi(PATH+'/welcomeUi.ui', self)
         self.btnLogin.clicked.connect(self.goToLogin)
+        self.btnCancel.clicked.connect(self.close)
         self.setWindowFlag(Qt.FramelessWindowHint)      
     def goToLogin(self):
         self.switch_window.emit()
@@ -256,8 +302,9 @@ class Controller:
         self.window.switch_window.connect(self.showTable)
         self.window.roadSwitch.connect(self.showRoadSetup)
         self.window.logout.connect(self.show_logout)
+        self.window.show()
         self.login.close()
-        self.window.showMaximized()
+       
     def showTable(self):
         self.newWin=TableUi()
         self.newWin.show()
