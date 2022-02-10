@@ -74,7 +74,7 @@ background-color:#CFCFCF;
                 <string/>
                </property>
                <property name="pixmap">
-                <pixmap>images/image 1.jpg</pixmap>
+                <pixmap>images/road.jpg</pixmap>
                </property>
                <property name="scaledContents">
                 <bool>true</bool>

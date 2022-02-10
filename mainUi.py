@@ -1,10 +1,13 @@
 from asyncio.windows_events import NULL
+import ctypes
 from itertools import count
 from threading import local
+import threading
+from tkinter import Image
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtWidgets import QFileDialog
 import sys
-from msilib.schema import File
+from msilib.schema import Control, File
 import sys
 import cv2
 import time
@@ -13,24 +16,44 @@ from PyQt5 import QtGui, QtCore
 from PyQt5.QtGui import QMovie
 from cv2 import QT_PUSH_BUTTON
 from matplotlib import widgets
-from PyQt5.QtCore import Qt,QDateTime,QDate,QTime,QTimer
+from PyQt5.QtCore import Qt,QDateTime,QDate,QTime,QTimer,QThread, pyqtSignal, pyqtSlot
 from sympy import false
+import numpy as np
+from PIL.ImageQt import ImageQt
+from PIL.Image import Image as ImagePil
+from PIL import Image as Img
+
+#adding the functinality features
+#import classes
+import sys
+import os
+sys.path.append("../")
+from main import getBgModelAndRoad, detection # main function to run detection
+
+PATH = os.getcwd()
+
 def cvImgtoQtImg(cvImg):  #Define the function of opencv image to PyQt image
-    QtImgBuf = cv2.cvtColor(cvImg, cv2.COLOR_BGR2BGRA)
-    QtImg = QtGui.QImage(QtImgBuf.data, QtImgBuf.shape[1], QtImgBuf.shape[0], QtGui.QImage.Format_RGB32)
-    return QtImg 
+    """Convert from an opencv image to QPixmap"""
+    rgb_image = cv2.cvtColor(cvImg, cv2.COLOR_BGR2RGB)
+    # im_pil = Img.fromarray(rgb_image)
+    h, w, ch = rgb_image.shape
+    bytes_per_line = ch * w
+    convert_to_Qt_format = QtGui.QImage(rgb_image.data, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
+    p = convert_to_Qt_format
+    return p
+
 
 class FinishingUi(QtWidgets.QWidget):#Finishing Loading UI
     screenLabel=QtCore.pyqtSignal()
     def __init__(self):
         super(FinishingUi, self).__init__()
-        uic.loadUi('finishingUi.ui', self)
+        uic.loadUi(PATH+'/finishingUi.ui', self)
         self.setWindowFlag(Qt.FramelessWindowHint)
-        self.animation=QMovie('icon/loadingAnimated.gif')#animation Logo
+        self.animation=QMovie(PATH+'/icon/loadingAnimated.gif')#animation Logo
         self.loading.setMovie(self.animation)
         self.animation.start()#animation Statrt
         self.show()
-        QtCore.QTimer.singleShot(5000, self.closeWindow)#run the window for 5 seconds
+        QtCore.QTimer.singleShot(500000, self.closeWindow)#run the window for 5 mins
     def closeWindow(self):
         self.screenLabel.emit()#calling screenlabel 
         self.close()#closing Widget
@@ -40,13 +63,13 @@ class roadSettingUp(QtWidgets.QWidget):#road Setting Up Loading
     screenLabel=QtCore.pyqtSignal()
     def __init__(self):
         super(roadSettingUp, self).__init__()
-        uic.loadUi('settingUpRoad.ui', self)
+        uic.loadUi(PATH+'/settingUpRoad.ui', self)
         self.setWindowFlag(Qt.FramelessWindowHint)#hide title bar
-        self.animation=QMovie('icon/loadingAnimated.gif')#Animation Loading
+        self.animation=QMovie(PATH+'/icon/loadingAnimated.gif')#Animation Loading
         self.loading.setMovie(self.animation)
         self.animation.start()#start Animation
         self.show()
-        QtCore.QTimer.singleShot(5000, self.closeWindow)#run the window for 5 seconds
+        QtCore.QTimer.singleShot(500000, self.closeWindow)#run the window for 5 mins
     def closeWindow(self):
         self.screenLabel.emit()
         self.close()#cloase Window
@@ -54,7 +77,7 @@ class RoadSetUpPaint(QtWidgets.QMainWindow):
     switch_window = QtCore.pyqtSignal() 
     def __init__(self):
         super(RoadSetUpPaint, self).__init__()
-        uic.loadUi('roadSetUp_paint.ui', self)
+        uic.loadUi(PATH+'/roadSetUp_paint.ui', self)
         self.setWindowFlag(Qt.FramelessWindowHint)
         self.btnCancel.clicked.connect(self.close)#Button Cancel
         self.btnDone.clicked.connect(self.loading)#mouse Event 
@@ -66,7 +89,7 @@ class LogoutUi(QtWidgets.QWidget):#Logout Ui
     confirmLogout=QtCore.pyqtSignal()
     def __init__(self):
         super(LogoutUi, self).__init__()
-        uic.loadUi('logoutUi.ui', self)
+        uic.loadUi(PATH+'/logoutUi.ui', self)
         self.setWindowFlag(Qt.FramelessWindowHint)#removing title bar
         self.btnLogout.clicked.connect(self.confirmLogout.emit)
    
@@ -76,14 +99,19 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
     switch_window = QtCore.pyqtSignal()
     selectImage=QtCore.pyqtSignal()
     settingUpRoad=QtCore.pyqtSignal()
-    def __init__(self):
+    def __init__(self, w):
         super(RoadSetUp1, self).__init__()
-        uic.loadUi('roadSetUp_phase1.ui', self)
+        uic.loadUi(PATH+'/roadSetUp_phase1.ui', self)
         self.setWindowFlag(Qt.FramelessWindowHint)      #removing Title bar
         self.label.mousePressEvent = self.selectImage   #mouse Event for Qlabel
         self.btnNew.clicked.connect(self.switch_window.emit)    #Showing Draw road Ui
         self.btnCancel.clicked.connect(self.close)          #close window
         self.btnConfirm.clicked.connect(self.loading)       #Loading Ui
+        if w.window.vidFile is None or not w.window.vidFile:
+            self.btnNew.setEnabled(False)
+        else:
+            self.btnNew.setEnabled(True)
+            
     def loading(self):
         self.settingUpRoad.emit()
         self.close()
@@ -97,7 +125,7 @@ class TableUi(QtWidgets.QMainWindow):
     switch_window = QtCore.pyqtSignal()
     def __init__(self):
         super(TableUi, self).__init__()
-        uic.loadUi('tableUi.ui', self)
+        uic.loadUi(PATH+'/tableUi.ui', self)
         self.setWindowFlag(Qt.FramelessWindowHint)
         self.tableWidget.horizontalHeader().setStretchLastSection(True)
         self.tableWidget.horizontalHeader().setSectionResizeMode(
@@ -125,8 +153,8 @@ class TableUi(QtWidgets.QMainWindow):
         #Adding PLay icon and Delete icon 
             icon1 = QtGui.QIcon()
             icon2 = QtGui.QIcon()
-            icon1.addPixmap(QtGui.QPixmap("icon/playCircleArrow.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-            icon2.addPixmap(QtGui.QPixmap("icon/deleteIcon.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+            icon1.addPixmap(QtGui.QPixmap(PATH+"/icon/playCircleArrow.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+            icon2.addPixmap(QtGui.QPixmap(PATH+"/icon/deleteIcon.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
             self.newBtnPlay.setIcon(icon1)
             self.newBtnDelete.setIcon(icon2)
             self.newBtnPlay.setIconSize(QtCore.QSize(19, 19))
@@ -140,9 +168,9 @@ class MainUi(QtWidgets.QMainWindow):
     switch_window = QtCore.pyqtSignal()
     roadSwitch=QtCore.pyqtSignal()
     logout=QtCore.pyqtSignal()
-    def __init__(self):
+    def __init__(self, window):
         super(MainUi, self).__init__()
-        uic.loadUi('frontEndUi.ui', self)
+        uic.loadUi(PATH+'/frontEndUi.ui', self)
         self.setWindowFlag(Qt.FramelessWindowHint) 
         self.btnRecord.clicked.connect(self.switch_window.emit)
         self.btnRoadSetup.clicked.connect(self.roadSwitch.emit)
@@ -150,6 +178,8 @@ class MainUi(QtWidgets.QMainWindow):
         self.btnAddVideo.clicked.connect(self.setUpVideo)
         self.btnPlayback.clicked.connect(self.activePlayback)
         self.btnWatch.clicked.connect(self.activeWatch)
+        self.vidFile = None
+        self.w = window
         #self.date=QDateTime.currentDateTime()
         #self.dateDay.setDate(self.date.date()
         timer = QTimer(self)
@@ -158,6 +188,7 @@ class MainUi(QtWidgets.QMainWindow):
 
 		# update the timer every second
         timer.start(1000)
+    
 	# method called by timer
     def showTime(self):
 
@@ -175,6 +206,7 @@ class MainUi(QtWidgets.QMainWindow):
 
 
     def activePlayback(self):
+        self.w.initDet.det.dets.stop() # for now, stop detection, but main purpose of this is to continue detection and view the recorded
         self.stackedWidget.setCurrentWidget(self.playbackPage)
         self.btnWatch.setStyleSheet('background-color:none;border:none')
         self.btnPlayback.setStyleSheet("color:white;font-size:14px;background-color:#1D1F32;border-left:3px solid #678ADD;")
@@ -193,40 +225,18 @@ class MainUi(QtWidgets.QMainWindow):
         self.roadSwitch.emit()"""
     #Function display Video    
     def setUpVideo(self): #Initialize click event
-        self.roadSwitch.emit()
-        """file=QFileDialog.getOpenFileUrl()
         
-        cap = cv2.VideoCapture(file[0].toString())  #get video object
-        fps = cap.get(cv2.CAP_PROP_FPS) 
-        if not cap.isOpened():
-            
-            return
-        self.verticalLayout_11.addWidget(self.frameWatch)
-        while True:
-            ret, frame = cap.read()  #Read the movie frame by frame
-            if not ret:
-                if frame is None:
-                    print("The video has end.")
-                else:
-                    print("Read video error!")
-                break
+        # run(vid = '../data/drive-download-20220119T020939Z-002/CCTV San Francisco/XVR_ch5_main_20220114100004_20220114110004.mp4')
+        self.vidFile=QFileDialog.getOpenFileUrl()[0].toString()
+        self.vidFile = self.vidFile[8:]
 
-            QtImg = cvImgtoQtImg(frame)  # Convert frame data to PyQt image format
-           
-            self.labelScreen.setPixmap(QtGui.QPixmap.fromImage(QtImg))  # Display image in ImgDisp
-               
-            self.btnAddVideo.hide()      # hide play button
-            self.labelScreen.show()        # refresh the interface
-            cv2.waitKey(int(500 / fps))  # Sleep for a while to make sure fps is played every second
-
-        # When everything is done, release the catcher
-        cap.release()"""
-
+        self.roadSwitch.emit()
+      
 class welcome(QtWidgets.QWidget):
     switch_window = QtCore.pyqtSignal()
     def __init__(self):
         super(welcome, self).__init__()
-        uic.loadUi('welcomeUi.ui', self)
+        uic.loadUi(PATH+'/welcomeUi.ui', self)
         self.btnLogin.clicked.connect(self.goToLogin)
         self.setWindowFlag(Qt.FramelessWindowHint)      
     def goToLogin(self):
@@ -242,7 +252,7 @@ class Controller:
         self.login.switch_window.connect(self.show_main)
         self.login.show()
     def show_main(self):
-        self.window = MainUi()
+        self.window = MainUi(self)
         self.window.switch_window.connect(self.showTable)
         self.window.roadSwitch.connect(self.showRoadSetup)
         self.window.logout.connect(self.show_logout)
@@ -252,16 +262,42 @@ class Controller:
         self.newWin=TableUi()
         self.newWin.show()
     def showRoadSetup(self):
-        self.road=RoadSetUp1()
-        self.road.switch_window.connect(self.show_RoadPaint)
-        #self.road.selectImage.connect(self.select)
-        self.road.settingUpRoad.connect(self.showSettingUproad)
+        # before showing road, execute background modelling and automatic road detection, must be loading
+        self.road = RoadSetUp1(self)
+        self.road.switch_window.connect(self.show_RoadPaint) # for btn new
+        # disable new if vidfile has value
+        # # self.road.selectImage.connect(self.select)
+        self.road.settingUpRoad.connect(self.showSettingUproad) # for btn confirm new
         self.road.show()
     def show_RoadPaint(self):
-        self.roadPaint=RoadSetUpPaint()
-        self.roadPaint.switch_window.connect(self.showFinishingUi)
-        self.road.close()
-        self.roadPaint.show()
+        if self.window.vidFile is not None:
+            self.road.close()
+            self.road.disconnect()
+            self.roadLoad = roadSettingUp() # for loading setting up road
+            
+            self.thread = QThread()
+            self.bgAndRoad = Worker(self)
+            self.bgAndRoad.moveToThread(self.thread)
+            self.thread.started.connect(self.bgAndRoad.runBG)
+            self.bgAndRoad.finished.connect(self.thread.quit)
+            self.thread.finished.connect(self.finishedInBGModelAndRoad) # execute when the task in thread is finised
+            self.thread.start()
+            print("started")
+        else:
+            ctypes.windll.user32.MessageBoxW(0, "Please insert a video first", "Empty Video file", 1)
+    
+    # function to call when the process of bg modelling and road extraction is done using thread
+    def finishedInBGModelAndRoad(self):
+        roadImage, self.ROI =  self.bgAndRoad.bgImage,  self.bgAndRoad.ROI
+        if roadImage is not NULL:
+            self.roadLoad.closeWindow()
+            self.roadPaint=RoadSetUpPaint()
+            self.roadPaint.switch_window.connect(self.showFinishingUi) # for btn confirm
+            self.roadPaint.show()
+        else:
+            print("ERROR: An error occure while extracting the road and background model")
+            exit()
+            
     def show_logout(self):
         self.logout_Ui=LogoutUi()
         self.logout_Ui.show()
@@ -274,29 +310,97 @@ class Controller:
         self.windowRoadSettingUp=roadSettingUp()
         self.windowRoadSettingUp.screenLabel.connect(self.showScreenImage)
     def showFinishingUi(self):
-        self.windowFinishing=FinishingUi()
-        self.windowFinishing.screenLabel.connect(self.showScreenImage)
-        #self.windowRoadSettingUp.show()
-    #this function whill display image    
-    def showScreenImage(self):
-        self.window.labelScreen.setPixmap(QtGui.QPixmap("images/image 1.jpg")) #setting image inside QLabel
-        self.window.labelScreen.setMinimumSize(QtCore.QSize(0, 400))#setting minimum heigth
-        self.window.label.setText("San Felipe")
-        self.window.verticalLayout_11.addWidget(self.window.frameWatch)#removing center aligment of frameWatch
-        self.window.btnAddVideo.hide()#hiding button Insert Video
-        #Closing Road Setting 
+        self.roadPaint.close()
+        # initialize detection
+        self.windowFinishing=FinishingUi()# loading for finishing 
+        
+        self.thread = QThread()
+        self.initDet = Worker(self)
+        self.initDet.moveToThread(self.thread)
+        self.thread.started.connect(self.initDet.initDet)
+        self.initDet.finished.connect(self.thread.quit)
+        self.thread.finished.connect(self.finishedInitDet) # execute when the task in thread is finised
+        self.thread.start()
+        print("started init det")
+        
+    # this function will be executed when finished initializing detection and tracking models
+    def finishedInitDet(self):
+        if self.initDet.det.dets.flag:
+            self.windowFinishing.closeWindow() # close loading
+            print("finished initializing detection models")
+            
+            # run detection here
+            self.window.label.setText("San Felipe") # name of video
+            self.window.verticalLayout_11.addWidget(self.window.frameWatch)#removing center aligment of frameWatch
+            self.window.btnAddVideo.hide()
+            self.window.labelScreen.setMinimumSize(QtCore.QSize(0, 400))
+            
+            self.thread = QThread()
+            self.runDets = Worker(self)
+            self.runDets.moveToThread(self.thread)
+            self.thread.started.connect(self.runDets.runDet)
+            self.runDets.finished.connect(self.thread.quit)
+            self.thread.finished.connect(self.finishedrunDet) # execute when the task in thread is finised
+            self.runDets.imgUpdate.connect(self.update_image)
+            self.thread.start()
+
+            
+        else:
+            print("ERROR: An error occured while performing detection")
+            exit()
+            
+    def update_image(self, qim):
+        self.window.labelScreen.setPixmap(qim)
+           
+    # this function will execute when the detection is finished with the video
+    def finishedrunDet(self):        
+        print("finished detection for this file")
+    
+    
+    # #this function will display image    
+    def showScreenImage(self): 
+        cv2.imshow("aa",self.initDet.det.dets.frame)
+        if cv2.waitKey(1) == ord('q'):
+            self.initDet.det.dets.stop()
+            
     def select(self):
         print("Select Image")
 
+class Worker(QtCore.QObject):
+    finished = QtCore.pyqtSignal()
+    imgUpdate = QtCore.pyqtSignal(QtGui.QPixmap)
+    
+    def __init__(self, window):
+        super(Worker, self).__init__()
+        self.w = window
+        self.vid = self.w.window.vidFile     
+
+    def runBG(self):
+        self.bgImage, self.ROI = getBgModelAndRoad(self.vid)
+        self.finished.emit()
         
+    def initDet(self):
+        self.det = detection(self.vid, self.w.ROI)
+        self.finished.emit()
 
-
-
-
+    def runDet(self):
+        # run/start detection
+        self.w.initDet.det.dets.t.start()
+        # wait for 1 sec
+        time.sleep(0.3)
+        while not self.w.initDet.det.dets.stopped:
+            #BUG: SLOW DETECTION, MAYBBE IN THREADS, I REALLY DONT KNOW
+            img = np.copy(self.w.initDet.det.dets.frame) #make a copy of frame
+            QtImg = cvImgtoQtImg(img)# Convert frame data to PyQt image format
+            qim = QtGui.QPixmap.fromImage(QtImg)
+            self.imgUpdate.emit(qim) # fix threading, slow detection bug
+            # self.w.showScreenImage()
+        self.finished.emit()
 
 
 if __name__ == '__main__':
     app=QApplication(sys.argv)
+    app.processEvents()
     controller = Controller()
     controller.show_login()
     sys.exit(app.exec_())
