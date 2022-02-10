@@ -1,5 +1,4 @@
 # Folders
-data/
 thread/
 
 
@@ -10,3 +9,5 @@ thread/
 *.avi
 *.so
 *.txt
+
+!requirements.txt
