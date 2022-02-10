@@ -4,7 +4,7 @@ class dc_road(Document):
     roadID = StringField()
     roadName  = StringField()
     roadCaptured  = StringField()
-    roadBoundaryCoordinates  = ListField()
+    roadBoundaryCoordinates  = StringField()
 
     def to_json(self):
         return{
