@@ -92,10 +92,11 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
             ]   
         x=0     #initialize x for items in each row
         row=0   #initialize row
+        self.prevSelectedImage=NULL
         while x< len(data):
             for y in range(2):                
                 self.frame= QtWidgets.QFrame(self.mainArea)    #create a Qframe for container
-                #self.frame.setObjectName("id"+str(data[x][0]))       #set Qframe objectName or class
+                self.frame.setObjectName("id"+str(data[x][0]))       #set Qframe objectName or class
                 self.objName=self.frame.objectName() 
                 #print(self.objName)
                 self.frame.setMaximumSize(QtCore.QSize(301, 1000))  #maximum size of container
@@ -115,21 +116,26 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
                 self.verticalLayout.addWidget(self.labelImage)
                 self.label = QtWidgets.QLabel(self.frame)
                 self.label.setText(str(data[x][2]))#Assign file label
-                self.labelImage.mousePressEvent =lambda event, x=x: self.selectImage(event,data[x][0])  #mouse Event 
+                self.labelImage.mousePressEvent =lambda event, x=x: self.selectImage(event,str(data[x][0]))  #mouse Event 
                 self.verticalLayout.addWidget(self.label, 0, QtCore.Qt.AlignHCenter|QtCore.Qt.AlignTop)
                 self.gridLayout.addWidget(self.frame,row,y,1,1) #added the frame inside grid layout
                 x=x+1       #iterate x
             row=row+1       #iterate row
-                
     def loading(self):
         self.settingUpRoad.emit()
         self.close()
     def selectImage(self,event,x):
-        print(x)
+        if self.prevSelectedImage != NULL:         #border of previous selected image is set to none  
+            self.newFrame=self.mainArea.findChild(QtWidgets.QFrame,self.prevSelectedImage)
+            self.newFrame.setStyleSheet("#label{border:none}")
+
+        self.newFrame=self.mainArea.findChild(QtWidgets.QFrame,"id"+x)#find child in mainArea with object name "id"+x 
+        self.newFrame.setStyleSheet("#label{border:2px solid white}")  #add border to image
         self.btnConfirm.setEnabled(True)                    #btnConfirm enable
         self.btnConfirm.setStyleSheet("color:white;border:2px solid white") #add css on btnConfirm
         self.mainArea.setStyleSheet("QFrame 2{\n"
             "border:5px solid white;}\n")
+        self.prevSelectedImage="id"+x
 
 #violation Record table
 class TableUi(QtWidgets.QMainWindow):
