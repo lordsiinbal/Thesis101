@@ -198,6 +198,12 @@ border-radius:15px;
 color:gray;
 font-size:14px;
 }
+#btnDelete{
+border:2px solid gray;
+border-radius:15px;
+color:gray;
+font-size:14px;
+}
 </string>
             </property>
             <property name="frameShape">
@@ -228,6 +234,9 @@ font-size:14px;
              </item>
              <item>
               <widget class="QPushButton" name="btnDelete">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
                <property name="minimumSize">
                 <size>
                  <width>125</width>
