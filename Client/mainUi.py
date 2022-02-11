@@ -1,5 +1,6 @@
 from asyncio.windows_events import NULL
 from itertools import count
+import json
 from threading import local
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtWidgets import QFileDialog
@@ -17,6 +18,8 @@ from PyQt5.QtCore import Qt,QDateTime,QDate,QTime,QTimer
 from sympy import false
 from api import baseURL
 import requests 
+
+
 
 def cvImgtoQtImg(cvImg):  #Define the function of opencv image to PyQt image
     QtImgBuf = cv2.cvtColor(cvImg, cv2.COLOR_BGR2BGRA)
@@ -88,9 +91,10 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
         self.btnNew.clicked.connect(self.switch_window.emit)    #Showing Draw road Ui
         self.btnCancel.clicked.connect(self.close)          #close window
         self.btnConfirm.clicked.connect(self.loading)       #Loading Ui
+        self.btnDelete.clicked.connect(self.drop)
         res = requests.get(url = baseURL + "/RoadFetchAll")
         data = res.json()
-        
+        self.prevSelectedImage=NULL
         
         if ((len(data)%2)==0):
             row = self.roadCard(data,len(data))
@@ -100,7 +104,7 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
             print(length)
             row = self.roadCard(data,length)
             self.frame= QtWidgets.QFrame(self.mainArea)    #create a Qframe for container
-            #self.frame.setObjectName("id"+str(data[x][0]))       #set Qframe objectName or class
+            self.frame.setObjectName(str(data[len(data)-1]['roadID']))       #set Qframe objectName or class
             self.objName=self.frame.objectName() 
             #print(self.objName)
             self.frame.setMaximumSize(QtCore.QSize(301, 1000))  #maximum size of container
@@ -120,9 +124,10 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
             self.verticalLayout.addWidget(self.labelImage)
             self.label = QtWidgets.QLabel(self.frame)
             self.label.setText(str(data[len(data)-1]['roadName']))#Assign file label
-            self.labelImage.mousePressEvent =lambda event, data=data: self.selectImage(event,data[len(data)-1]['roadID'])  #mouse Event 
+            self.labelImage.mousePressEvent =lambda event, data=data: self.selectImage(event,data[len(data)-1])  #mouse Event 
             self.verticalLayout.addWidget(self.label, 0, QtCore.Qt.AlignHCenter|QtCore.Qt.AlignTop)
-            self.gridLayout.addWidget(self.frame,row+1,0,1,1) #added the frame inside grid layout   
+            self.gridLayout.addWidget(self.frame,row+1,0,1,1) #added the frame inside grid layout   \
+            
                 
     
     def roadCard(self,data,length):
@@ -132,7 +137,7 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
         while x < length:
                 for y in range(2):                
                     self.frame= QtWidgets.QFrame(self.mainArea)    #create a Qframe for container
-                    #self.frame.setObjectName("id"+str(data[x][0]))       #set Qframe objectName or class
+                    self.frame.setObjectName(str(data[x]['roadID']))       #set Qframe objectName or class
                     self.objName=self.frame.objectName() 
                     #print(self.objName)
                     self.frame.setMaximumSize(QtCore.QSize(301, 1000))  #maximum size of container
@@ -152,31 +157,44 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
                     self.verticalLayout.addWidget(self.labelImage)
                     self.label = QtWidgets.QLabel(self.frame)
                     self.label.setText(str(data[x]['roadName']))#Assign file label
-                    self.labelImage.mousePressEvent =lambda event, x=x: self.selectImage(event,data[x]['roadID'])  #mouse Event 
+                    self.labelImage.mousePressEvent =lambda event, x=x: self.selectImage(event,data[x])  #mouse Event 
                     self.verticalLayout.addWidget(self.label, 0, QtCore.Qt.AlignHCenter|QtCore.Qt.AlignTop)
                     self.gridLayout.addWidget(self.frame,row,y,1,1) #added the frame inside grid layout
                     x=x+1       #iterate x
                 row=row+1       #iterate row
         return row
+   
 
     def loading(self):
         self.settingUpRoad.emit()
         self.close()
+ 
     def selectImage(self,event,x):
-        print(x)
+        if self.prevSelectedImage != NULL:         #border of previous selected image is set to none  
+            self.newFrame=self.mainArea.findChild(QtWidgets.QFrame,self.prevSelectedImage)
+            self.newFrame.setStyleSheet("#label{border:none}")
+
+        
+        self.newFrame=self.mainArea.findChild(QtWidgets.QFrame,x['roadID'])#find child in mainArea with object name 
+        self.newFrame.setStyleSheet("#label{border:2px solid white}")  #add border to image
         self.btnConfirm.setEnabled(True)                    #btnConfirm enable
+        self.btnDelete.setEnabled(True)
+        self.btnDelete.setStyleSheet("color:white;border:2px solid white") #add css on btnConfirm
         self.btnConfirm.setStyleSheet("color:white;border:2px solid white") #add css on btnConfirm
         self.mainArea.setStyleSheet("QFrame 2{\n"
             "border:5px solid white;}\n")
+        self.prevSelectedImage= x['roadID']
+        self.selected = x
+
+    def drop(self):
+        print(self.selected['roadID'])
+        requests.delete(url = baseURL + "/RoadDelete",data={"roadID": self.selected['roadID']})
+
+
 
 #violation Record table
 class TableUi(QtWidgets.QMainWindow):
     switch_window = QtCore.pyqtSignal()
-
-    # def getTableData():
-    #     res = requests.get(url = baseURL + "/ViolationFetchAll")
-    #     data = res.json()
-    #     return data
 
 
     def __init__(self):
@@ -347,9 +365,13 @@ class Controller:
         #self.windowRoadSettingUp.show()
     #this function whill display image    
     def showScreenImage(self):
+        data = self.road.selected
+        print(data)
+        # print(data)
+        # # print(data)
         self.window.labelScreen.setPixmap(QtGui.QPixmap("images/image 1.jpg")) #setting image inside QLabel
         self.window.labelScreen.setMinimumSize(QtCore.QSize(0, 400))#setting minimum heigth
-        self.window.label.setText("San Felipe")
+        self.window.label.setText(data['roadName'])
         self.window.verticalLayout_11.addWidget(self.window.frameWatch)#removing center aligment of frameWatch
         self.window.btnAddVideo.hide()#hiding button Insert Video
         #Closing Road Setting 
