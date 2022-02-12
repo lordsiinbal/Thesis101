@@ -42,7 +42,7 @@ def getBgModelAndRoad(vid):
 class detection:
     def __init__(self, vid, ROI):
         changePath()
-        from Yolov5_DeepSort_Pytorch.track import det
+        from detection_module.track import det
         import params
         import torch
 

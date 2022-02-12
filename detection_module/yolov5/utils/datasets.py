@@ -252,7 +252,7 @@ class LoadImages:
             img0 = self.video_getter.frame
             img0 = cv2.resize(img0, (896, 504))
             # masking roi
-            im = np.copy(img0)
+            im = img0
             bg = np.zeros_like(img0)
             cv2.drawContours(bg, self.roi, -1, (0,0,255), thickness= -1)
             pts = np.where(bg == 255)
