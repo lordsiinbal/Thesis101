@@ -1,4 +1,5 @@
 from asyncio.windows_events import NULL
+from email import header
 from itertools import count
 import json
 from threading import local
@@ -187,9 +188,13 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
         self.selected = x
 
     def drop(self):
-        print(self.selected['roadID'])
-        requests.delete(url = baseURL + "/RoadDelete",data={"roadID": self.selected['roadID']})
+        a=str(self.selected['roadID'])
+        headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+        data = {"roadID": a}
 
+        r = requests.delete(url = baseURL + "/RoadDelete",json=data,headers=headers )
+        print(r)
+        # print (r.json())
 
 
 #violation Record table
