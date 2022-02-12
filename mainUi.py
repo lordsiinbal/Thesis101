@@ -479,7 +479,7 @@ class Worker(QtCore.QObject):
     def runDet(self):
         # run/start detection
         self.w.initDet.det.dets.t.start()
-        # wait for 1 sec
+        # sleep for 0.3 sec
         time.sleep(0.3)
         while not self.w.initDet.det.dets.stopped:
             #BUG: SLOW DETECTION, MAYBBE IN THREADS, I REALLY DONT KNOW
@@ -489,8 +489,8 @@ class Worker(QtCore.QObject):
                 img = numpy.copy(self.w.initDet.det.dets.frame) #make a copy of frame
                 QtImg = cvImgtoQtImg(img)# Convert frame data to PyQt image format
                 qim = QtGui.QPixmap.fromImage(QtImg)
-                self.imgUpdate.emit(qim) # fix threading, slow detection bug
-                # print('%.3fs' % (time.time()-t))
+                self.imgUpdate.emit(qim)
+                time.sleep(1/self.w.initDet.det.dets.vid_fps) # sleep dependent to fps
             else:
                 print('a', end='\r')
 
