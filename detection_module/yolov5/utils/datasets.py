@@ -286,7 +286,7 @@ class LoadImages:
         # Convert
         img = img.transpose((2, 0, 1))[::-1]  # HWC to CHW, BGR to RGB
         img = np.ascontiguousarray(img)
-
+        
         return path, img, img0, self.cap, s, self.frame, self.vid_fps,  self.video_getter, im, ret_val
 
     def new_video(self, path):

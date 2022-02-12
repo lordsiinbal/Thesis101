@@ -131,6 +131,7 @@ class det:
     
     def detect(self):
         print("it has started")
+        # self.show_vid = False
         for frame_idx, (path, img, im0s, vid_cap, s, frm_id, vid_fps, video_getter, im, ret) in enumerate(self.dataset):
             if not self.stopped:
                 self.frm_id = frm_id
