@@ -305,6 +305,7 @@ class det:
                                 fps, w, h = 30, im.shape[1], im.shape[0]
                             self.vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
                         self.vid_writer.write(im)
+                    
             else:
                 video_getter.stop() 
                 t = tuple(x / self.seen * 1E3 for x in self.dt)  # speeds per image
