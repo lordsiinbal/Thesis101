@@ -10,6 +10,7 @@ class bg:
         frames = []
         # For local video only
         FOI = np.random.choice(range(int(cap.get(cv.CAP_PROP_FRAME_COUNT))),size=20, replace= False) # defualt 500
+        # FOI = cap.get(cv.CAP_PROP_FRAME_COUNT) * np.random.uniform(size=30)
         self.backgroundFrame = None
         t = Thread(target=self.sub, args=(cap, FOI, frames))
         t.start()
@@ -22,8 +23,8 @@ class bg:
             _, frame = cap.read()
             # h, w, __ = frame.shape
             # new_h = int(h/2)
-            # new_w = int(w/2)
-            b = cv.resize(frame,(896,504), interpolation=cv.INTER_CUBIC)
+            # new_w = int(w/2) 896,504
+            b = cv.resize(frame,(1280,720), interpolation=cv.INTER_CUBIC)
             frames.append(b)
             # #getting the first 1500 frames or 60 seconds, assuming the video is 25 fps
             # if len(frames) == 1500: 

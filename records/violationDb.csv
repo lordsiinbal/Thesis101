@@ -1,5 +1,4 @@
 violationID,vehicleID,roadName,lengthOfViolation,startDateAndTime,endDateAndTime
-1,1,road name,0:00:10,"Saturday, February 12, 2022 02:51:17","Saturday, February 12, 2022 02:51:27"
-1,1,road name,0:00:10,"Saturday, February 12, 2022 02:51:17","Saturday, February 12, 2022 02:51:27"
-1,1,road name,0:00:10,"Saturday, February 12, 2022 02:51:17","Saturday, February 12, 2022 02:51:27"
-1,1,road name,0:00:10,"Saturday, February 12, 2022 02:51:17","Saturday, February 12, 2022 02:51:27"
+1,1,road name,0:00:10,"Sunday, February 13, 2022 12:43:29","Sunday, February 13, 2022 12:43:39"
+1,3,road name,0:00:10,"Sunday, February 13, 2022 12:43:29","Sunday, February 13, 2022 12:43:39"
+1,6,road name,0:00:10,"Sunday, February 13, 2022 12:43:33","Sunday, February 13, 2022 12:43:44"

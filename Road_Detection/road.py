@@ -158,7 +158,7 @@ def detect_road(img_orig):
         if area > (0.5*img_orig.shape[0]*img_orig.shape[1]):
             kernel_size = 20
         else:
-            kernel_size = 90
+            kernel_size = 100
         #resize contour
         cv2.drawContours(bg, [contour], -1, (0,0,255), thickness= -1)
         cv2.drawContours(final_mask, [contour], -1, (255,255,255), thickness= -1)

@@ -216,7 +216,7 @@ class det:
                                         self.vehicleInfos['finalTime'][index] = float(int(time_sync()-self.vehicleInfos['startTime'][index]))
                                         sec = self.vehicleInfos['finalTime'][index] 
                                         t = str(dtime.timedelta(seconds=sec))
-                                        if sec == 10: # means 5 mins
+                                        if sec == 300: # means 5 mins
                                             col = (0,0,255)
                                             #save records here, one time only...
                                             self.violationInfos['violationID'].append(read('violation')+1)
@@ -256,7 +256,6 @@ class det:
                     # Stream results
                     im = annotator.result()
                     im = apply_roi_in_scene(self.roi, im)
-                    
                     if self.show_vid:
                         self.frame, self.ret = im, ret
                         # saving only when quitted

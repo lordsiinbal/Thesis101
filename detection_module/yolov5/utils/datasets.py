@@ -250,7 +250,7 @@ class LoadImages:
             self.mode = 'video'
             ret_val = self.video_getter.grabbed
             img0 = self.video_getter.frame
-            img0 = cv2.resize(img0, (896, 504))
+            img0 = cv2.resize(img0, (1280,720))
             # masking roi
             im = img0
             bg = np.zeros_like(img0)

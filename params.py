@@ -4,11 +4,11 @@ from pathlib import Path
 
 # model.pt path(s) choose between yolov5m, yolov5n6, yolov5m6, yolov5x
 
-yolo_model='yolov5n6.pt'
+yolo_model='yolov5s.pt'
 deep_sort_model='osnet_x0_25'
 output='inference/output'
-imgsz=[720]
-conf_thres=0.4
+imgsz=[640]
+conf_thres=0.25
 iou_thres=0.5
 fourcc='mp4v'
 device=0
