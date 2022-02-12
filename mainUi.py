@@ -2,6 +2,7 @@ from asyncio.windows_events import NULL
 import ctypes
 import datetime as dtime
 from itertools import count
+from queue import PriorityQueue
 from threading import local
 import threading
 from tkinter import Image
@@ -17,7 +18,7 @@ from PyQt5 import QtGui, QtCore
 from PyQt5.QtGui import QMovie
 from cv2 import QT_PUSH_BUTTON
 from matplotlib import widgets
-from PyQt5.QtCore import Qt,QDateTime,QDate,QTime,QTimer,QThread, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import Qt,QDateTime,QDate,QTime,QTimer,QThread, pyqtSignal, pyqtSlot, QThreadPool
 import numpy
 from sympy import false
 
@@ -383,6 +384,8 @@ class Controller:
         self.logout_Ui.show()
         self.logout_Ui.confirmLogout.connect(self.closeWindow)
     def closeWindow(self):
+        # stop detection
+        self.initDet.det.dets.stop()
         self.window.close()
         self.logout_Ui.close()
         self.login.show()
@@ -432,7 +435,6 @@ class Controller:
             self.thread.finished.connect(self.finishedrunDet) # execute when the task in thread is finised
             self.runDets.imgUpdate.connect(self.update_image)
             self.thread.start()
-
             
         else:
             print("ERROR: An error occured while performing detection")
@@ -483,12 +485,17 @@ class Worker(QtCore.QObject):
             #BUG: SLOW DETECTION, MAYBBE IN THREADS, I REALLY DONT KNOW
             # self.w.showScreenImage()
             if self.w.initDet.det.dets.show_vid:
+                # t = time.time()
                 img = numpy.copy(self.w.initDet.det.dets.frame) #make a copy of frame
                 QtImg = cvImgtoQtImg(img)# Convert frame data to PyQt image format
                 qim = QtGui.QPixmap.fromImage(QtImg)
                 self.imgUpdate.emit(qim) # fix threading, slow detection bug
+                # print('%.3fs' % (time.time()-t))
             else:
                 print('a', end='\r')
+
+
+                
             
         self.finished.emit()
 
