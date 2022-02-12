@@ -18,6 +18,7 @@ from PyQt5.QtGui import QMovie
 from cv2 import QT_PUSH_BUTTON
 from matplotlib import widgets
 from PyQt5.QtCore import Qt,QDateTime,QDate,QTime,QTimer,QThread, pyqtSignal, pyqtSlot
+import numpy
 from sympy import false
 
 
@@ -280,7 +281,7 @@ class MainUi(QtWidgets.QMainWindow):
         # self.w.initDet.det.dets.stop() # for now, stop detection, but main purpose of this is to continue detection and save and view the recorded
         self.saveVid()
         self.w.initDet.det.dets.show_vid = False
-        cv2.destroyWindow('aa')
+        # cv2.destroyAllWindows()
         self.stackedWidget.setCurrentWidget(self.playbackPage)
         self.btnWatch.setStyleSheet('background-color:none;border:none')
         self.btnPlayback.setStyleSheet("color:white;font-size:14px;background-color:#1D1F32;border-left:3px solid #678ADD;")
@@ -298,7 +299,6 @@ class MainUi(QtWidgets.QMainWindow):
         self.roadSwitch.emit()
         
     def saveVid(self):
-    
         self.playbackInfo['playbackID'].append(read('playback')+1)
         self.playbackInfo['playbackVideo'].append(self.w.initDet.det.dets.vid_path)
         duration = self.w.initDet.det.dets.frm_id / self.w.initDet.det.dets.vid_fps
@@ -447,12 +447,13 @@ class Controller:
     
     
     # #this function will display image    
-    def showScreenImage(self): 
-        cv2.imshow("aa",self.initDet.det.dets.frame)
-        key = cv2.waitKey(1)
-        if key == ord('q'):
-            self.initDet.det.dets.stop()
-            
+    def showScreenImage(self):
+        if self.initDet.det.dets.show_vid:
+            cv2.imshow("aa",self.initDet.det.dets.frame)
+            key = cv2.waitKey(1)
+            if key == ord('q'):
+                self.initDet.det.dets.stop()
+                
     def select(self):
         print("Select Image")
 
@@ -479,13 +480,16 @@ class Worker(QtCore.QObject):
         # wait for 1 sec
         time.sleep(0.3)
         while not self.w.initDet.det.dets.stopped:
+            #BUG: SLOW DETECTION, MAYBBE IN THREADS, I REALLY DONT KNOW
+            # self.w.showScreenImage()
             if self.w.initDet.det.dets.show_vid:
-                #BUG: SLOW DETECTION, MAYBBE IN THREADS, I REALLY DONT KNOW
-                # img = np.copy(self.w.initDet.det.dets.frame) #make a copy of frame
-                # QtImg = cvImgtoQtImg(img)# Convert frame data to PyQt image format
-                # qim = QtGui.QPixmap.fromImage(QtImg)
-                # self.imgUpdate.emit(qim) # fix threading, slow detection bug
-                self.w.showScreenImage()
+                img = numpy.copy(self.w.initDet.det.dets.frame) #make a copy of frame
+                QtImg = cvImgtoQtImg(img)# Convert frame data to PyQt image format
+                qim = QtGui.QPixmap.fromImage(QtImg)
+                self.imgUpdate.emit(qim) # fix threading, slow detection bug
+            else:
+                print('a', end='\r')
+            
         self.finished.emit()
 
 
