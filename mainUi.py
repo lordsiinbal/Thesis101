@@ -114,12 +114,22 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
         else:
             self.btnNew.setEnabled(True)
             
-        for x in range(2):
+        data=[
+            [0,"images/image 1.jpg","FileName1"],[1,"images/image 1.jpg","FileName2"],
+            [2,"images/image 1.jpg","FileName3"],[3,"images/image 1.jpg","FileName4"],
+            [4,"images/image 1.jpg","FileName5"],[5,"images/image 1.jpg","FileName6"]
+            ]   
+        x=0     #initialize x for items in each row
+        row=0   #initialize row
+        self.prevSelectedImage=NULL
+        while x< len(data):
             for y in range(2):                
-                #button = QtWidgets.QPushButton(str(str(3*x+y)))
-                self.frame = QtWidgets.QFrame(self.mainArea)
-                self.frame.setMaximumSize(QtCore.QSize(301, 1000))
-                self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.frame= QtWidgets.QFrame(self.mainArea)    #create a Qframe for container
+                self.frame.setObjectName("id"+str(data[x][0]))       #set Qframe objectName or class
+                self.objName=self.frame.objectName() 
+                #print(self.objName)
+                self.frame.setMaximumSize(QtCore.QSize(301, 1000))  #maximum size of container
+                self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)  
                 self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
                 self.verticalLayout = QtWidgets.QVBoxLayout(self.frame)
                 self.verticalLayout.setObjectName("verticalLayout")
@@ -130,28 +140,34 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
                 self.labelImage.setFocusPolicy(QtCore.Qt.ClickFocus)
                 self.labelImage.setText("")
                 self.labelImage.setPixmap(QtGui.QPixmap(PATH+"/images/image 1.jpg"))
+                
+                # self.labelImage.setText("") #emptying text 
+                # self.labelImage.setPixmap(QtGui.QPixmap(str(data[x][1])))   #get show Image inside labelImage
                 self.labelImage.setScaledContents(True)
-                self.labelImage.setObjectName("label")
+                self.labelImage.setObjectName("label")  #set 
                 self.verticalLayout.addWidget(self.labelImage)
                 self.label = QtWidgets.QLabel(self.frame)
-                self.label.setText('Something')
-                self.labelImage.mousePressEvent = self.selectImage
+                self.label.setText(str(data[x][2]))#Assign file label
+                self.labelImage.mousePressEvent =lambda event, x=x: self.selectImage(event,str(data[x][0]))  #mouse Event 
                 self.verticalLayout.addWidget(self.label, 0, QtCore.Qt.AlignHCenter|QtCore.Qt.AlignTop)
-                self.gridLayout.addWidget(self.frame, x, y, 1, 1)
-                #self.gridLayout.addWidget(button, x, y)
-
-
+                self.gridLayout.addWidget(self.frame,row,y,1,1) #added the frame inside grid layout
+                x=x+1       #iterate x
+            row=row+1       #iterate row
     def loading(self):
         self.settingUpRoad.emit()
         self.close()
-    def selectImage(self,event):                            #HighLight selected Image
-        #self.qt.setStyleSheet("border:3px solid white")    #border
-        #widget.QFrame.setStyleSheet("border:2px solid white")
-        #self.item=self.gridLayout.itemAtPosition(0,0)
-        #self.item.QLabel.setText("fasf")
-        #item.QLabel.setStyleSheet("border:2px solid white")
+    def selectImage(self,event,x):
+        if self.prevSelectedImage != NULL:         #border of previous selected image is set to none  
+            self.newFrame=self.mainArea.findChild(QtWidgets.QFrame,self.prevSelectedImage)
+            self.newFrame.setStyleSheet("#label{border:none}")
+
+        self.newFrame=self.mainArea.findChild(QtWidgets.QFrame,"id"+x)#find child in mainArea with object name "id"+x 
+        self.newFrame.setStyleSheet("#label{border:2px solid white}")  #add border to image
         self.btnConfirm.setEnabled(True)                    #btnConfirm enable
         self.btnConfirm.setStyleSheet("color:white;border:2px solid white") #add css on btnConfirm
+        self.mainArea.setStyleSheet("QFrame 2{\n"
+            "border:5px solid white;}\n")
+        self.prevSelectedImage="id"+x
 
 #violation Record table
 class TableUi(QtWidgets.QMainWindow):
