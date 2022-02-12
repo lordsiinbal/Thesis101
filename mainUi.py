@@ -29,6 +29,7 @@ import sys
 import os
 sys.path.append("../")
 from main import getBgModelAndRoad, detection # main function to run detection
+from records.dbProcess import save, read
 
 PATH = os.getcwd()
 
@@ -242,7 +243,13 @@ class MainUi(QtWidgets.QMainWindow):
 
 		# update the timer every second
         timer.start(1000)
-    
+        self.roadKeys = ['roadId', 'roadName','roadCaptured', 'roadBoundaryCoordinates']
+        self.roadInfos = {k: [] for k in self.roadKeys}
+        self.violationKeys = ['violationID', 'vehicleID','roadName', 'lengthOfViolation','startDateAndTime', 'endDateAndTime']
+        self.violationInfos = {k: [] for k in self.violationKeys}
+        self.playbackKeys = ['playbackID', 'playbackVideo','duration', 'roadName', 'dateAndTime']
+        self.playbackInfo = {k: [] for k in self.playbackKeys}
+        
 	# method called by timer
     def showTime(self):
 
@@ -335,8 +342,8 @@ class Controller:
     
     # function to call when the process of bg modelling and road extraction is done using thread
     def finishedInBGModelAndRoad(self):
-        roadImage, self.ROI =  self.bgAndRoad.bgImage,  self.bgAndRoad.ROI
-        if roadImage is not NULL:
+        self.roadImage, self.ROI =  self.bgAndRoad.bgImage,  self.bgAndRoad.ROI
+        if self.roadImage is not NULL:
             self.roadLoad.closeWindow()
             self.roadPaint=RoadSetUpPaint()
             self.roadPaint.switch_window.connect(self.showFinishingUi) # for btn confirm
@@ -358,8 +365,16 @@ class Controller:
         self.windowRoadSettingUp.screenLabel.connect(self.showScreenImage)
     def showFinishingUi(self):
         self.roadPaint.close()
+        type = 'road'
         # initialize detection
         self.windowFinishing=FinishingUi()# loading for finishing 
+        
+        # save road to db
+        self.window.roadInfos['roadId'].append(read(type)+1)
+        self.window.roadInfos['roadName'].append('something')
+        self.window.roadInfos['roadCaptured'].append(str(list(self.roadImage)))
+        self.window.roadInfos['roadBoundaryCoordinates'].append(str(list(self.ROI)))
+        save(type, self.window.roadInfos)
         
         self.thread = QThread()
         self.initDet = Worker(self)
@@ -367,7 +382,7 @@ class Controller:
         self.thread.started.connect(self.initDet.initDet)
         self.initDet.finished.connect(self.thread.quit)
         self.thread.finished.connect(self.finishedInitDet) # execute when the task in thread is finised
-        self.thread.start()
+        # self.thread.start()
         print("started init det")
         
     # this function will be executed when finished initializing detection and tracking models
