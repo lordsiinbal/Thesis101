@@ -1,5 +1,6 @@
 from asyncio.windows_events import NULL
 import ctypes
+import datetime as dtime
 from itertools import count
 from threading import local
 import threading
@@ -18,10 +19,7 @@ from cv2 import QT_PUSH_BUTTON
 from matplotlib import widgets
 from PyQt5.QtCore import Qt,QDateTime,QDate,QTime,QTimer,QThread, pyqtSignal, pyqtSlot
 from sympy import false
-import numpy as np
-from PIL.ImageQt import ImageQt
-from PIL.Image import Image as ImagePil
-from PIL import Image as Img
+
 
 #adding the functinality features
 #import classes
@@ -115,9 +113,9 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
             self.btnNew.setEnabled(True)
             
         data=[
-            [0,"images/image 1.jpg","FileName1"],[1,"images/image 1.jpg","FileName2"],
-            [2,"images/image 1.jpg","FileName3"],[3,"images/image 1.jpg","FileName4"],
-            [4,"images/image 1.jpg","FileName5"],[5,"images/image 1.jpg","FileName6"]
+            [0,PATH+"/images/image 1.jpg","FileName1"],[1,PATH+"/images/image 1.jpg","FileName2"],
+            [2,PATH+"/images/image 1.jpg","FileName3"],[3,PATH+"/images/image 1.jpg","FileName4"],
+            [4,PATH+"/images/image 1.jpg","FileName5"],[5,PATH+"/images/image 1.jpg","FileName6"]
             ]   
         x=0     #initialize x for items in each row
         row=0   #initialize row
@@ -261,8 +259,6 @@ class MainUi(QtWidgets.QMainWindow):
         timer.start(1000)
         self.roadKeys = ['roadId', 'roadName','roadCaptured', 'roadBoundaryCoordinates']
         self.roadInfos = {k: [] for k in self.roadKeys}
-        self.violationKeys = ['violationID', 'vehicleID','roadName', 'lengthOfViolation','startDateAndTime', 'endDateAndTime']
-        self.violationInfos = {k: [] for k in self.violationKeys}
         self.playbackKeys = ['playbackID', 'playbackVideo','duration', 'roadName', 'dateAndTime']
         self.playbackInfo = {k: [] for k in self.playbackKeys}
         
@@ -280,26 +276,40 @@ class MainUi(QtWidgets.QMainWindow):
         self.dateDay.setDate(current_date)
         self.dateMonthYear.setDate(current_date)
 
-
-
     def activePlayback(self):
-        self.w.initDet.det.dets.stop() # for now, stop detection, but main purpose of this is to continue detection and view the recorded
+        # self.w.initDet.det.dets.stop() # for now, stop detection, but main purpose of this is to continue detection and save and view the recorded
+        self.saveVid()
+        self.w.initDet.det.dets.show_vid = False
+        cv2.destroyWindow('aa')
         self.stackedWidget.setCurrentWidget(self.playbackPage)
         self.btnWatch.setStyleSheet('background-color:none;border:none')
         self.btnPlayback.setStyleSheet("color:white;font-size:14px;background-color:#1D1F32;border-left:3px solid #678ADD;")
+        
     def activeWatch(self):
+        self.w.initDet.det.dets.show_vid = True
         self.stackedWidget.setCurrentWidget(self.watchingPage)
         self.btnPlayback.setStyleSheet('background-color:none;border:none')
         self.btnWatch.setStyleSheet("color:white;font-size:14px;background-color:#1D1F32;border-left:3px solid #678ADD;")
+        
     #Function display Video    
     def setUpVideo(self): #Initialize click event
-        
-        # run(vid = '../data/drive-download-20220119T020939Z-002/CCTV San Francisco/XVR_ch5_main_20220114100004_20220114110004.mp4')
         self.vidFile=QFileDialog.getOpenFileUrl()[0].toString()
         self.vidFile = self.vidFile[8:]
-
         self.roadSwitch.emit()
-      
+        
+    def saveVid(self):
+    
+        self.playbackInfo['playbackID'].append(read('playback')+1)
+        self.playbackInfo['playbackVideo'].append(self.w.initDet.det.dets.vid_path)
+        duration = self.w.initDet.det.dets.frm_id / self.w.initDet.det.dets.vid_fps
+        print(duration)
+        duration = str(dtime.timedelta(seconds=float(int(duration))))
+        self.playbackInfo['duration'].append(duration)
+        self.playbackInfo['roadName'].append('road name')
+        self.playbackInfo['dateAndTime'].append(dtime.date.today())
+        save('playBack', self.playbackInfo)
+        
+        
 class welcome(QtWidgets.QWidget):
     switch_window = QtCore.pyqtSignal()
     def __init__(self):
@@ -386,10 +396,11 @@ class Controller:
         self.windowFinishing=FinishingUi()# loading for finishing 
         
         # save road to db
+        # BUG: the saved arrays are separated by ... means the'yre too large
         self.window.roadInfos['roadId'].append(read(type)+1)
         self.window.roadInfos['roadName'].append('something')
-        self.window.roadInfos['roadCaptured'].append(str(list(self.roadImage)))
-        self.window.roadInfos['roadBoundaryCoordinates'].append(str(list(self.ROI)))
+        self.window.roadInfos['roadCaptured'].append(self.roadImage)
+        self.window.roadInfos['roadBoundaryCoordinates'].append(self.ROI)
         save(type, self.window.roadInfos)
         
         self.thread = QThread()
@@ -398,7 +409,7 @@ class Controller:
         self.thread.started.connect(self.initDet.initDet)
         self.initDet.finished.connect(self.thread.quit)
         self.thread.finished.connect(self.finishedInitDet) # execute when the task in thread is finised
-        # self.thread.start()
+        self.thread.start()
         print("started init det")
         
     # this function will be executed when finished initializing detection and tracking models
@@ -438,7 +449,8 @@ class Controller:
     # #this function will display image    
     def showScreenImage(self): 
         cv2.imshow("aa",self.initDet.det.dets.frame)
-        if cv2.waitKey(1) == ord('q'):
+        key = cv2.waitKey(1)
+        if key == ord('q'):
             self.initDet.det.dets.stop()
             
     def select(self):
@@ -467,12 +479,13 @@ class Worker(QtCore.QObject):
         # wait for 1 sec
         time.sleep(0.3)
         while not self.w.initDet.det.dets.stopped:
-            #BUG: SLOW DETECTION, MAYBBE IN THREADS, I REALLY DONT KNOW
-            img = np.copy(self.w.initDet.det.dets.frame) #make a copy of frame
-            QtImg = cvImgtoQtImg(img)# Convert frame data to PyQt image format
-            qim = QtGui.QPixmap.fromImage(QtImg)
-            self.imgUpdate.emit(qim) # fix threading, slow detection bug
-            # self.w.showScreenImage()
+            if self.w.initDet.det.dets.show_vid:
+                #BUG: SLOW DETECTION, MAYBBE IN THREADS, I REALLY DONT KNOW
+                # img = np.copy(self.w.initDet.det.dets.frame) #make a copy of frame
+                # QtImg = cvImgtoQtImg(img)# Convert frame data to PyQt image format
+                # qim = QtGui.QPixmap.fromImage(QtImg)
+                # self.imgUpdate.emit(qim) # fix threading, slow detection bug
+                self.w.showScreenImage()
         self.finished.emit()
 
 
