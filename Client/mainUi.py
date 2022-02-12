@@ -1,5 +1,6 @@
 from asyncio.windows_events import NULL
 from email import header
+from importlib import reload
 from itertools import count
 import json
 from threading import local
@@ -194,6 +195,7 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
 
         r = requests.delete(url = baseURL + "/RoadDelete",json=data,headers=headers )
         print(r)
+        reload(RoadSetUp1)
         # print (r.json())
 
 
@@ -213,7 +215,6 @@ class TableUi(QtWidgets.QMainWindow):
 
         res = requests.get(url = baseURL + "/ViolationFetchAll")
         data = res.json()
-        print (data[0]['startDateAndTime'])
         
         self.tableWidget.setRowCount(4) 
         self.tableWidget.setItem(0,0, QTableWidgetItem("Name"))
@@ -253,10 +254,18 @@ class TableUi(QtWidgets.QMainWindow):
             self.newBtnDelete.setIconSize(QtCore.QSize(14,15))
             self.tableWidget.setCellWidget(i,6,self.newBtnPlay)
             self.tableWidget.setCellWidget(i,7,self.newBtnDelete)
+            self.newBtnDelete.clicked.connect(lambda ch, i=i: self.drop(data[i]['violationID']))
             self.newBtnPlay.clicked.connect(lambda ch, i=i: self.buttonSome(i))
         self.btnDone.clicked.connect(self.close)
     
-    
+    def drop(self,violation_ID):
+        a=str(violation_ID)
+        headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+        data = {"violationID": a}
+
+        r = requests.delete(url = baseURL + "/ViolationDelete",json=data,headers=headers )
+        print(r)
+        reload(TableUi)
 
     def buttonSome(self,i):
         print(i)
