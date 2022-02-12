@@ -18,8 +18,7 @@ def ViolationDelete():
     return jsonify(dc_violation.objects)
 
 @delete.route('/RoadDelete', methods=['DELETE'])
-def RoadDelete():
-    # print(request.get_json())
+def RoadDelete():   
     data = request.get_json()
     dc_road.objects(roadID = data['roadID']).delete()
     return jsonify(dc_road.objects)
