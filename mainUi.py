@@ -385,7 +385,10 @@ class Controller:
         self.logout_Ui.confirmLogout.connect(self.closeWindow)
     def closeWindow(self):
         # stop detection
-        self.initDet.det.dets.stop()
+        try:
+            self.initDet.det.dets.stop()
+        except:
+            pass
         self.window.close()
         self.logout_Ui.close()
         self.login.show()
@@ -451,7 +454,7 @@ class Controller:
     # #this function will display image    
     def showScreenImage(self):
         if self.initDet.det.dets.show_vid:
-            cv2.imshow("aa",self.initDet.det.dets.frame)
+            cv2.imshow("aa",self.initDet.det.dets.im)
             key = cv2.waitKey(1)
             if key == ord('q'):
                 self.initDet.det.dets.stop()
@@ -480,24 +483,26 @@ class Worker(QtCore.QObject):
         # run/start detection
         self.w.initDet.det.dets.t.start()
         # sleep for 0.3 sec
-        # time.sleep(0.3)
+        time.sleep(0.3)
         f = 1
         while not self.w.initDet.det.dets.stopped:
-            # self.w.showScreenImage()
+            
             if self.w.initDet.det.dets.show_vid:
-                # t = time.time()
+            #     # t = time.time()
                 if f == self.w.initDet.det.dets.f:
+                # self.w.showScreenImage()
                     img = numpy.copy(self.w.initDet.det.dets.frame) #make a copy of frame
                     QtImg = cvImgtoQtImg(img)# Convert frame data to PyQt image format
                     qim = QtGui.QPixmap.fromImage(QtImg)
                     self.imgUpdate.emit(qim)
-                    # time.sleep(1/self.w.initDet.det.dets.vid_fps) # sleep dependent to fps
-                    print('here')
+                    # time.sleep(1.0/(self.w.initDet.det.dets.vid_fps*1.5))
+                # time.sleep(1.0/self.w.initDet.det.dets.vid_fps) # sleep dependent to fps
                     f +=1
                 else:
-                    print('k', end='\r')
+                    print(' ', end='\r')
             else:
-                print('a', end='\r')
+                f = self.w.initDet.det.dets.f + 1
+                print(' ', end='\r')
 
 
                 
