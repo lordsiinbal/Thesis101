@@ -480,17 +480,22 @@ class Worker(QtCore.QObject):
         # run/start detection
         self.w.initDet.det.dets.t.start()
         # sleep for 0.3 sec
-        time.sleep(0.3)
+        # time.sleep(0.3)
+        f = 1
         while not self.w.initDet.det.dets.stopped:
-            #BUG: SLOW DETECTION, MAYBBE IN THREADS, I REALLY DONT KNOW
             # self.w.showScreenImage()
             if self.w.initDet.det.dets.show_vid:
                 # t = time.time()
-                img = numpy.copy(self.w.initDet.det.dets.frame) #make a copy of frame
-                QtImg = cvImgtoQtImg(img)# Convert frame data to PyQt image format
-                qim = QtGui.QPixmap.fromImage(QtImg)
-                self.imgUpdate.emit(qim)
-                time.sleep(1/self.w.initDet.det.dets.vid_fps) # sleep dependent to fps
+                if f == self.w.initDet.det.dets.f:
+                    img = numpy.copy(self.w.initDet.det.dets.frame) #make a copy of frame
+                    QtImg = cvImgtoQtImg(img)# Convert frame data to PyQt image format
+                    qim = QtGui.QPixmap.fromImage(QtImg)
+                    self.imgUpdate.emit(qim)
+                    # time.sleep(1/self.w.initDet.det.dets.vid_fps) # sleep dependent to fps
+                    print('here')
+                    f +=1
+                else:
+                    print('k', end='\r')
             else:
                 print('a', end='\r')
 
