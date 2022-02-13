@@ -4,7 +4,7 @@ from pathlib import Path
 
 # model.pt path(s) choose between yolov5m, yolov5n6, yolov5m6, yolov5x
 
-yolo_model='yolov5s.pt'
+yolo_model='yolov5n.pt'
 deep_sort_model='osnet_x0_25'
 output='inference/output'
 imgsz=[640]

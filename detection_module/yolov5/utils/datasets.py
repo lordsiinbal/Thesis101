@@ -13,6 +13,7 @@ import time
 from itertools import repeat
 from multiprocessing.pool import Pool, ThreadPool
 from pathlib import Path
+from multiprocessing import Process
 from threading import Thread
 from zipfile import ZipFile
 
@@ -167,8 +168,7 @@ class VideoGet:
     def __init__(self, cap):
         self.stream = cv2.VideoCapture(cap)
         (self.grabbed, self.frame) = self.stream.read()
-        self.fps = self.stream .get(cv2.CAP_PROP_FPS)
-        print(self.fps)
+        self.fps = self.stream.get(cv2.CAP_PROP_FPS)
         self.stopped = True
         self.t = Thread(target=self.get, args=())
         self.t.daemon = True # daemon threads run in background 
@@ -192,8 +192,13 @@ class VideoGet:
                 self.frames += 1
                 (self.grabbed, self.frame) = self.stream.read()
                 timeDiff = time_sync() - now
-                if (timeDiff<1.0/(self.fps*1.13459)):
-                    time.sleep(1.0/(self.fps*1.13459)-timeDiff)
+                print('%.3f and %.3f' % (timeDiff, 1.0/(self.fps*1.5)), end='\r')
+                if (timeDiff<1.0/(self.fps*1.5)):
+                    time.sleep((1.0/(self.fps*1.5)) - timeDiff)
+                else:
+                    print('g')
+                    # time.sleep(timeDiff-(1.0/(self.fps*1.5)))
+                    
                 # img0 = cv2.resize(img0, (896, 504))
                 # time.sleep(0.05)
                 
@@ -241,6 +246,7 @@ class LoadImages:
         return self
 
     def __next__(self):
+        t = time.time()
         if self.count == self.nf:
             raise StopIteration
         path = self.files[self.count]
@@ -253,7 +259,7 @@ class LoadImages:
             img0 = cv2.resize(img0, (1280,720))
             # masking roi
             im = img0
-            bg = np.zeros_like(img0)
+            bg = np.zeros(img0.shape, np.uint8)
             cv2.drawContours(bg, self.roi, -1, (0,0,255), thickness= -1)
             pts = np.where(bg == 255)
             bg[pts[0],pts[1]] = img0[pts[0],pts[1]]
@@ -287,7 +293,7 @@ class LoadImages:
         img = img.transpose((2, 0, 1))[::-1]  # HWC to CHW, BGR to RGB
         img = np.ascontiguousarray(img)
         
-        return path, img, img0, self.cap, s, self.frame, self.vid_fps,  self.video_getter, im, ret_val
+        return path, img, img0, self.cap, s, self.frame, self.vid_fps,  self.video_getter, im, ret_val, t
 
     def new_video(self, path):
         self.frame = 0

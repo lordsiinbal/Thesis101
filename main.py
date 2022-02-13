@@ -36,7 +36,7 @@ def getBgModelAndRoad(vid):
     t2 = time.time()
     print('Time it took to Extract Road from the Background Model: %.3fs' % (t2-t1))
     # cv.imshow("road", road_surface)
-    # cv.imwrite("images/road.jpg", image)
+    cv.imwrite("images/road.jpg", image)
     return image, ROI
 
 class detection:

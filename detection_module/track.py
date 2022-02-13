@@ -23,8 +23,8 @@ import datetime as dtime
 import torch.backends.cudnn as cudnn
 import csv
 
+from multiprocessing import Process
 from threading import Thread
-
 from datetime import datetime
 from yolov5.models.experimental import attempt_load
 from yolov5.utils.downloads import attempt_download
@@ -133,9 +133,9 @@ class det:
     def detect(self):
         print("it has started")
         # self.show_vid = False
-        for frame_idx, (path, img, im0s, vid_cap, s, frm_id, vid_fps, video_getter, im, ret) in enumerate(self.dataset):
+        for frame_idx, (path, img, im0s, vid_cap, s, frm_id, vid_fps, video_getter, im, ret, tim) in enumerate(self.dataset):
+            
             if not self.stopped:
-                self.frm_id = frm_id
                 self.vid_fps = vid_fps
                 t1 = time_sync()
                 img = torch.from_numpy(img).to(self.device)
@@ -247,8 +247,8 @@ class det:
                                         annotator.box_label(bboxes, label, color=(255,255,0))
                         else: # set the prev frame xy to current xy
                             self.PREV_XY = xy
-                        self.dt[4] += t5 - t1
-                        LOGGER.info(f'Done. YOLO:({t3 - t2:.3f}s), DeepSort:({t5 - t4:.3f}s), Stationary:({t9 - t8:.3f}s) Overall:({t5-t1:.3f}s)')
+                        self.dt[4] += t5 - tim
+                        LOGGER.info(f'Done. YOLO:({t3 - t2:.3f}s), DeepSort:({t5 - t4:.3f}s), Stationary:({t9 - t8:.3f}s) Overall:({t5-tim:.3f}s)')
 
                     else:
                         self.deepsort.increment_ages()
@@ -258,7 +258,6 @@ class det:
                     im = annotator.result()
                     im = apply_roi_in_scene(self.roi, im)
                     if self.show_vid:
-                        self.f = frame_idx
                         self.frame, self.ret = im, ret
                         # saving only when quitted
                         # if key == ord('q'):  # q to quit
@@ -283,7 +282,7 @@ class det:
                                     
                             # print('MP4 results saved to %s' % save_path)
                             # print('CSV results saved to %s' % self.txt_path)
-                            
+                    self.f = frame_idx     
                     
                     t0 = time_sync()
                     # Save results (image with detections)

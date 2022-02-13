@@ -9,8 +9,8 @@ class bg:
         cap = cv.VideoCapture(vid)
         frames = []
         # For local video only
-        FOI = np.random.choice(range(int(cap.get(cv.CAP_PROP_FRAME_COUNT))),size=20, replace= False) # defualt 500
-        # FOI = cap.get(cv.CAP_PROP_FRAME_COUNT) * np.random.uniform(size=30)
+        # FOI = np.random.choice(range(int(cap.get(cv.CAP_PROP_FRAME_COUNT))),size=30, replace= False) # defualt 500
+        FOI = cap.get(cv.CAP_PROP_FRAME_COUNT) * np.random.uniform(size=30) # 20-50 lang dapat kasi may paint naman
         self.backgroundFrame = None
         t = Thread(target=self.sub, args=(cap, FOI, frames))
         t.start()
