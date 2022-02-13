@@ -127,6 +127,7 @@ class det:
         self.roi = roi
         self.t = Thread(target=self.detect, args=())
         self.flag = True
+        self.f = 0
         self.t.daemon = True
     
     def detect(self):
@@ -257,6 +258,7 @@ class det:
                     im = annotator.result()
                     im = apply_roi_in_scene(self.roi, im)
                     if self.show_vid:
+                        self.f = frame_idx
                         self.frame, self.ret = im, ret
                         # saving only when quitted
                         # if key == ord('q'):  # q to quit
