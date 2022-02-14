@@ -219,7 +219,7 @@ class det:
                                         t = str(dtime.timedelta(seconds=sec))
                                         if sec == 300: # means 5 mins
                                             col = (0,0,255)
-                                            #save records here, one time only...
+                                            # save violation here
                                             self.violationInfos['violationID'].append(read('violation')+1)
                                             self.violationInfos['vehicleID'].append(id)
                                             self.violationInfos['roadName'].append('road name')

@@ -30,6 +30,9 @@ import requests
 
 
 
+#NOTE: Si pag save kang road saka playback yaon igdi sa file, control F 'save road' saka 'save playback' ka nalang
+# si pag save kang violation nasa track.py sa detection_module control-F 'save violation' ka nalang ulit
+
 
 #adding the functinality features
 #import classes
@@ -340,15 +343,21 @@ class MainUi(QtWidgets.QMainWindow):
 
     def activePlayback(self):
         # self.w.initDet.det.dets.stop() # for now, stop detection, but main purpose of this is to continue detection and save and view the recorded
-        self.saveVid()
-        self.w.initDet.det.dets.show_vid = False
+        try:
+            self.saveVid()
+            self.w.initDet.det.dets.show_vid = False
+        except:
+            pass
         # cv2.destroyAllWindows()
         self.stackedWidget.setCurrentWidget(self.playbackPage)
         self.btnWatch.setStyleSheet('background-color:none;border:none')
         self.btnPlayback.setStyleSheet("color:white;font-size:14px;background-color:#1D1F32;border-left:3px solid #678ADD;")
         
     def activeWatch(self):
-        self.w.initDet.det.dets.show_vid = True
+        try:
+            self.w.initDet.det.dets.show_vid = True
+        except:
+            pass
         self.stackedWidget.setCurrentWidget(self.watchingPage)
         self.btnPlayback.setStyleSheet('background-color:none;border:none')
         self.btnWatch.setStyleSheet("color:white;font-size:14px;background-color:#1D1F32;border-left:3px solid #678ADD;")
@@ -360,15 +369,16 @@ class MainUi(QtWidgets.QMainWindow):
         self.roadSwitch.emit()
         
     def saveVid(self):
+        
+        # save playback here
         self.playbackInfo['playbackID'].append(read('playback')+1)
-        self.playbackInfo['playbackVideo'].append(self.w.initDet.det.dets.vid_path)
+        self.playbackInfo['playbackVideo'].append(self.w.initDet.det.dets.vid_path) # si path ini kang video playback nasa detection_module/runs/
         duration = self.w.initDet.det.dets.frm_id / self.w.initDet.det.dets.vid_fps
-        print(duration)
         duration = str(dtime.timedelta(seconds=float(int(duration))))
         self.playbackInfo['duration'].append(duration)
         self.playbackInfo['roadName'].append('road name')
         self.playbackInfo['dateAndTime'].append(dtime.date.today())
-        save('playBack', self.playbackInfo)
+        save('playBack', self.playbackInfo) # saved to records/playBackDb.csv
         
         
 class welcome(QtWidgets.QWidget):
@@ -416,6 +426,7 @@ class Controller:
             self.road.disconnect()
             self.roadLoad = roadSettingUp() # for loading setting up road
             
+            # run extraction of bg and road
             self.thread = QThread()
             self.bgAndRoad = Worker(self)
             self.bgAndRoad.moveToThread(self.thread)
@@ -457,17 +468,19 @@ class Controller:
         self.windowRoadSettingUp.screenLabel.connect(self.showScreenImage)
     def showFinishingUi(self):
         self.roadPaint.close()
-        type = 'road'
+        
         # initialize detection
         self.windowFinishing=FinishingUi()# loading for finishing 
-        
-        # save road to db
+        # save road to db here
         # BUG: the saved arrays are separated by ... means the'yre too large
+        # roadImage and ROI are large arrays, dai ko aram if pag tg save sa db complete sya, sa csv kaya putol sya
+        
+        type = 'road'
         self.window.roadInfos['roadId'].append(read(type)+1)
-        self.window.roadInfos['roadName'].append('something')
-        self.window.roadInfos['roadCaptured'].append(self.roadImage)
+        self.window.roadInfos['roadName'].append('something') # get the txt from textbox
+        self.window.roadInfos['roadCaptured'].append(self.roadImage) 
         self.window.roadInfos['roadBoundaryCoordinates'].append(self.ROI)
-        save(type, self.window.roadInfos)
+        save(type, self.window.roadInfos) # saved to records/roadDb.csv
         
         self.thread = QThread()
         self.initDet = Worker(self)
@@ -484,12 +497,13 @@ class Controller:
             self.windowFinishing.closeWindow() # close loading
             print("finished initializing detection models")
             
-            # run detection here
+           
             self.window.label.setText("San Felipe") # name of video
             self.window.verticalLayout_11.addWidget(self.window.frameWatch)#removing center aligment of frameWatch
             self.window.btnAddVideo.hide()
             self.window.labelScreen.setMinimumSize(QtCore.QSize(0, 400))
             
+            # run detection here on separate thread
             self.thread = QThread()
             self.runDets = Worker(self)
             self.runDets.moveToThread(self.thread)
@@ -515,8 +529,7 @@ class Controller:
     def showScreenImage(self):
         data = self.road.selected
         print(data)
-        # print(data)
-        # # print(data)
+
         self.window.labelScreen.setPixmap(QtGui.QPixmap("images/image 1.jpg")) #setting image inside QLabel
         self.window.labelScreen.setMinimumSize(QtCore.QSize(0, 400))#setting minimum heigth
         self.window.label.setText(data['roadName'])
@@ -526,6 +539,8 @@ class Controller:
     def select(self):
         print("Select Image")
 
+
+# classes for worker threads
 class Worker(QtCore.QObject):
     finished = QtCore.pyqtSignal()
     imgUpdate = QtCore.pyqtSignal(QtGui.QPixmap)
@@ -550,29 +565,20 @@ class Worker(QtCore.QObject):
         time.sleep(0.3)
         f = 1
         while not self.w.initDet.det.dets.stopped:
-            
             if self.w.initDet.det.dets.show_vid:
-            #     # t = time.time()
                 if f == self.w.initDet.det.dets.f:
-                # self.w.showScreenImage()
                     img = numpy.copy(self.w.initDet.det.dets.frame) #make a copy of frame
                     QtImg = cvImgtoQtImg(img)# Convert frame data to PyQt image format
                     qim = QtGui.QPixmap.fromImage(QtImg)
                     self.imgUpdate.emit(qim)
-                    # time.sleep(1.0/(self.w.initDet.det.dets.vid_fps*1.5))
-                # time.sleep(1.0/self.w.initDet.det.dets.vid_fps) # sleep dependent to fps
                     f +=1
                 else:
                     print(' ', end='\r')
             else:
                 f = self.w.initDet.det.dets.f + 1
                 print(' ', end='\r')
-
-
-                
             
         self.finished.emit()
-
 
 if __name__ == '__main__':
     app=QApplication(sys.argv)
