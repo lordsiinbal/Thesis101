@@ -1,0 +1,4 @@
+[submodule "Client"]
+	path = Client
+	url = https://github.com/lordsiinbal/Thesis101
+	branch = master
