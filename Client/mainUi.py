@@ -2,13 +2,10 @@ from asyncio.windows_events import NULL
 import ctypes
 import datetime as dtime
 from itertools import count
-<<<<<<< HEAD
-=======
 import json
 import ctypes
 import datetime as dtime
 from itertools import count
->>>>>>> 8a490d0d6f1dea807e19302d62f2691021ef0c89
 from queue import PriorityQueue
 from threading import local
 import threading
