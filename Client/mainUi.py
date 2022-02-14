@@ -1,15 +1,12 @@
 from asyncio.windows_events import NULL
-<<<<<<< HEAD
 from email import header
 from importlib import reload
 from itertools import count
 import json
-=======
 import ctypes
 import datetime as dtime
 from itertools import count
 from queue import PriorityQueue
->>>>>>> 1998ca57d6195f9267e3cbdff1c409405f565986
 from threading import local
 import threading
 from tkinter import Image
@@ -28,12 +25,10 @@ from matplotlib import widgets
 from PyQt5.QtCore import Qt,QDateTime,QDate,QTime,QTimer,QThread, pyqtSignal, pyqtSlot, QThreadPool
 import numpy
 from sympy import false
-<<<<<<< HEAD
 from api import baseURL
 import requests 
 
 
-=======
 
 
 #adding the functinality features
@@ -45,7 +40,6 @@ from main import getBgModelAndRoad, detection # main function to run detection
 from records.dbProcess import save, read
 
 PATH = os.getcwd()
->>>>>>> 1998ca57d6195f9267e3cbdff1c409405f565986
 
 def cvImgtoQtImg(cvImg):  #Define the function of opencv image to PyQt image
     """Convert from an opencv image to QPixmap"""
@@ -123,7 +117,6 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
         self.btnNew.clicked.connect(self.switch_window.emit)    #Showing Draw road Ui
         self.btnCancel.clicked.connect(self.close)          #close window
         self.btnConfirm.clicked.connect(self.loading)       #Loading Ui
-<<<<<<< HEAD
         self.btnDelete.clicked.connect(self.drop)
         res = requests.get(url = baseURL + "/RoadFetchAll")
         data = res.json()
@@ -198,52 +191,6 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
         return row
    
 
-=======
-        if w.window.vidFile is None or not w.window.vidFile:
-            self.btnNew.setEnabled(False)
-        else:
-            self.btnNew.setEnabled(True)
-            
-        data=[
-            [0,PATH+"/images/image 1.jpg","FileName1"],[1,PATH+"/images/image 1.jpg","FileName2"],
-            [2,PATH+"/images/image 1.jpg","FileName3"],[3,PATH+"/images/image 1.jpg","FileName4"],
-            [4,PATH+"/images/image 1.jpg","FileName5"],[5,PATH+"/images/image 1.jpg","FileName6"]
-            ]   
-        x=0     #initialize x for items in each row
-        row=0   #initialize row
-        self.prevSelectedImage=NULL
-        while x< len(data):
-            for y in range(2):                
-                self.frame= QtWidgets.QFrame(self.mainArea)    #create a Qframe for container
-                self.frame.setObjectName("id"+str(data[x][0]))       #set Qframe objectName or class
-                self.objName=self.frame.objectName() 
-                #print(self.objName)
-                self.frame.setMaximumSize(QtCore.QSize(301, 1000))  #maximum size of container
-                self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)  
-                self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
-                self.verticalLayout = QtWidgets.QVBoxLayout(self.frame)
-                self.verticalLayout.setObjectName("verticalLayout")
-                self.labelImage = QtWidgets.QLabel(self.frame)
-                self.labelImage.setMaximumSize(QtCore.QSize(16777215, 167))
-                self.labelImage.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
-                self.labelImage.setMouseTracking(True)
-                self.labelImage.setFocusPolicy(QtCore.Qt.ClickFocus)
-                self.labelImage.setText("")
-                self.labelImage.setPixmap(QtGui.QPixmap(PATH+"/images/image 1.jpg"))
-                
-                # self.labelImage.setText("") #emptying text 
-                # self.labelImage.setPixmap(QtGui.QPixmap(str(data[x][1])))   #get show Image inside labelImage
-                self.labelImage.setScaledContents(True)
-                self.labelImage.setObjectName("label")  #set 
-                self.verticalLayout.addWidget(self.labelImage)
-                self.label = QtWidgets.QLabel(self.frame)
-                self.label.setText(str(data[x][2]))#Assign file label
-                self.labelImage.mousePressEvent =lambda event, x=x: self.selectImage(event,str(data[x][0]))  #mouse Event 
-                self.verticalLayout.addWidget(self.label, 0, QtCore.Qt.AlignHCenter|QtCore.Qt.AlignTop)
-                self.gridLayout.addWidget(self.frame,row,y,1,1) #added the frame inside grid layout
-                x=x+1       #iterate x
-            row=row+1       #iterate row
->>>>>>> 1998ca57d6195f9267e3cbdff1c409405f565986
     def loading(self):
         self.settingUpRoad.emit()
         self.close()
@@ -566,7 +513,6 @@ class Controller:
     
     # #this function will display image    
     def showScreenImage(self):
-<<<<<<< HEAD
         data = self.road.selected
         print(data)
         # print(data)
@@ -577,14 +523,6 @@ class Controller:
         self.window.verticalLayout_11.addWidget(self.window.frameWatch)#removing center aligment of frameWatch
         self.window.btnAddVideo.hide()#hiding button Insert Video
         #Closing Road Setting 
-=======
-        if self.initDet.det.dets.show_vid:
-            cv2.imshow("aa",self.initDet.det.dets.im)
-            key = cv2.waitKey(1)
-            if key == ord('q'):
-                self.initDet.det.dets.stop()
-                
->>>>>>> 1998ca57d6195f9267e3cbdff1c409405f565986
     def select(self):
         print("Select Image")
 
