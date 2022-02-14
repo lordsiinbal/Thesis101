@@ -1,8 +1,4 @@
-[submodule "server"]
-	path = server
-	url = https://github.com/lordsiinbal/Thesis101
-	branch = main
-[submodule "client"]
-	path = client
+[submodule "Client"]
+	path = Client
 	url = https://github.com/lordsiinbal/Thesis101
 	branch = master
