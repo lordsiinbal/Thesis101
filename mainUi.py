@@ -1,4 +1,8 @@
 from asyncio.windows_events import NULL
+from email import header
+from importlib import reload
+from itertools import count
+import json
 import ctypes
 import datetime as dtime
 from itertools import count
@@ -21,6 +25,13 @@ from matplotlib import widgets
 from PyQt5.QtCore import Qt,QDateTime,QDate,QTime,QTimer,QThread, pyqtSignal, pyqtSlot, QThreadPool
 import numpy
 from sympy import false
+from api import baseURL
+import requests 
+
+
+
+#NOTE: Si pag save kang road saka playback yaon igdi sa file, control F 'save road' saka 'save playback' ka nalang
+# si pag save kang violation nasa track.py sa detection_module control-F 'save violation' ka nalang ulit
 
 
 #adding the functinality features
@@ -109,69 +120,117 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
         self.btnNew.clicked.connect(self.switch_window.emit)    #Showing Draw road Ui
         self.btnCancel.clicked.connect(self.close)          #close window
         self.btnConfirm.clicked.connect(self.loading)       #Loading Ui
-        if w.window.vidFile is None or not w.window.vidFile:
-            self.btnNew.setEnabled(False)
+        self.btnDelete.clicked.connect(self.drop)
+        res = requests.get(url = baseURL + "/RoadFetchAll")
+        data = res.json()
+        self.prevSelectedImage=NULL
+        
+        if ((len(data)%2)==0):
+            row = self.roadCard(data,len(data))
         else:
-            self.btnNew.setEnabled(True)
             
-        data=[
-            [0,PATH+"/images/image 1.jpg","FileName1"],[1,PATH+"/images/image 1.jpg","FileName2"],
-            [2,PATH+"/images/image 1.jpg","FileName3"],[3,PATH+"/images/image 1.jpg","FileName4"],
-            [4,PATH+"/images/image 1.jpg","FileName5"],[5,PATH+"/images/image 1.jpg","FileName6"]
-            ]   
+            length=len(data)-1
+            print(length)
+            row = self.roadCard(data,length)
+            self.frame= QtWidgets.QFrame(self.mainArea)    #create a Qframe for container
+            self.frame.setObjectName(str(data[len(data)-1]['roadID']))       #set Qframe objectName or class
+            self.objName=self.frame.objectName() 
+            #print(self.objName)
+            self.frame.setMaximumSize(QtCore.QSize(301, 1000))  #maximum size of container
+            self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)  
+            self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
+            self.verticalLayout = QtWidgets.QVBoxLayout(self.frame)
+            self.verticalLayout.setObjectName("verticalLayout")
+            self.labelImage = QtWidgets.QLabel(self.frame)
+            self.labelImage.setMaximumSize(QtCore.QSize(16777215, 167))
+            self.labelImage.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+            self.labelImage.setMouseTracking(True)
+            self.labelImage.setFocusPolicy(QtCore.Qt.ClickFocus)
+            self.labelImage.setText("") #emptying text 
+            self.labelImage.setPixmap(QtGui.QPixmap(str(data[len(data)-1]['roadCaptured'])))   #get show Image inside labelImage
+            self.labelImage.setScaledContents(True)
+            self.labelImage.setObjectName("label")  #set 
+            self.verticalLayout.addWidget(self.labelImage)
+            self.label = QtWidgets.QLabel(self.frame)
+            self.label.setText(str(data[len(data)-1]['roadName']))#Assign file label
+            self.labelImage.mousePressEvent =lambda event, data=data: self.selectImage(event,data[len(data)-1])  #mouse Event 
+            self.verticalLayout.addWidget(self.label, 0, QtCore.Qt.AlignHCenter|QtCore.Qt.AlignTop)
+            self.gridLayout.addWidget(self.frame,row+1,0,1,1) #added the frame inside grid layout   \
+            
+                
+    
+    def roadCard(self,data,length):
+        print(length)
         x=0     #initialize x for items in each row
         row=0   #initialize row
-        self.prevSelectedImage=NULL
-        while x< len(data):
-            for y in range(2):                
-                self.frame= QtWidgets.QFrame(self.mainArea)    #create a Qframe for container
-                self.frame.setObjectName("id"+str(data[x][0]))       #set Qframe objectName or class
-                self.objName=self.frame.objectName() 
-                #print(self.objName)
-                self.frame.setMaximumSize(QtCore.QSize(301, 1000))  #maximum size of container
-                self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)  
-                self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
-                self.verticalLayout = QtWidgets.QVBoxLayout(self.frame)
-                self.verticalLayout.setObjectName("verticalLayout")
-                self.labelImage = QtWidgets.QLabel(self.frame)
-                self.labelImage.setMaximumSize(QtCore.QSize(16777215, 167))
-                self.labelImage.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
-                self.labelImage.setMouseTracking(True)
-                self.labelImage.setFocusPolicy(QtCore.Qt.ClickFocus)
-                self.labelImage.setText("")
-                self.labelImage.setPixmap(QtGui.QPixmap(PATH+"/images/image 1.jpg"))
-                
-                # self.labelImage.setText("") #emptying text 
-                # self.labelImage.setPixmap(QtGui.QPixmap(str(data[x][1])))   #get show Image inside labelImage
-                self.labelImage.setScaledContents(True)
-                self.labelImage.setObjectName("label")  #set 
-                self.verticalLayout.addWidget(self.labelImage)
-                self.label = QtWidgets.QLabel(self.frame)
-                self.label.setText(str(data[x][2]))#Assign file label
-                self.labelImage.mousePressEvent =lambda event, x=x: self.selectImage(event,str(data[x][0]))  #mouse Event 
-                self.verticalLayout.addWidget(self.label, 0, QtCore.Qt.AlignHCenter|QtCore.Qt.AlignTop)
-                self.gridLayout.addWidget(self.frame,row,y,1,1) #added the frame inside grid layout
-                x=x+1       #iterate x
-            row=row+1       #iterate row
+        while x < length:
+                for y in range(2):                
+                    self.frame= QtWidgets.QFrame(self.mainArea)    #create a Qframe for container
+                    self.frame.setObjectName(str(data[x]['roadID']))       #set Qframe objectName or class
+                    self.objName=self.frame.objectName() 
+                    #print(self.objName)
+                    self.frame.setMaximumSize(QtCore.QSize(301, 1000))  #maximum size of container
+                    self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)  
+                    self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
+                    self.verticalLayout = QtWidgets.QVBoxLayout(self.frame)
+                    self.verticalLayout.setObjectName("verticalLayout")
+                    self.labelImage = QtWidgets.QLabel(self.frame)
+                    self.labelImage.setMaximumSize(QtCore.QSize(16777215, 167))
+                    self.labelImage.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+                    self.labelImage.setMouseTracking(True)
+                    self.labelImage.setFocusPolicy(QtCore.Qt.ClickFocus)
+                    self.labelImage.setText("") #emptying text 
+                    self.labelImage.setPixmap(QtGui.QPixmap(str(data[x]['roadCaptured'])))   #get show Image inside labelImage
+                    self.labelImage.setScaledContents(True)
+                    self.labelImage.setObjectName("label")  #set 
+                    self.verticalLayout.addWidget(self.labelImage)
+                    self.label = QtWidgets.QLabel(self.frame)
+                    self.label.setText(str(data[x]['roadName']))#Assign file label
+                    self.labelImage.mousePressEvent =lambda event, x=x: self.selectImage(event,data[x])  #mouse Event 
+                    self.verticalLayout.addWidget(self.label, 0, QtCore.Qt.AlignHCenter|QtCore.Qt.AlignTop)
+                    self.gridLayout.addWidget(self.frame,row,y,1,1) #added the frame inside grid layout
+                    x=x+1       #iterate x
+                row=row+1       #iterate row
+        return row
+   
+
     def loading(self):
         self.settingUpRoad.emit()
         self.close()
+ 
     def selectImage(self,event,x):
         if self.prevSelectedImage != NULL:         #border of previous selected image is set to none  
             self.newFrame=self.mainArea.findChild(QtWidgets.QFrame,self.prevSelectedImage)
             self.newFrame.setStyleSheet("#label{border:none}")
 
-        self.newFrame=self.mainArea.findChild(QtWidgets.QFrame,"id"+x)#find child in mainArea with object name "id"+x 
+        
+        self.newFrame=self.mainArea.findChild(QtWidgets.QFrame,x['roadID'])#find child in mainArea with object name 
         self.newFrame.setStyleSheet("#label{border:2px solid white}")  #add border to image
         self.btnConfirm.setEnabled(True)                    #btnConfirm enable
+        self.btnDelete.setEnabled(True)
+        self.btnDelete.setStyleSheet("color:white;border:2px solid white") #add css on btnConfirm
         self.btnConfirm.setStyleSheet("color:white;border:2px solid white") #add css on btnConfirm
         self.mainArea.setStyleSheet("QFrame 2{\n"
             "border:5px solid white;}\n")
-        self.prevSelectedImage="id"+x
+        self.prevSelectedImage= x['roadID']
+        self.selected = x
+
+    def drop(self):
+        a=str(self.selected['roadID'])
+        headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+        data = {"roadID": a}
+
+        r = requests.delete(url = baseURL + "/RoadDelete",json=data,headers=headers )
+        print(r)
+        reload(RoadSetUp1)
+        # print (r.json())
+
 
 #violation Record table
 class TableUi(QtWidgets.QMainWindow):
     switch_window = QtCore.pyqtSignal()
+
+
     def __init__(self):
         super(TableUi, self).__init__()
         uic.loadUi(PATH+'/tableUi.ui', self)
@@ -180,35 +239,29 @@ class TableUi(QtWidgets.QMainWindow):
         self.tableWidget.horizontalHeader().setSectionResizeMode(
             QHeaderView.Stretch)
         _translate = QtCore.QCoreApplication.translate
-        data=[['01','Violated','San Felipe','5 minutes','01/26/22'],
-              ['02','Violated','SM Area','7 minutes','01/29/22'],
-              ['03','Violated','Terminal 2','10 minutes','01/27/22'],
-              ['04','Violated','Terminal 1','6 minutes','02/06/22'],
-              ['01','Violated','San Felipe','5 minutes','01/26/22'],
-              ['02','Violated','SM Area','7 minutes','01/29/22'],
-              ['03','Violated','Terminal 2','10 minutes','01/27/22'],
-              ['04','Violated','Terminal 1','6 minutes','02/06/22'],
-              ['01','Violated','San Felipe','5 minutes','01/26/22'],
-              ['02','Violated','SM Area','7 minutes','01/29/22'],
-              ['03','Violated','Terminal 2','10 minutes','01/27/22'],
-              ['04','Violated','Terminal 1','6 minutes','02/06/22'],
-              ['01','Violated','San Felipe','5 minutes','01/26/22'],
-              ['02','Violated','SM Area','7 minutes','01/29/22'],
-              ['03','Violated','Terminal 2','10 minutes','01/27/22'],
-              ['04','Violated','Terminal 1','6 minutes','02/06/22'],
-              ['01','Violated','San Felipe','5 minutes','01/26/22'],
-              ['02','Violated','SM Area','7 minutes','01/29/22'],
-              ['03','Violated','Terminal 2','10 minutes','01/27/22'],
-              ['04','Violated','Terminal 1','6 minutes','02/06/22']
-              ]
+
+        res = requests.get(url = baseURL + "/ViolationFetchAll")
+        data = res.json()
         
-        #self.tableWidget.setRowCount(4) 
-        #self.tableWidget.setItem(0,0, QTableWidgetItem("Name"))
+        self.tableWidget.setRowCount(4) 
+        self.tableWidget.setItem(0,0, QTableWidgetItem("Name"))
         self.tableWidget.setRowCount(len(data))
         for i in range(len(data)):
-            for j in range(5):
-                self.tableWidget.setItem(i,j, QTableWidgetItem(data[i][j]))
-                self.tableWidget.item(i,j).setTextAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
+            self.tableWidget.setItem(i,0, QTableWidgetItem(data[i]['violationID']))
+            self.tableWidget.item(i,0).setTextAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
+            self.tableWidget.setItem(i,1, QTableWidgetItem(data[i]['vehicleID']))
+            self.tableWidget.item(i,1).setTextAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
+            self.tableWidget.setItem(i,2, QTableWidgetItem(data[i]['roadName']))
+            self.tableWidget.item(i,2).setTextAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
+            self.tableWidget.setItem(i,3, QTableWidgetItem(data[i]['lengthOfViolation']))
+            self.tableWidget.item(i,3).setTextAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
+            self.tableWidget.setItem(i,4, QTableWidgetItem(data[i]['lengthOfViolation']))
+            self.tableWidget.item(i,4).setTextAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
+            self.tableWidget.setItem(i,5, QTableWidgetItem(data[i]['lengthOfViolation']))
+            self.tableWidget.item(i,5).setTextAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
+            # for j in range(5):
+            #     self.tableWidget.setItem(i,j, QTableWidgetItem(data[i][j]))
+            #     self.tableWidget.item(i,j).setTextAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
             #Adding BUtton in each row  
             self.newBtnPlay=QtWidgets.QPushButton(self.tableWidget)
             self.newBtnDelete=QtWidgets.QPushButton(self.tableWidget)
@@ -226,11 +279,21 @@ class TableUi(QtWidgets.QMainWindow):
             self.newBtnDelete.setIcon(icon2)
             self.newBtnPlay.setIconSize(QtCore.QSize(19, 19))
             self.newBtnDelete.setIconSize(QtCore.QSize(14,15))
-            self.tableWidget.setCellWidget(i,j+1,self.newBtnPlay)
-            self.tableWidget.setCellWidget(i,j+2,self.newBtnDelete)
+            self.tableWidget.setCellWidget(i,6,self.newBtnPlay)
+            self.tableWidget.setCellWidget(i,7,self.newBtnDelete)
+            self.newBtnDelete.clicked.connect(lambda ch, i=i: self.drop(data[i]['violationID']))
             self.newBtnPlay.clicked.connect(lambda ch, i=i: self.buttonSome(i))
         self.btnDone.clicked.connect(self.close)
     
+    def drop(self,violation_ID):
+        a=str(violation_ID)
+        headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+        data = {"violationID": a}
+
+        r = requests.delete(url = baseURL + "/ViolationDelete",json=data,headers=headers )
+        print(r)
+        reload(TableUi)
+
     def buttonSome(self,i):
         print(i)
 #main Window
@@ -280,15 +343,21 @@ class MainUi(QtWidgets.QMainWindow):
 
     def activePlayback(self):
         # self.w.initDet.det.dets.stop() # for now, stop detection, but main purpose of this is to continue detection and save and view the recorded
-        self.saveVid()
-        self.w.initDet.det.dets.show_vid = False
+        try:
+            self.saveVid()
+            self.w.initDet.det.dets.show_vid = False
+        except:
+            pass
         # cv2.destroyAllWindows()
         self.stackedWidget.setCurrentWidget(self.playbackPage)
         self.btnWatch.setStyleSheet('background-color:none;border:none')
         self.btnPlayback.setStyleSheet("color:white;font-size:14px;background-color:#1D1F32;border-left:3px solid #678ADD;")
         
     def activeWatch(self):
-        self.w.initDet.det.dets.show_vid = True
+        try:
+            self.w.initDet.det.dets.show_vid = True
+        except:
+            pass
         self.stackedWidget.setCurrentWidget(self.watchingPage)
         self.btnPlayback.setStyleSheet('background-color:none;border:none')
         self.btnWatch.setStyleSheet("color:white;font-size:14px;background-color:#1D1F32;border-left:3px solid #678ADD;")
@@ -300,15 +369,16 @@ class MainUi(QtWidgets.QMainWindow):
         self.roadSwitch.emit()
         
     def saveVid(self):
+        
+        # save playback here
         self.playbackInfo['playbackID'].append(read('playback')+1)
-        self.playbackInfo['playbackVideo'].append(self.w.initDet.det.dets.vid_path)
+        self.playbackInfo['playbackVideo'].append(self.w.initDet.det.dets.vid_path) # si path ini kang video playback nasa detection_module/runs/
         duration = self.w.initDet.det.dets.frm_id / self.w.initDet.det.dets.vid_fps
-        print(duration)
         duration = str(dtime.timedelta(seconds=float(int(duration))))
         self.playbackInfo['duration'].append(duration)
         self.playbackInfo['roadName'].append('road name')
         self.playbackInfo['dateAndTime'].append(dtime.date.today())
-        save('playBack', self.playbackInfo)
+        save('playBack', self.playbackInfo) # saved to records/playBackDb.csv
         
         
 class welcome(QtWidgets.QWidget):
@@ -356,6 +426,7 @@ class Controller:
             self.road.disconnect()
             self.roadLoad = roadSettingUp() # for loading setting up road
             
+            # run extraction of bg and road
             self.thread = QThread()
             self.bgAndRoad = Worker(self)
             self.bgAndRoad.moveToThread(self.thread)
@@ -397,17 +468,19 @@ class Controller:
         self.windowRoadSettingUp.screenLabel.connect(self.showScreenImage)
     def showFinishingUi(self):
         self.roadPaint.close()
-        type = 'road'
+        
         # initialize detection
         self.windowFinishing=FinishingUi()# loading for finishing 
-        
-        # save road to db
+        # save road to db here
         # BUG: the saved arrays are separated by ... means the'yre too large
+        # roadImage and ROI are large arrays, dai ko aram if pag tg save sa db complete sya, sa csv kaya putol sya
+        
+        type = 'road'
         self.window.roadInfos['roadId'].append(read(type)+1)
-        self.window.roadInfos['roadName'].append('something')
-        self.window.roadInfos['roadCaptured'].append(self.roadImage)
+        self.window.roadInfos['roadName'].append('something') # get the txt from textbox
+        self.window.roadInfos['roadCaptured'].append(self.roadImage) 
         self.window.roadInfos['roadBoundaryCoordinates'].append(self.ROI)
-        save(type, self.window.roadInfos)
+        save(type, self.window.roadInfos) # saved to records/roadDb.csv
         
         self.thread = QThread()
         self.initDet = Worker(self)
@@ -424,12 +497,13 @@ class Controller:
             self.windowFinishing.closeWindow() # close loading
             print("finished initializing detection models")
             
-            # run detection here
+           
             self.window.label.setText("San Felipe") # name of video
             self.window.verticalLayout_11.addWidget(self.window.frameWatch)#removing center aligment of frameWatch
             self.window.btnAddVideo.hide()
             self.window.labelScreen.setMinimumSize(QtCore.QSize(0, 400))
             
+            # run detection here on separate thread
             self.thread = QThread()
             self.runDets = Worker(self)
             self.runDets.moveToThread(self.thread)
@@ -453,15 +527,20 @@ class Controller:
     
     # #this function will display image    
     def showScreenImage(self):
-        if self.initDet.det.dets.show_vid:
-            cv2.imshow("aa",self.initDet.det.dets.im)
-            key = cv2.waitKey(1)
-            if key == ord('q'):
-                self.initDet.det.dets.stop()
-                
+        data = self.road.selected
+        print(data)
+
+        self.window.labelScreen.setPixmap(QtGui.QPixmap("images/image 1.jpg")) #setting image inside QLabel
+        self.window.labelScreen.setMinimumSize(QtCore.QSize(0, 400))#setting minimum heigth
+        self.window.label.setText(data['roadName'])
+        self.window.verticalLayout_11.addWidget(self.window.frameWatch)#removing center aligment of frameWatch
+        self.window.btnAddVideo.hide()#hiding button Insert Video
+        #Closing Road Setting 
     def select(self):
         print("Select Image")
 
+
+# classes for worker threads
 class Worker(QtCore.QObject):
     finished = QtCore.pyqtSignal()
     imgUpdate = QtCore.pyqtSignal(QtGui.QPixmap)
@@ -486,29 +565,20 @@ class Worker(QtCore.QObject):
         time.sleep(0.3)
         f = 1
         while not self.w.initDet.det.dets.stopped:
-            
             if self.w.initDet.det.dets.show_vid:
-            #     # t = time.time()
                 if f == self.w.initDet.det.dets.f:
-                # self.w.showScreenImage()
                     img = numpy.copy(self.w.initDet.det.dets.frame) #make a copy of frame
                     QtImg = cvImgtoQtImg(img)# Convert frame data to PyQt image format
                     qim = QtGui.QPixmap.fromImage(QtImg)
                     self.imgUpdate.emit(qim)
-                    # time.sleep(1.0/(self.w.initDet.det.dets.vid_fps*1.5))
-                # time.sleep(1.0/self.w.initDet.det.dets.vid_fps) # sleep dependent to fps
                     f +=1
                 else:
                     print(' ', end='\r')
             else:
                 f = self.w.initDet.det.dets.f + 1
                 print(' ', end='\r')
-
-
-                
             
         self.finished.emit()
-
 
 if __name__ == '__main__':
     app=QApplication(sys.argv)
