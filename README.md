@@ -1,10 +1,9 @@
-# Thesis101
+Detect Core GUI with Detection and tracking features
 
+Installation guide:
 
-Need to be INSTALLED
+Install Pytorch >= 1.7 here: https://pytorch.org/get-started/locally/
 
-Client (Front-End)
-1. pip install QT-PyQt-PySide-Custom-Widgets
+If gpu supported, install CUDA here: https://developer.nvidia.com/cuda-toolkit
 
-Server
-1. pip install flask-mongoengine
+Then, install dependencies: pip install -r requirements.txt
