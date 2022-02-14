@@ -2,6 +2,8 @@ Detect Core GUI with Detection and tracking features
 
 Installation guide:
 
+clone this branch: git clone -b gui_detection https://github.com/lordsiinbal/Thesis101.git
+
 Install Pytorch >= 1.7 here: https://pytorch.org/get-started/locally/
 
 If gpu supported, install CUDA here: https://developer.nvidia.com/cuda-toolkit
