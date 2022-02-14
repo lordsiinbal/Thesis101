@@ -493,7 +493,7 @@ class Controller:
         
     # this function will be executed when finished initializing detection and tracking models
     def finishedInitDet(self):
-        if self.initDet.det.dets.flag:
+        if self.initDet.det.dets.nflag:
             self.windowFinishing.closeWindow() # close loading
             print("finished initializing detection models")
             
@@ -555,13 +555,17 @@ class Worker(QtCore.QObject):
         self.finished.emit()
         
     def initDet(self):
-        self.det = detection(self.vid, self.w.ROI)
+        self.det = detection(self.vid, self.w.ROI, self.w.roadImage)
         self.finished.emit()
 
     def runDet(self):
         # run/start detection
         self.w.initDet.det.dets.t.start()
+        # self.w.initDet.det.dets.t.join()
         # sleep for 0.3 sec
+        # while not self.w.initDet.det.dets.flag:
+        #     print('wait')
+        #     pass
         time.sleep(0.3)
         f = 1
         while not self.w.initDet.det.dets.stopped:
@@ -582,7 +586,7 @@ class Worker(QtCore.QObject):
 
 if __name__ == '__main__':
     app=QApplication(sys.argv)
-    app.processEvents()
+    # app.processEvents()
     controller = Controller()
     controller.show_login()
     sys.exit(app.exec_())

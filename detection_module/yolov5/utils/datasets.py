@@ -168,7 +168,9 @@ class VideoGet:
     def __init__(self, cap):
         self.stream = cv2.VideoCapture(cap)
         (self.grabbed, self.frame) = self.stream.read()
-        self.fps = self.stream.get(cv2.CAP_PROP_FPS)
+        # self.fps = self.stream.get(cv2.CAP_PROP_FPS)
+        self.nframes = int(self.stream.get(cv2.CAP_PROP_FRAME_COUNT))
+        self.fps = int(self.stream.get(cv2.CAP_PROP_FPS))
         self.stopped = True
         self.t = Thread(target=self.get, args=())
         self.t.daemon = True # daemon threads run in background 
@@ -191,6 +193,8 @@ class VideoGet:
             else:
                 self.frames += 1
                 (self.grabbed, self.frame) = self.stream.read()
+                # self.frame = cv2.resize(self.frame, (1280,720))
+                # self.frame = cv2.resize( self.frame, (1280,720), interpolation=cv2.INTER_NEAREST)
                 timeDiff = time_sync() - now
                 print('%.3f and %.3f' % (timeDiff, 1.0/(self.fps*1.5)), end='\r')
                 if (timeDiff<1.0/(self.fps*1.5)):
@@ -232,7 +236,6 @@ class LoadImages:
         self.auto = auto
         self.counter = 0
         self.roi = roi
-      
         
         if any(videos):
             self.new_video(videos[0])  # new video
@@ -256,13 +259,11 @@ class LoadImages:
             self.mode = 'video'
             ret_val = self.video_getter.grabbed
             img0 = self.video_getter.frame
-            img0 = cv2.resize(img0, (1280,720))
-            # masking roi
+            img0 = cv2.resize(img0, (1280,720), interpolation=cv2.INTER_NEAREST)
             im = img0
+            # masking roi
             bg = np.zeros(img0.shape, np.uint8)
-            cv2.drawContours(bg, self.roi, -1, (0,0,255), thickness= -1)
-            pts = np.where(bg == 255)
-            bg[pts[0],pts[1]] = img0[pts[0],pts[1]]
+            bg[self.roi[0],self.roi[1]] = img0[self.roi[0],self.roi[1]]
             img0 = bg
             # time.sleep(0.025)
             while not ret_val:
@@ -300,8 +301,8 @@ class LoadImages:
         self.cap = cv2.VideoCapture(path)
         self.video_getter = VideoGet(path).start()
         # self.video_shower = VideoShow(self.video_getter.frame)
-        self.frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        self.vid_fps = int(self.cap.get(cv2.CAP_PROP_FPS))
+        self.frames = self.video_getter.nframes
+        self.vid_fps = self.video_getter.fps
         
 
     def __len__(self):

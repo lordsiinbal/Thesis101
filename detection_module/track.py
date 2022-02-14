@@ -1,6 +1,5 @@
 # limit the number of cpus used by high performance libraries
 import os
-import threading
 os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
@@ -42,7 +41,7 @@ from records.dbProcess import save, read
 
 
 class det:
-    def __init__(self, opt, source, roi):
+    def __init__(self, opt, source, roi, shape):
         self.frame, self.ret, self.stopped = None, False, False
         self.violationKeys = ['violationID', 'vehicleID','roadName', 'lengthOfViolation','startDateAndTime', 'endDateAndTime']
         self.keys = ['id', 'startTime','finalTime', 'class']
@@ -107,7 +106,15 @@ class det:
             self.dataset = LoadStreams(self.source, img_size=self.imgsz, stride=stride, auto=pt and not jit)
             bs = len(self.dataset)  # batch_size
         else:
-            self.dataset = LoadImages(self.source, img_size=self.imgsz, stride=stride, auto=pt and not jit, roi = roi)
+            # configuire roi to oposite
+            # bg = np.zeros((1280*720), np.uint8)
+            # cv2.drawContours(bg, roi, -1, (255,255,255), thickness= -1)
+            # pts = np.where(bg == 255) # inverting roi
+            
+            bg = np.zeros(shape, np.uint8)
+            cv2.drawContours(bg, roi, -1, (255,255,255), thickness= -1)
+            pts = np.where(bg == 255)
+            self.dataset = LoadImages(self.source, img_size=self.imgsz, stride=stride, auto=pt and not jit, roi = pts)
             bs = 1  # batch_size
         self.vid_path, self.vid_writer = [None] * bs, [None] * bs
 
@@ -125,16 +132,17 @@ class det:
         self.t11 = time_sync()
         self.opt = opt
         self.roi = roi
-        self.t = Thread(target=self.detect, args=())
-        self.flag = True
+        self.t = Thread(target=self.detect, args=()) # use multiprocess instead of thread
+        self.flag = False
+        self.nflag = True
         self.f = 0
         self.t.daemon = True
     
     def detect(self):
         print("it has started")
+        # self.flag = True
         # self.show_vid = False
         for frame_idx, (path, img, im0s, vid_cap, s, frm_id, vid_fps, video_getter, im, ret, tim) in enumerate(self.dataset):
-            
             if not self.stopped:
                 self.vid_fps = vid_fps
                 t1 = time_sync()
@@ -248,7 +256,7 @@ class det:
                         else: # set the prev frame xy to current xy
                             self.PREV_XY = xy
                         self.dt[4] += t5 - tim
-                        LOGGER.info(f'Done. YOLO:({t3 - t2:.3f}s), DeepSort:({t5 - t4:.3f}s), Stationary:({t9 - t8:.3f}s) Overall:({t5-tim:.3f}s)')
+                        LOGGER.info(f'Done. Read-frame: ({t1-tim:.3f}) YOLO:({t3 - t2:.3f}s), DeepSort:({t5 - t4:.3f}s), Stationary:({t9 - t8:.3f}s) Overall:({t5-tim:.3f}s)')
 
                     else:
                         self.deepsort.increment_ages()
