@@ -175,9 +175,7 @@ class VideoGet:
         self.t = Thread(target=self.get, args=())
         self.t.daemon = True # daemon threads run in background 
         self.frames = 0
-        # self.t = multiprocessing.Process(target=self.get)
-        # print("STARTING process")
-        # self.t.start()
+
 
     def start(self):    
         self.stopped = False
@@ -193,18 +191,13 @@ class VideoGet:
             else:
                 self.frames += 1
                 (self.grabbed, self.frame) = self.stream.read()
-                # self.frame = cv2.resize(self.frame, (1280,720))
-                # self.frame = cv2.resize( self.frame, (1280,720), interpolation=cv2.INTER_NEAREST)
                 timeDiff = time_sync() - now
                 print('%.3f and %.3f' % (timeDiff, 1.0/(self.fps*1.5)), end='\r')
                 if (timeDiff<1.0/(self.fps*1.5)):
                     time.sleep((1.0/(self.fps*1.5)) - timeDiff)
                 else:
                     print('g')
-                    # time.sleep(timeDiff-(1.0/(self.fps*1.5)))
-                    
-                # img0 = cv2.resize(img0, (896, 504))
-                # time.sleep(0.05)
+                 
                 
 
     def stop(self):
@@ -212,7 +205,7 @@ class VideoGet:
         
 class LoadImages:
     # YOLOv5 image/video dataloader, i.e. `python detect.py --source image.jpg/vid.mp4`
-    def __init__(self, path, img_size=640, stride=32, auto=True, roi = None):
+    def __init__(self, path, img_size=640, stride=32, auto=True, mask = None):
         p = str(Path(path).resolve())  # os-agnostic absolute path
         if '*' in p:
             files = sorted(glob.glob(p, recursive=True))  # glob
@@ -235,9 +228,10 @@ class LoadImages:
         self.mode = 'image'
         self.auto = auto
         self.counter = 0
-        self.roi = roi
-        
+        self.mask = mask
+
         if any(videos):
+            self.path = videos[0]
             self.new_video(videos[0])  # new video
         else:
             self.cap = None
@@ -262,9 +256,7 @@ class LoadImages:
             img0 = cv2.resize(img0, (1280,720), interpolation=cv2.INTER_NEAREST)
             im = img0
             # masking roi
-            bg = np.zeros(img0.shape, np.uint8)
-            bg[self.roi[0],self.roi[1]] = img0[self.roi[0],self.roi[1]]
-            img0 = bg
+            img0 = cv2.copyTo(img0, self.mask)
             # time.sleep(0.025)
             while not ret_val:
                 self.count += 1
@@ -298,9 +290,11 @@ class LoadImages:
 
     def new_video(self, path):
         self.frame = 0
-        self.cap = cv2.VideoCapture(path)
-        self.video_getter = VideoGet(path).start()
+        self.cap = True
         # self.video_shower = VideoShow(self.video_getter.frame)
+        
+    def begin(self):
+        self.video_getter = VideoGet(self.path).start()
         self.frames = self.video_getter.nframes
         self.vid_fps = self.video_getter.fps
         

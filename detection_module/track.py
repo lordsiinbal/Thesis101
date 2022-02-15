@@ -1,4 +1,5 @@
 # limit the number of cpus used by high performance libraries
+import multiprocessing
 import os
 os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
@@ -38,9 +39,20 @@ from deep_sort.utils.parser import get_config
 from deep_sort.deep_sort import DeepSort
 
 from records.dbProcess import save, read
+import concurrent.futures
 
 
 class det:
+    
+    """Detection constructor, initializing detection models (yolo and deepsort)
+    
+        parameters are as follows:
+        opt = yolo required parameters, can be found and edited at params.py
+        source = input source/video
+        roi = road boundary coordinates
+        shape = input source shape
+    
+    """
     def __init__(self, opt, source, roi, shape):
         self.frame, self.ret, self.stopped = None, False, False
         self.violationKeys = ['violationID', 'vehicleID','roadName', 'lengthOfViolation','startDateAndTime', 'endDateAndTime']
@@ -106,15 +118,10 @@ class det:
             self.dataset = LoadStreams(self.source, img_size=self.imgsz, stride=stride, auto=pt and not jit)
             bs = len(self.dataset)  # batch_size
         else:
-            # configuire roi to oposite
-            # bg = np.zeros((1280*720), np.uint8)
-            # cv2.drawContours(bg, roi, -1, (255,255,255), thickness= -1)
-            # pts = np.where(bg == 255) # inverting roi
-            
-            bg = np.zeros(shape, np.uint8)
-            cv2.drawContours(bg, roi, -1, (255,255,255), thickness= -1)
-            pts = np.where(bg == 255)
-            self.dataset = LoadImages(self.source, img_size=self.imgsz, stride=stride, auto=pt and not jit, roi = pts)
+            # getting the mask of roi
+            mask = np.zeros(shape, np.uint8)
+            cv2.drawContours(mask, roi, -1, (255,255,255), thickness= -1)
+            self.dataset = LoadImages(self.source, img_size=self.imgsz, stride=stride, auto=pt and not jit, mask = mask)
             bs = 1  # batch_size
         self.vid_path, self.vid_writer = [None] * bs, [None] * bs
 
@@ -132,16 +139,22 @@ class det:
         self.t11 = time_sync()
         self.opt = opt
         self.roi = roi
+        self.num_processes = multiprocessing.cpu_count()
         self.t = Thread(target=self.detect, args=()) # use multiprocess instead of thread
         self.flag = False
         self.nflag = True
         self.f = 0
         self.t.daemon = True
     
+    
+    def run(self):
+        self.dataset.begin()
+        self.t.start()
+    
+    """detection function"""
     def detect(self):
         print("it has started")
-        # self.flag = True
-        # self.show_vid = False
+        self.flag = True
         for frame_idx, (path, img, im0s, vid_cap, s, frm_id, vid_fps, video_getter, im, ret, tim) in enumerate(self.dataset):
             if not self.stopped:
                 self.vid_fps = vid_fps
@@ -290,14 +303,13 @@ class det:
                                     
                             # print('MP4 results saved to %s' % save_path)
                             # print('CSV results saved to %s' % self.txt_path)
-                    self.f = frame_idx     
+                    self.f = frame_idx
                     
                     t0 = time_sync()
                     # Save results (image with detections)
                     if self.save_vid:
                         now = time.time()
                         if self.vid_path != save_path:  # new video
-                            print('here')
                             self.vid_path = save_path
                             if isinstance(self.vid_writer, cv2.VideoWriter):
                                 self.vid_writer.release()  # release previous video writer
@@ -319,7 +331,7 @@ class det:
                 video_getter.stop() 
                 t = tuple(x / self.seen * 1E3 for x in self.dt)  # speeds per image
                 LOGGER.info(f'Speed: %.1fms pre-process, %.1fms inference, %.1fms NMS, %.1fms deep sort update per image at shape {(1, 3, *self.imgsz)}. \nAverage speed of %.1fms per frame' % t)
-                raise StopIteration        
+                raise StopIteration   
                 
     def stop(self):
         self.stopped = True
