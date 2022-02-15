@@ -251,7 +251,7 @@ class det:
                                         elif sec > 300: #exceed 5 mins
                                             col = (0,0,255)
                                         else:
-                                            col = (255,255,0)
+                                            col = (0,165,255)
                                         label = f'{id} {self.names[c]}: {t}'
                                         annotator.box_label(bboxes, label, color=col)
                                         
@@ -265,7 +265,7 @@ class det:
                                         c = int(cls)  # integer class
                                         self.vehicleInfos['class'].append(self.names[c])
                                         label = f'{id} {self.names[c]}: {t}'
-                                        annotator.box_label(bboxes, label, color=(255,255,0))
+                                        annotator.box_label(bboxes, label, color=(0,165,255))
                         else: # set the prev frame xy to current xy
                             self.PREV_XY = xy
                         self.dt[4] += t5 - tim

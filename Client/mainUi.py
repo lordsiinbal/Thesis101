@@ -578,7 +578,7 @@ class Worker(QtCore.QObject):
                     self.imgUpdate.emit(qim)
                     f +=1
                 else:
-                    print(' ',self.w.initDet.det.dets.f, end='\r')
+                    print(' ', end='\r')
             else:
                 f = self.w.initDet.det.dets.f + 1
                 print(' ', end='\r')
