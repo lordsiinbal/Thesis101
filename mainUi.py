@@ -6,6 +6,7 @@ import json
 import ctypes
 import datetime as dtime
 from itertools import count
+import multiprocessing
 from queue import PriorityQueue
 from threading import local
 import threading
@@ -27,7 +28,6 @@ import numpy
 from sympy import false
 from api import baseURL
 import requests 
-
 
 
 #NOTE: Si pag save kang road saka playback yaon igdi sa file, control F 'save road' saka 'save playback' ka nalang
@@ -387,10 +387,13 @@ class welcome(QtWidgets.QWidget):
         super(welcome, self).__init__()
         uic.loadUi(PATH+'/welcomeUi.ui', self)
         self.btnLogin.clicked.connect(self.goToLogin)
-        self.btnCancel.clicked.connect(self.close)
+        self.btnCancel.clicked.connect(self.closeWindow)
         self.setWindowFlag(Qt.FramelessWindowHint)      
     def goToLogin(self):
         self.switch_window.emit()
+    def closeWindow(self):
+        self.close()
+        exit()
 
 """Class for navigating"""      
 class Controller:
@@ -560,14 +563,12 @@ class Worker(QtCore.QObject):
 
     def runDet(self):
         # run/start detection
-        self.w.initDet.det.dets.t.start()
-        # self.w.initDet.det.dets.t.join()
-        # sleep for 0.3 sec
-        # while not self.w.initDet.det.dets.flag:
-        #     print('wait')
-        #     pass
-        time.sleep(0.3)
+        self.w.initDet.det.dets.run()
         f = 1
+        # wait for detection to finish one frame
+        while self.w.initDet.det.dets.f == 0:
+            print('wait', end="\r")
+            pass
         while not self.w.initDet.det.dets.stopped:
             if self.w.initDet.det.dets.show_vid:
                 if f == self.w.initDet.det.dets.f:
@@ -577,7 +578,7 @@ class Worker(QtCore.QObject):
                     self.imgUpdate.emit(qim)
                     f +=1
                 else:
-                    print(' ', end='\r')
+                    print(' ',self.w.initDet.det.dets.f, end='\r')
             else:
                 f = self.w.initDet.det.dets.f + 1
                 print(' ', end='\r')
@@ -589,5 +590,6 @@ if __name__ == '__main__':
     # app.processEvents()
     controller = Controller()
     controller.show_login()
+
     sys.exit(app.exec_())
 
