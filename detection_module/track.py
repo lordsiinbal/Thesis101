@@ -1,7 +1,7 @@
 # limit the number of cpus used by high performance libraries
 import json
 import threading
-
+import os
 from flask import request
 import multiprocessing
 os.environ["OMP_NUM_THREADS"] = "1"
@@ -14,7 +14,7 @@ import sys
 sys.path.insert(0,'./yolov5')
 
 import argparse
-import os
+
 import platform
 import shutil
 import time
