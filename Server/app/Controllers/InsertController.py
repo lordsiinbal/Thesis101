@@ -29,30 +29,30 @@ def RoadInsert():
     roadInsert.roadID = data['roadID']
     roadInsert.roadName = data['roadName']
     roadInsert.roadCaptured = data['roadCaptured']
-    # roadInsert.roadBoundaryCoordinates = data['roadBoundaryCoordinates']
-    filename = data['roadID']+".txt"
-    # roi = open('%s.txt' %filename, "w")
-    # roi.write(data['roadBoundaryCoordinates'])
+    roadInsert.roadBoundaryCoordinates = data['roadBoundaryCoordinates']
+    # filename = data['roadID']+".txt"
+    # # roi = open('%s.txt' %filename, "w")
+    # # roi.write(data['roadBoundaryCoordinates'])
    
-    # roi.close()
-    with open(filename, 'w') as roi:
-        roi.write(data['roadBoundaryCoordinates'])
-    print("filesave  ", filename)
+    # # roi.close()
+    # with open(filename, 'w') as roi:
+    #     roi.write(data['roadBoundaryCoordinates'])
+    # print("filesave  ", filename)
 
-    # with open('%s.txt' % data['roadID'], 'rb') as fd:
-    #     dc_road.roadBoundaryCoordinates.put(fd, content_type = 'text/plain')
-    # f = GridFSProxy()
-    to_read = open('%s.txt' % data['roadID'], 'rb')
-    roadInsert.roadBoundaryCoordinates.put(to_read, content_type = 'text/plain', filename=os.path.basename(to_read.name))
-    to_read.close()
-    # roadInsert.roadBoundaryCoordinates = f
+    # # with open('%s.txt' % data['roadID'], 'rb') as fd:
+    # #     dc_road.roadBoundaryCoordinates.put(fd, content_type = 'text/plain')
+    # # f = GridFSProxy()
+    # to_read = open('%s.txt' % data['roadID'], 'rb')
+    # roadInsert.roadBoundaryCoordinates.put(to_read, content_type = 'text/plain', filename=os.path.basename(to_read.name))
+    # to_read.close()
+    # # roadInsert.roadBoundaryCoordinates = f
     
-    file=open(filename, "r")
-    print(file.read())
-    print(roadInsert.roadID)
-    print(roadInsert.roadBoundaryCoordinates)
-    print(roadInsert.roadBoundaryCoordinates.filename)
-    print(roadInsert.roadBoundaryCoordinates.content_type)
+    # file=open(filename, "r")
+    # print(file.read())
+    # print(roadInsert.roadID)
+    # print(roadInsert.roadBoundaryCoordinates)
+    # print(roadInsert.roadBoundaryCoordinates.filename)
+    # print(roadInsert.roadBoundaryCoordinates.content_type)
     roadInsert.save()
     return jsonify({"roadID":  roadInsert.roadID, "roadName": roadInsert.roadName,"roadCaptured": roadInsert.roadCaptured, "roadBoundaryCoordinates": roadInsert.roadBoundaryCoordinates})
 
