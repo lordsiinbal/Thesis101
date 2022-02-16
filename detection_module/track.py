@@ -1,9 +1,9 @@
 # limit the number of cpus used by high performance libraries
 import json
-import os
 import threading
 
 from flask import request
+import multiprocessing
 os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
@@ -26,7 +26,6 @@ import datetime as dtime
 import torch.backends.cudnn as cudnn
 import csv
 
-
 from multiprocessing import Process
 from threading import Thread
 from datetime import datetime
@@ -46,8 +45,19 @@ from records.dbProcess import save, read
 from Client.api import baseURL
 import requests
 
+"""Detection constructor, initializing detection models (yolo and deepsort)
+    
+        parameters are as follows:
+        opt = yolo required parameters, can be found and edited at params.py
+        source = input source/video
+        roi = road boundary coordinates
+        shape = input source shape
+    
+    """
+
 class det:
-    def __init__(self, opt, source, roi):
+
+    def __init__(self, opt, source, roi, shape):
         self.frame, self.ret, self.stopped = None, False, False
         # self.violationKeys = ['violationID', 'vehicleID','roadName', 'lengthOfViolation','startDateAndTime', 'endDateAndTime']
         self.keys = ['id', 'startTime','finalTime', 'class']
@@ -112,7 +122,10 @@ class det:
             self.dataset = LoadStreams(self.source, img_size=self.imgsz, stride=stride, auto=pt and not jit)
             bs = len(self.dataset)  # batch_size
         else:
-            self.dataset = LoadImages(self.source, img_size=self.imgsz, stride=stride, auto=pt and not jit, roi = roi)
+            # getting the mask of roi
+            mask = np.zeros(shape, np.uint8)
+            cv2.drawContours(mask, roi, -1, (255,255,255), thickness= -1)
+            self.dataset = LoadImages(self.source, img_size=self.imgsz, stride=stride, auto=pt and not jit, mask = mask)
             bs = 1  # batch_size
         self.vid_path, self.vid_writer = [None] * bs, [None] * bs
 
@@ -130,16 +143,23 @@ class det:
         self.t11 = time_sync()
         self.opt = opt
         self.roi = roi
-        self.t = Thread(target=self.detect, args=())
-        self.flag = True
+        self.num_processes = multiprocessing.cpu_count()
+        self.t = Thread(target=self.detect, args=()) # use multiprocess instead of thread
+        self.flag = False
+        self.nflag = True
         self.f = 0
         self.t.daemon = True
-
+    
+    
+    def run(self):
+        self.dataset.begin()
+        self.t.start()
+    
+    """detection function"""
     def detect(self):
         print("it has started")
-        # self.show_vid = False
+        self.flag = True
         for frame_idx, (path, img, im0s, vid_cap, s, frm_id, vid_fps, video_getter, im, ret, tim) in enumerate(self.dataset):
-            
             if not self.stopped:
                 self.vid_fps = vid_fps
                 t1 = time_sync()
@@ -244,7 +264,7 @@ class det:
                                         elif sec > 300: #exceed 5 mins
                                             col = (0,0,255)
                                         else:
-                                            col = (255,255,0)
+                                            col = (0,165,255)
                                         label = f'{id} {self.names[c]}: {t}'
                                         annotator.box_label(bboxes, label, color=col)
                                         
@@ -258,11 +278,11 @@ class det:
                                         c = int(cls)  # integer class
                                         self.vehicleInfos['class'].append(self.names[c])
                                         label = f'{id} {self.names[c]}: {t}'
-                                        annotator.box_label(bboxes, label, color=(255,255,0))
+                                        annotator.box_label(bboxes, label, color=(0,165,255))
                         else: # set the prev frame xy to current xy
                             self.PREV_XY = xy
                         self.dt[4] += t5 - tim
-                        LOGGER.info(f'Done. YOLO:({t3 - t2:.3f}s), DeepSort:({t5 - t4:.3f}s), Stationary:({t9 - t8:.3f}s) Overall:({t5-tim:.3f}s)')
+                        LOGGER.info(f'Done. Read-frame: ({t1-tim:.3f}) YOLO:({t3 - t2:.3f}s), DeepSort:({t5 - t4:.3f}s), Stationary:({t9 - t8:.3f}s) Overall:({t5-tim:.3f}s)')
 
                     else:
                         self.deepsort.increment_ages()
@@ -296,14 +316,13 @@ class det:
                                     
                             # print('MP4 results saved to %s' % save_path)
                             # print('CSV results saved to %s' % self.txt_path)
-                    self.f = frame_idx     
+                    self.f = frame_idx
                     
                     t0 = time_sync()
                     # Save results (image with detections)
                     if self.save_vid:
                         now = time.time()
                         if self.vid_path != save_path:  # new video
-                            print('here')
                             self.vid_path = save_path
                             if isinstance(self.vid_writer, cv2.VideoWriter):
                                 self.vid_writer.release()  # release previous video writer

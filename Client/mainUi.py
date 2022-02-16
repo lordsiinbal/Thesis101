@@ -396,10 +396,13 @@ class welcome(QtWidgets.QWidget):
         super(welcome, self).__init__()
         uic.loadUi(PATH+'/welcomeUi.ui', self)
         self.btnLogin.clicked.connect(self.goToLogin)
-        self.btnCancel.clicked.connect(self.close)
+        self.btnCancel.clicked.connect(self.closeWindow)
         self.setWindowFlag(Qt.FramelessWindowHint)      
     def goToLogin(self):
         self.switch_window.emit()
+    def closeWindow(self):
+        self.close()
+        exit()
 
 """Class for navigating"""      
 class Controller:
@@ -588,15 +591,17 @@ class Worker(QtCore.QObject):
         self.finished.emit()
         
     def initDet(self):
-        self.det = detection(self.vid, self.w.ROI)
+        self.det = detection(self.vid, self.w.ROI, self.w.roadImage)
         self.finished.emit()
 
     def runDet(self):
         # run/start detection
-        self.w.initDet.det.dets.t.start()
-        # sleep for 0.3 sec
-        time.sleep(0.3)
+        self.w.initDet.det.dets.run()
         f = 1
+        # wait for detection to finish one frame
+        while self.w.initDet.det.dets.f == 0:
+            print('wait', end="\r")
+            pass
         while not self.w.initDet.det.dets.stopped:
             if self.w.initDet.det.dets.show_vid:
                 if f == self.w.initDet.det.dets.f:
@@ -615,8 +620,9 @@ class Worker(QtCore.QObject):
 
 if __name__ == '__main__':
     app=QApplication(sys.argv)
-    app.processEvents()
+    # app.processEvents()
     controller = Controller()
     controller.show_login()
+
     sys.exit(app.exec_())
 
