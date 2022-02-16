@@ -10,7 +10,11 @@ class bg:
         frames = []
         # For local video only
         # FOI = np.random.choice(range(int(cap.get(cv.CAP_PROP_FRAME_COUNT))),size=30, replace= False) # defualt 500
+<<<<<<< HEAD
         FOI = cap.get(cv.CAP_PROP_FRAME_COUNT) * np.random.uniform(size=30) # 20-50 lang dapat kasi may paint naman
+=======
+        FOI = cap.get(cv.CAP_PROP_FRAME_COUNT) * np.random.uniform(size=50) # 20-50 lang dapat kasi may paint naman
+>>>>>>> e020c26c3b4d4772f45daaae701b1c3be315b066
         self.backgroundFrame = None
         t = Thread(target=self.sub, args=(cap, FOI, frames))
         t.start()

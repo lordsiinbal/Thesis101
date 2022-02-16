@@ -40,7 +40,7 @@ def getBgModelAndRoad(vid):
     return image, ROI
 
 class detection:
-    def __init__(self, vid, ROI):
+    def __init__(self, vid, ROI, shp):
         changePath()
         from detection_module.track import det
         import params
@@ -50,5 +50,5 @@ class detection:
         with torch.no_grad():
             # calling the yolov5 and deepsort module
             # initializing the detection
-            self.dets = det(params, source=vid, roi=ROI)
+            self.dets = det(params, source=vid, roi=ROI, shape = shp.shape)
 # NOTE: APPLY THE ROI, REUTRN THE COORDINATES OF THE WHOLE CONTOURS #DONE----------

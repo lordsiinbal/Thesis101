@@ -23,7 +23,7 @@ def detect_road(img_orig):
     imt_test = np.array(img_orig)
     imt_test = cv2.cvtColor(imt_test,cv2.COLOR_BGR2HSV)
     average_value = np.mean(imt_test[:,1,2])
-    
+    print('img ave val', average_value)
    
     img = cv2.equalizeHist(img) #performing histogram equalization to equalize the distribution of pixels
     # cv2.imshow('hist', img)
