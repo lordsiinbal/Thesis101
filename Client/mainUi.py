@@ -529,7 +529,7 @@ class Controller:
 
     # this function will be executed when finished initializing detection and tracking models
     def finishedInitDet(self):
-        if self.initDet.det.dets.flag:
+        if self.initDet.det.dets.nflag:
             self.windowFinishing.closeWindow() # close loading
             print("finished initializing detection models")
             
