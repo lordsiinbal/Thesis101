@@ -31,7 +31,6 @@ import requests
 import pandas as pd
 from sys import *
 
-
 #NOTE: Si pag save kang road saka playback yaon igdi sa file, control F 'save road' saka 'save playback' ka nalang
 # si pag save kang violation nasa track.py sa detection_module control-F 'save violation' ka nalang ulit
 
@@ -493,10 +492,12 @@ class Controller:
         # save(type, self.window.roadInfos) # saved to records/roadDb.csv
 
         type = 'road'
+        roadID = str(read(type)+1)
+        roadCapturedTxt = "image/"+roadID+".jpg"
         data = {
             'roadID' : str(read(type)+1),
             'roadName' : "San Felipe",
-            'roadCaptured' : self.roadImage.tolist(),
+            'roadCaptured' : roadCapturedTxt,
             'roadBoundaryCoordinates' : str(pd.Series(self.ROI).to_json(orient='values'))
         }
     
