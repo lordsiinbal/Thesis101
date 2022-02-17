@@ -1,6 +1,9 @@
 # limit the number of cpus used by high performance libraries
-import multiprocessing
+import json
+import threading
 import os
+from flask import request
+import multiprocessing
 os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
@@ -11,7 +14,7 @@ import sys
 sys.path.insert(0,'./yolov5')
 
 import argparse
-import os
+
 import platform
 import shutil
 import time
@@ -39,12 +42,11 @@ from deep_sort.utils.parser import get_config
 from deep_sort.deep_sort import DeepSort
 
 from records.dbProcess import save, read
-import concurrent.futures
+from Client.api import baseURL
+import requests
+from Client.mainUi import TableUi
 
-
-class det:
-    
-    """Detection constructor, initializing detection models (yolo and deepsort)
+"""Detection constructor, initializing detection models (yolo and deepsort)
     
         parameters are as follows:
         opt = yolo required parameters, can be found and edited at params.py
@@ -53,12 +55,15 @@ class det:
         shape = input source shape
     
     """
+
+class det:
+
     def __init__(self, opt, source, roi, shape):
         self.frame, self.ret, self.stopped = None, False, False
-        self.violationKeys = ['violationID', 'vehicleID','roadName', 'lengthOfViolation','startDateAndTime', 'endDateAndTime']
+        # self.violationKeys = ['violationID', 'vehicleID','roadName', 'lengthOfViolation','startDateAndTime', 'endDateAndTime']
         self.keys = ['id', 'startTime','finalTime', 'class']
         self.vehicleInfos = {k: [] for k in self.keys}
-        self.violationInfos = {k: [] for k in self.violationKeys}
+        # self.violationInfos = {k: [] for k in self.violationKeys}
         self.out, self.source, self.yolo_model, self.deep_sort_model, self.show_vid, self.save_vid, self.save_txt, self.imgsz, self.evaluate, self.half, self.project, self.name, self.exist_ok= \
             opt.output, source, opt.yolo_model, opt.deep_sort_model, opt.show_vid, opt.save_vid, \
             opt.save_txt, opt.imgsz, opt.evaluate, opt.half, opt.project, opt.name, opt.exist_ok
@@ -239,16 +244,32 @@ class det:
                                         self.vehicleInfos['finalTime'][index] = float(int(time_sync()-self.vehicleInfos['startTime'][index]))
                                         sec = self.vehicleInfos['finalTime'][index] 
                                         t = str(dtime.timedelta(seconds=sec))
-                                        if sec == 300: # means 5 mins
+                                        if sec == 10: # means 5 mins
                                             col = (0,0,255)
+                                            
+                                            # if TableUi.dataViolationGlobal: #determining if the dataRoadGlobal is empty
+                                            #     roadIDLatest=str(self.road.dataRoadGlobal[len(self.road.dataRoadGlobal)-1]['roadID']).split("-")
+                                            #     print(roadIDLatest)
+                                            #     intRoadID=int(roadIDLatest[1]) + 1
+                                            #     roadID="R-" + str(intRoadID).zfill(7)
+                                            #     print(roadID)
+                                                
+                                            # else:
+                                            #     type = 'road'
+                                            #     roadID = "R-000000"+str(read(type)+1)
+
+
                                             # save violation here
-                                            self.violationInfos['violationID'].append(read('violation')+1)
-                                            self.violationInfos['vehicleID'].append(id)
-                                            self.violationInfos['roadName'].append('road name')
-                                            self.violationInfos['lengthOfViolation'].append(str(dtime.timedelta(seconds=sec)))
-                                            self.violationInfos['startDateAndTime'].append(datetime.fromtimestamp(self.vehicleInfos['startTime'][index]).strftime("%A, %B %d, %Y %I:%M:%S"))
-                                            self.violationInfos['endDateAndTime'].append(datetime.fromtimestamp(float(int(time_sync()))).strftime("%A, %B %d, %Y %I:%M:%S"))   
-                                            save('violation', data=self.violationInfos)
+                                            #making the data a json type
+                                            data = {
+                                                            'violationID' : str(read('violation')+1),
+                                                            'vehicleID' : str(id),
+                                                            'roadName' : "San Felipe",
+                                                            'lengthOfViolation' : str(dtime.timedelta(seconds=sec)),
+                                                            'startDateAndTime' :datetime.fromtimestamp(self.vehicleInfos['startTime'][index]).strftime("%A, %B %d, %Y %I:%M:%S"),
+                                                            'endDateAndTime' : datetime.fromtimestamp(float(int(time_sync()))).strftime("%A, %B %d, %Y %I:%M:%S")
+                                                        }
+                                            self.saveViolation(data) #calling the saveViolation Function to save the data to the database
                                         elif sec > 300: #exceed 5 mins
                                             col = (0,0,255)
                                         else:
@@ -332,11 +353,18 @@ class det:
                 video_getter.stop() 
                 t = tuple(x / self.seen * 1E3 for x in self.dt)  # speeds per image
                 LOGGER.info(f'Speed: %.1fms pre-process, %.1fms inference, %.1fms NMS, %.1fms deep sort update per image at shape {(1, 3, *self.imgsz)}. \nAverage speed of %.1fms per frame' % t)
-                raise StopIteration   
+                raise StopIteration        
                 
     def stop(self):
         self.stopped = True
-        
+    
+    def saveViolation(self,data):
+        headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+        print("violation 1")
+        print(data)
+        r = requests.post(url = baseURL + "/ViolationInsert",data=json.dumps(data),headers=headers)
+        print(r)
+
     # # Print results
     # t = tuple(x / seen * 1E3 for x in dt)  # speeds per image
     # LOGGER.info(f'Speed: %.1fms pre-process, %.1fms inference, %.1fms NMS, %.1fms deep sort update \

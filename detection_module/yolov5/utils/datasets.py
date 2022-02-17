@@ -176,7 +176,6 @@ class VideoGet:
         self.t.daemon = True # daemon threads run in background 
         self.frames = 0
 
-
     def start(self):    
         self.stopped = False
         self.t.start()
