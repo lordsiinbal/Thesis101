@@ -63,11 +63,12 @@ def ViolationInsert():
     violationInsert.violationID = data['violationID']
     violationInsert.vehicleID = data['vehicleID']
     violationInsert.roadName = data['roadName']
+    violationInsert.roadID = data['roadID']
     violationInsert.lengthOfViolation = data['lengthOfViolation']   
     violationInsert.startDateAndTime = data['startDateAndTime']
     violationInsert.endDateAndTime = data['endDateAndTime']    
     violationInsert.save()
-    return jsonify ({"violationID": violationInsert.violationID, "vehicleID": violationInsert.vehicleID,"roadName":violationInsert.roadName,"lengthOfViolation": violationInsert.lengthOfViolation, "startDateAndTime": violationInsert.startDateAndTime, "endDateAndTime": violationInsert.endDateAndTime})
+    return jsonify ({"violationID": violationInsert.violationID, "vehicleID": violationInsert.vehicleID,"roadName":violationInsert.roadName,"roadID":violationInsert.roadID,"lengthOfViolation": violationInsert.lengthOfViolation, "startDateAndTime": violationInsert.startDateAndTime, "endDateAndTime": violationInsert.endDateAndTime})
 
 @post.route('/PlaybackInsert', methods=['POST'])
 def PlaybackInsert():
