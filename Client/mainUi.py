@@ -239,8 +239,8 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
 
         r = requests.delete(url = baseURL + "/RoadDelete",json=data,headers=headers )
         print(r)
-        self.update
-        self.repaint
+        self.update()
+        self.repaint()
         # print (r.json())
 
 
@@ -482,6 +482,7 @@ class Controller:
     
     # function to call when the process of bg modelling and road extraction is done using thread
     def finishedInBGModelAndRoad(self):
+        
         self.roadImage, self.ROI =  self.bgAndRoad.bgImage,  self.bgAndRoad.ROI
         if self.roadImage is not NULL:
             self.roadLoad.closeWindow()
@@ -509,60 +510,83 @@ class Controller:
         self.windowRoadSettingUp=roadSettingUp()
         self.windowRoadSettingUp.screenLabel.connect(self.showScreenImage)
     def showFinishingUi(self):
-        self.windowFinishing=FinishingUi()
-        
-        # initialize detection
-        # loading for finishing 
-        # print(self.ROI)
-
-        try:
-            if self.road.flagRoad:
-                self.ROI = self.road.selectedROI
-                self.road.flagRoad = False
-                self.roadImage = cv.imread(self.road.selectedRoadImage)
-            
-        except:
-            #setting up the roadID 
-            self.roadPaint.close()
-            if self.road.dataRoadGlobal: #determining if the dataRoadGlobal is empty
-                roadIDLatest=str(self.road.dataRoadGlobal[len(self.road.dataRoadGlobal)-1]['roadID']).split("-")
-                print(roadIDLatest)
-                intRoadID=int(roadIDLatest[1]) + 1
-                roadID="R-" + str(intRoadID).zfill(7)
-                print(roadID)
+        if self.window.vidFile is not None: # hcheck if there's a current vid file
+            # initialize detection
+            try:
+                # fot btn confirm
+                if self.road.flagRoad:
+                    self.ROI = self.road.selectedROI
+                    try:
+                        # if detection is currently running
+                        self.initDet.det.dets.changeROI(self.road.selectedROI)
+                        self.window.label.setText(self.road.selectedRoadName)
+                        print('ROI has been changed in running confirm')
+                    except:
+                        # if it is not running, pass, then ruin code below
+                        self.windowFinishing=FinishingUi()
+                        pass
+                    self.road.flagRoad = False
+                    self.roadImage = cv.imread(self.road.selectedRoadImage)
                 
-            else:
-                type = 'road'
-                roadID = "R-000000"+str(read(type)+1)
-            print(self.ROI[0])
+            except:
+                # for btn new
+                self.roadPaint.close()
+                try:
+                    # if detection is currently running
+                    self.initDet.det.dets.changeROI(self.ROI)
+                    self.window.label.setText(self.roadPaint.roadNameValue)
+                    print('ROI has been changed in running new')
+                except:
+                    self.windowFinishing=FinishingUi()
+                    # if it is not running, pass then execute code below
+                    pass
+                #setting up the roadID
+                if self.road.dataRoadGlobal: #determining if the dataRoadGlobal is empty
+                    roadIDLatest=str(self.road.dataRoadGlobal[len(self.road.dataRoadGlobal)-1]['roadID']).split("-")
+                    print(roadIDLatest)
+                    intRoadID=int(roadIDLatest[1]) + 1
+                    roadID="R-" + str(intRoadID).zfill(7)
+                    print(roadID)
+                    
+                else:
+                    type = 'road'
+                    roadID = "R-000000"+str(read(type)+1)
+                print(self.ROI[0])
 
-            # serialized=[]
-            # for c in self.ROI:
-            #     serialized.append(json.dumps(c.tolist()))     
+                # serialized=[]
+                # for c in self.ROI:
+                #     serialized.append(json.dumps(c.tolist()))     
 
-            cv.imwrite("images/{}.jpg".format(roadID), self.roadImage) #writing the image with ROI to Client/images path
-            roadCapturedJPG = "images/"+roadID+".jpg"
-            #making the data a json type
-            data = {
-                'roadID' : roadID,
-                'roadName' : self.roadPaint.roadNameValue,
-                'roadCaptured' : roadCapturedJPG,
-                'roadBoundaryCoordinates' : pd.Series(self.ROI).to_json(orient='values')
-                # 
-            }  
-            self.saveRoad(data)
+                cv.imwrite("images/{}.jpg".format(roadID), self.roadImage) #writing the image with ROI to Client/images path
+                roadCapturedJPG = "images/"+roadID+".jpg"
+                #making the data a json type
+                data = {
+                    'roadID' : roadID,
+                    'roadName' : self.roadPaint.roadNameValue,
+                    'roadCaptured' : roadCapturedJPG,
+                    'roadBoundaryCoordinates' : pd.Series(self.ROI).to_json(orient='values')
+                    # 
+                }  
+                self.saveRoad(data)
 
 
-        
-        self.thread = QThread()
-        self.initDet = Worker(self)
-        self.initDet.moveToThread(self.thread)
-        self.thread.started.connect(self.initDet.initDet)
-        self.initDet.finished.connect(self.thread.quit)
-        self.thread.finished.connect(self.finishedInitDet) # execute when the task in thread is finised
-        self.thread.start()
-        print("started init det")
-
+            try:
+                if not self.initDet.det.dets.stopped:
+                    #if detection is running
+                    #do nothing since ROI has been changed above
+                    pass
+            except:
+                # if detection is not running
+                self.thread = QThread()
+                self.initDet = Worker(self)
+                self.initDet.moveToThread(self.thread)
+                self.thread.started.connect(self.initDet.initDet)
+                self.initDet.finished.connect(self.thread.quit)
+                self.thread.finished.connect(self.finishedInitDet) # execute when the task in thread is finised
+                self.thread.start()
+                print("started init det")
+        else:
+            ctypes.windll.user32.MessageBoxW(0, "Please insert a video first", "Empty Video file", 1)
     #this function will request post to save the data to the database
     def saveRoad(self,data):
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}

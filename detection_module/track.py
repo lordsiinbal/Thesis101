@@ -124,9 +124,9 @@ class det:
             bs = len(self.dataset)  # batch_size
         else:
             # getting the mask of roi
-            mask = np.zeros(shape, np.uint8)
-            cv2.drawContours(mask, roi, -1, (255,255,255), thickness= -1)
-            self.dataset = LoadImages(self.source, img_size=self.imgsz, stride=stride, auto=pt and not jit, mask = mask)
+            self.mask = np.zeros(shape, np.uint8)
+            cv2.drawContours(self.mask, roi, -1, (255,255,255), thickness= -1)
+            self.dataset = LoadImages(self.source, img_size=self.imgsz, stride=stride, auto=pt and not jit, mask = self.mask)
             bs = 1  # batch_size
         self.vid_path, self.vid_writer = [None] * bs, [None] * bs
 
@@ -144,6 +144,7 @@ class det:
         self.t11 = time_sync()
         self.opt = opt
         self.roi = roi
+        self.shape = shape
         self.num_processes = multiprocessing.cpu_count()
         self.t = Thread(target=self.detect, args=()) # use multiprocess instead of thread
         self.flag = False
@@ -291,11 +292,11 @@ class det:
                         else: # set the prev frame xy to current xy
                             self.PREV_XY = xy
                         self.dt[4] += t5 - tim
-                        LOGGER.info(f'Done. Read-frame: ({t1-tim:.3f}) YOLO:({t3 - t2:.3f}s), DeepSort:({t5 - t4:.3f}s), Stationary:({t9 - t8:.3f}s) Overall:({t5-tim:.3f}s)')
+                        # LOGGER.info(f'Done. Read-frame: ({t1-tim:.3f}) YOLO:({t3 - t2:.3f}s), DeepSort:({t5 - t4:.3f}s), Stationary:({t9 - t8:.3f}s) Overall:({t5-tim:.3f}s)')
 
                     else:
                         self.deepsort.increment_ages()
-                        LOGGER.info('No detections')
+                        # LOGGER.info('No detections')
 
                     # Stream results
                     im = annotator.result()
@@ -365,6 +366,12 @@ class det:
         r = requests.post(url = baseURL + "/ViolationInsert",data=json.dumps(data),headers=headers)
         print(r)
 
+
+    def changeROI(self, ROI):
+        self.roi = ROI
+        self.mask = np.zeros(self.shape, np.uint8)
+        cv2.drawContours(self.mask, self.roi, -1, (255,255,255), thickness= -1)
+        self.dataset.mask = self.mask
     # # Print results
     # t = tuple(x / seen * 1E3 for x in dt)  # speeds per image
     # LOGGER.info(f'Speed: %.1fms pre-process, %.1fms inference, %.1fms NMS, %.1fms deep sort update \
