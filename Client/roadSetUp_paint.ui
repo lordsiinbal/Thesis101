@@ -183,6 +183,9 @@ color:white;
           </item>
           <item>
            <widget class="QPushButton" name="btnDone">
+           <!-- <property name="enabled">
+                <bool>false</bool>
+            </property> -->
             <property name="minimumSize">
              <size>
               <width>125</width>

@@ -44,6 +44,7 @@ from deep_sort.deep_sort import DeepSort
 from records.dbProcess import save, read
 from Client.api import baseURL
 import requests
+from Client.mainUi import TableUi
 
 """Detection constructor, initializing detection models (yolo and deepsort)
     
@@ -244,14 +245,21 @@ class det:
                                         t = str(dtime.timedelta(seconds=sec))
                                         if sec == 10: # means 5 mins
                                             col = (0,0,255)
+                                            
+                                            # if TableUi.dataViolationGlobal: #determining if the dataRoadGlobal is empty
+                                            #     roadIDLatest=str(self.road.dataRoadGlobal[len(self.road.dataRoadGlobal)-1]['roadID']).split("-")
+                                            #     print(roadIDLatest)
+                                            #     intRoadID=int(roadIDLatest[1]) + 1
+                                            #     roadID="R-" + str(intRoadID).zfill(7)
+                                            #     print(roadID)
+                                                
+                                            # else:
+                                            #     type = 'road'
+                                            #     roadID = "R-000000"+str(read(type)+1)
+
+
                                             # save violation here
-                                            # self.violationInfos['violationID'].append(read('violation')+1)
-                                            # self.violationInfos['vehicleID'].append(id)
-                                            # self.violationInfos['roadName'].append('road name')
-                                            # self.violationInfos['lengthOfViolation'].append(str(dtime.timedelta(seconds=sec)))
-                                            # self.violationInfos['startDateAndTime'].append(datetime.fromtimestamp(self.vehicleInfos['startTime'][index]).strftime("%A, %B %d, %Y %I:%M:%S"))
-                                            # self.violationInfos['endDateAndTime'].append(datetime.fromtimestamp(float(int(time_sync()))).strftime("%A, %B %d, %Y %I:%M:%S"))   
-                                            # save('violation', data=self.violationInfos)
+                                            #making the data a json type
                                             data = {
                                                             'violationID' : str(read('violation')+1),
                                                             'vehicleID' : str(id),
@@ -260,7 +268,7 @@ class det:
                                                             'startDateAndTime' :datetime.fromtimestamp(self.vehicleInfos['startTime'][index]).strftime("%A, %B %d, %Y %I:%M:%S"),
                                                             'endDateAndTime' : datetime.fromtimestamp(float(int(time_sync()))).strftime("%A, %B %d, %Y %I:%M:%S")
                                                         }
-                                            self.saveViolation(data)
+                                            self.saveViolation(data) #calling the saveViolation Function to save the data to the database
                                         elif sec > 300: #exceed 5 mins
                                             col = (0,0,255)
                                         else:
