@@ -6,7 +6,6 @@ import json
 import ctypes
 import datetime as dtime
 from itertools import count
-import multiprocessing
 from queue import PriorityQueue
 from threading import local
 import threading
@@ -22,13 +21,17 @@ from PyQt5.QtWidgets import  QApplication,QFileDialog,QTableWidgetItem,QHeaderVi
 from PyQt5 import QtGui, QtCore
 from PyQt5.QtGui import QMovie
 from cv2 import QT_PUSH_BUTTON
+from flask import jsonify
 from matplotlib import widgets
 from PyQt5.QtCore import Qt,QDateTime,QDate,QTime,QTimer,QThread, pyqtSignal, pyqtSlot, QThreadPool
 import numpy
+from sklearn.feature_selection import SelectFpr
 from sympy import false
 from api import baseURL
 import requests 
-
+import pandas as pd
+from sys import *
+import cv2 as cv
 
 #NOTE: Si pag save kang road saka playback yaon igdi sa file, control F 'save road' saka 'save playback' ka nalang
 # si pag save kang violation nasa track.py sa detection_module control-F 'save violation' ka nalang ulit
@@ -92,9 +95,14 @@ class RoadSetUpPaint(QtWidgets.QMainWindow):
         uic.loadUi(PATH+'/roadSetUp_paint.ui', self)
         self.setWindowFlag(Qt.FramelessWindowHint)
         self.btnCancel.clicked.connect(self.close)#Button Cancel
-        self.btnDone.clicked.connect(self.loading)#mouse Event 
+        self.btnDone.clicked.connect(self.loading)#mouse Event
+
+        
     def loading(self):#funtion for loading 
+        self.roadNameValue=self.roadTextBox.text()
         self.switch_window.emit()
+
+        print(self.roadNameValue)
         self.close()
 
 class LogoutUi(QtWidgets.QWidget):#Logout Ui
@@ -120,9 +128,10 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
         self.btnNew.clicked.connect(self.switch_window.emit)    #Showing Draw road Ui
         self.btnCancel.clicked.connect(self.close)          #close window
         self.btnConfirm.clicked.connect(self.loading)       #Loading Ui
-        self.btnDelete.clicked.connect(self.drop)
+        self.btnDelete.clicked.connect(self.dropRoad)
         res = requests.get(url = baseURL + "/RoadFetchAll")
         data = res.json()
+        self.dataRoadGlobal = res.json()
         self.prevSelectedImage=NULL
         
         if ((len(data)%2)==0):
@@ -147,7 +156,7 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
             self.labelImage.setMouseTracking(True)
             self.labelImage.setFocusPolicy(QtCore.Qt.ClickFocus)
             self.labelImage.setText("") #emptying text 
-            self.labelImage.setPixmap(QtGui.QPixmap(str(data[len(data)-1]['roadCaptured'])))   #get show Image inside labelImage
+            self.labelImage.setPixmap(QtGui.QPixmap(PATH + "/" + str(data[len(data)-1]['roadCaptured'])))   #get show Image inside labelImage
             self.labelImage.setScaledContents(True)
             self.labelImage.setObjectName("label")  #set 
             self.verticalLayout.addWidget(self.labelImage)
@@ -180,7 +189,7 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
                     self.labelImage.setMouseTracking(True)
                     self.labelImage.setFocusPolicy(QtCore.Qt.ClickFocus)
                     self.labelImage.setText("") #emptying text 
-                    self.labelImage.setPixmap(QtGui.QPixmap(str(data[x]['roadCaptured'])))   #get show Image inside labelImage
+                    self.labelImage.setPixmap(QtGui.QPixmap(PATH + "/" + str( data[x]['roadCaptured'])))   #get show Image inside labelImage
                     self.labelImage.setScaledContents(True)
                     self.labelImage.setObjectName("label")  #set 
                     self.verticalLayout.addWidget(self.labelImage)
@@ -195,6 +204,12 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
    
 
     def loading(self):
+        self.flagRoad= True
+        
+        self.selectedROI= json.loads(self.selected['roadBoundaryCoordinates'])
+        self.selectedROI= numpy.asarray(self.selectedROI,dtype=numpy.int32)
+        self.selectedRoadImage  = self.selected['roadCaptured']
+        self.selectedRoadName = self.selected['roadName']
         self.settingUpRoad.emit()
         self.close()
  
@@ -214,15 +229,18 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
             "border:5px solid white;}\n")
         self.prevSelectedImage= x['roadID']
         self.selected = x
+        # print(x)
+        
 
-    def drop(self):
+    def dropRoad(self):
         a=str(self.selected['roadID'])
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
         data = {"roadID": a}
 
         r = requests.delete(url = baseURL + "/RoadDelete",json=data,headers=headers )
         print(r)
-        reload(RoadSetUp1)
+        self.update
+        self.repaint
         # print (r.json())
 
 
@@ -242,7 +260,7 @@ class TableUi(QtWidgets.QMainWindow):
 
         res = requests.get(url = baseURL + "/ViolationFetchAll")
         data = res.json()
-        
+        self.dataViolationGlobal = res.json()
         self.tableWidget.setRowCount(4) 
         self.tableWidget.setItem(0,0, QTableWidgetItem("Name"))
         self.tableWidget.setRowCount(len(data))
@@ -281,18 +299,18 @@ class TableUi(QtWidgets.QMainWindow):
             self.newBtnDelete.setIconSize(QtCore.QSize(14,15))
             self.tableWidget.setCellWidget(i,6,self.newBtnPlay)
             self.tableWidget.setCellWidget(i,7,self.newBtnDelete)
-            self.newBtnDelete.clicked.connect(lambda ch, i=i: self.drop(data[i]['violationID']))
+            self.newBtnDelete.clicked.connect(lambda ch, i=i: self.dropViolation(data[i]['violationID']))
             self.newBtnPlay.clicked.connect(lambda ch, i=i: self.buttonSome(i))
         self.btnDone.clicked.connect(self.close)
     
-    def drop(self,violation_ID):
+    def dropViolation(self,violation_ID):
         a=str(violation_ID)
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
         data = {"violationID": a}
 
         r = requests.delete(url = baseURL + "/ViolationDelete",json=data,headers=headers )
         print(r)
-        reload(TableUi)
+        self.update
 
     def buttonSome(self,i):
         print(i)
@@ -322,8 +340,6 @@ class MainUi(QtWidgets.QMainWindow):
 
 		# update the timer every second
         timer.start(1000)
-        self.roadKeys = ['roadId', 'roadName','roadCaptured', 'roadBoundaryCoordinates']
-        self.roadInfos = {k: [] for k in self.roadKeys}
         self.playbackKeys = ['playbackID', 'playbackVideo','duration', 'roadName', 'dateAndTime']
         self.playbackInfo = {k: [] for k in self.playbackKeys}
         
@@ -395,7 +411,13 @@ class MainUi(QtWidgets.QMainWindow):
         self.playbackInfo['duration'].append(duration)
         self.playbackInfo['roadName'].append('road name')
         self.playbackInfo['dateAndTime'].append(dtime.date.today())
-        save('playBack', self.playbackInfo) # saved to records/playBackDb.csv
+        # save('playBack', self.playbackInfo) # saved to records/playBackDb.csv
+        self.savePlayback(self.playbackInfo)
+
+    def savePlayback(self,data):
+        headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+        r = requests.post(url = baseURL + "/PlaybackInsert",data=json.dumps(data),headers=headers)
+        print(r)
         
         
 class welcome(QtWidgets.QWidget):
@@ -438,7 +460,7 @@ class Controller:
         self.road.switch_window.connect(self.show_RoadPaint) # for btn new
         # disable new if vidfile has value
         # # self.road.selectImage.connect(self.select)
-        self.road.settingUpRoad.connect(self.showSettingUproad) # for btn confirm new
+        self.road.settingUpRoad.connect(self.showFinishingUi) # for btn confirm new
         self.road.show()
     def show_RoadPaint(self):
         if self.window.vidFile is not None:
@@ -487,20 +509,50 @@ class Controller:
         self.windowRoadSettingUp=roadSettingUp()
         self.windowRoadSettingUp.screenLabel.connect(self.showScreenImage)
     def showFinishingUi(self):
-        self.roadPaint.close()
+        self.windowFinishing=FinishingUi()
         
         # initialize detection
-        self.windowFinishing=FinishingUi()# loading for finishing 
-        # save road to db here
-        # BUG: the saved arrays are separated by ... means the'yre too large
-        # roadImage and ROI are large arrays, dai ko aram if pag tg save sa db complete sya, sa csv kaya putol sya
-        
-        type = 'road'
-        self.window.roadInfos['roadId'].append(read(type)+1)
-        self.window.roadInfos['roadName'].append('something') # get the txt from textbox
-        self.window.roadInfos['roadCaptured'].append(self.roadImage) 
-        self.window.roadInfos['roadBoundaryCoordinates'].append(self.ROI)
-        save(type, self.window.roadInfos) # saved to records/roadDb.csv
+        # loading for finishing 
+        # print(self.ROI)
+
+        try:
+            if self.road.flagRoad:
+                self.ROI = self.road.selectedROI
+                self.road.flagRoad = False
+                self.roadImage = cv.imread(self.road.selectedRoadImage)
+            
+        except:
+            #setting up the roadID 
+            self.roadPaint.close()
+            if self.road.dataRoadGlobal: #determining if the dataRoadGlobal is empty
+                roadIDLatest=str(self.road.dataRoadGlobal[len(self.road.dataRoadGlobal)-1]['roadID']).split("-")
+                print(roadIDLatest)
+                intRoadID=int(roadIDLatest[1]) + 1
+                roadID="R-" + str(intRoadID).zfill(7)
+                print(roadID)
+                
+            else:
+                type = 'road'
+                roadID = "R-000000"+str(read(type)+1)
+            print(self.ROI[0])
+
+            # serialized=[]
+            # for c in self.ROI:
+            #     serialized.append(json.dumps(c.tolist()))     
+
+            cv.imwrite("images/{}.jpg".format(roadID), self.roadImage) #writing the image with ROI to Client/images path
+            roadCapturedJPG = "images/"+roadID+".jpg"
+            #making the data a json type
+            data = {
+                'roadID' : roadID,
+                'roadName' : self.roadPaint.roadNameValue,
+                'roadCaptured' : roadCapturedJPG,
+                'roadBoundaryCoordinates' : pd.Series(self.ROI).to_json(orient='values')
+                # 
+            }  
+            self.saveRoad(data)
+
+
         
         self.thread = QThread()
         self.initDet = Worker(self)
@@ -510,15 +562,24 @@ class Controller:
         self.thread.finished.connect(self.finishedInitDet) # execute when the task in thread is finised
         self.thread.start()
         print("started init det")
-        
+
+    #this function will request post to save the data to the database
+    def saveRoad(self,data):
+        headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+        r = requests.post(url = baseURL + "/RoadInsert",data=json.dumps(data),headers=headers)
+        print(r)
+
+
     # this function will be executed when finished initializing detection and tracking models
     def finishedInitDet(self):
         if self.initDet.det.dets.nflag:
             self.windowFinishing.closeWindow() # close loading
             print("finished initializing detection models")
-            
            
-            self.window.label.setText("San Felipe") # name of video
+            try:
+                self.window.label.setText(self.road.selectedRoadName)
+            except:
+                self.window.label.setText(self.roadPaint.roadNameValue)
             self.window.verticalLayout_11.addWidget(self.window.frameWatch)#removing center aligment of frameWatch
             self.window.btnAddVideo.hide()
             self.window.labelScreen.setMinimumSize(QtCore.QSize(0, 400))
