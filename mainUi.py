@@ -342,19 +342,36 @@ class MainUi(QtWidgets.QMainWindow):
         self.dateMonthYear.setDate(current_date)
 
     def activePlayback(self):
-        # self.w.initDet.det.dets.stop() # for now, stop detection, but main purpose of this is to continue detection and save and view the recorded
         try:
-            self.saveVid()
             self.w.initDet.det.dets.show_vid = False
-        except:
+            self.w.initDet.det.dets.stop()
+            self.saveVid()
+            # play playback video here
+            # creat a thread object for playing video
+            self.nthread = QThread()
+            self.getVid = videoGet(self.w)
+            self.getVid.moveToThread(self.nthread)
+            self.nthread.started.connect(self.getVid.run)
+            self.getVid.finished.connect(self.nthread.quit)
+            self.nthread.finished.connect(self.finishedPlayBack) # execute when the task in thread is finised
+            self.getVid.imgUpdate.connect(self.update_image)
+            self.nthread.start()
+        except Exception as er:
+            print(er)
             pass
-        # cv2.destroyAllWindows()
         self.stackedWidget.setCurrentWidget(self.playbackPage)
         self.btnWatch.setStyleSheet('background-color:none;border:none')
         self.btnPlayback.setStyleSheet("color:white;font-size:14px;background-color:#1D1F32;border-left:3px solid #678ADD;")
+    
+    def update_image(self, qim):
+        self.w.window.labelScreen.setPixmap(qim)
+        
+    def finishedPlayBack(self):
+        print('finished playing video')
         
     def activeWatch(self):
         try:
+            self.getVid.stop()
             self.w.initDet.det.dets.show_vid = True
         except:
             pass
@@ -430,13 +447,13 @@ class Controller:
             self.roadLoad = roadSettingUp() # for loading setting up road
             
             # run extraction of bg and road
-            self.thread = QThread()
+            self.roadThread = QThread()
             self.bgAndRoad = Worker(self)
-            self.bgAndRoad.moveToThread(self.thread)
-            self.thread.started.connect(self.bgAndRoad.runBG)
-            self.bgAndRoad.finished.connect(self.thread.quit)
-            self.thread.finished.connect(self.finishedInBGModelAndRoad) # execute when the task in thread is finised
-            self.thread.start()
+            self.bgAndRoad.moveToThread(self.roadThread)
+            self.roadThread.started.connect(self.bgAndRoad.runBG)
+            self.bgAndRoad.finished.connect(self.roadThread.quit)
+            self.roadThread.finished.connect(self.finishedInBGModelAndRoad) # execute when the task in thread is finised
+            self.roadThread.start()
             print("started")
         else:
             ctypes.windll.user32.MessageBoxW(0, "Please insert a video first", "Empty Video file", 1)
@@ -584,6 +601,44 @@ class Worker(QtCore.QObject):
                 print(' ', end='\r')
             
         self.finished.emit()
+        
+        
+
+# class for video playback getting
+class videoGet(QtCore.QObject):
+    finished = QtCore.pyqtSignal()
+    imgUpdate = QtCore.pyqtSignal(QtGui.QPixmap)
+    
+    def __init__(self, window):
+        super(videoGet, self).__init__()
+        self.w = window
+        vid = window.initDet.det.dets.vid_path
+        print(vid)
+        self.stream = cv2.VideoCapture(vid)
+        (self.grabbed, self.frame) = self.stream.read()
+        self.fps = int(self.stream.get(cv2.CAP_PROP_FPS))
+        self.stopped = False
+     
+        
+    def run(self):
+         while not self.stopped:
+            if not self.grabbed:
+                self.stop()
+            else:
+                (self.grabbed, self.frame) = self.stream.read()
+                cv2.imshow('s', self.frame)
+                cv2.waitKey(1)
+                time.sleep((1.0/(self.fps)))
+                QtImg = cvImgtoQtImg(self.frame)# Convert frame data to PyQt image format
+                qim = QtGui.QPixmap.fromImage(QtImg)
+                self.imgUpdate.emit(qim)
+  
+    def stop(self):
+        self.stopped = True     
+            
+    
+        
+    
 
 if __name__ == '__main__':
     app=QApplication(sys.argv)
