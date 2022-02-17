@@ -1,5 +1,12 @@
 # Folders
 thread/
+__pycache__/
+Background_subtraction/__pycache__/
+Client/__pycache__/
+detection_module/__pycache__/
+records/__pycache__/
+Road_Detection/__pycache__/
+Server/app/__pycache__/
 
 
 # Files
@@ -9,5 +16,6 @@ thread/
 *.avi
 *.so
 *.txt
+*.pyc
 
 !requirements.txt
