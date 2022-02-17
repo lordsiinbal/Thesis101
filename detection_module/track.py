@@ -158,6 +158,7 @@ class det:
         for frame_idx, (path, img, im0s, vid_cap, s, frm_id, vid_fps, video_getter, im, ret, tim) in enumerate(self.dataset):
             if not self.stopped:
                 self.vid_fps = vid_fps
+                self.frm_id = frm_id
                 t1 = time_sync()
                 img = torch.from_numpy(img).to(self.device)
                 img = img.half() if self.half else img.float()  # uint8 to fp16/32
@@ -316,7 +317,7 @@ class det:
                             if vid_cap:  # video
                                 #calculating fps
                                 # fps = 19
-                                fps = np.ceil((1/(t0-self.t11))*1.13459)
+                                fps = np.ceil((1/(t0-self.t11))*1.5)
                                 
                                 # print(vid_fps)
                                 w = int(im.shape[1])
