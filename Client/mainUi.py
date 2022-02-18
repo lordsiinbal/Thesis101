@@ -160,12 +160,16 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
         # self.dataRoadGlobal = res.json()
         
     # execute when all roads were fetched 
-    def getAllRoad(self, response):
+    def getAllRoad(self, response, f = None):
         self.roadThread.quit()
         self.loadingRetrieve.closeWindow()
         print('done retrieve')
-        self.data = response.json()
-        self.dataRoadGlobal = response.json()
+        if f:
+            self.data = response
+            self.dataRoadGlobal = response
+        else:
+            self.data = response.json()
+            self.dataRoadGlobal = response.json()
         self.prevSelectedImage=NULL
         
         if ((len(self.data)%2)==0):
@@ -287,10 +291,15 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
     
     def finishedDelRoad(self, response):
         self.delThread.quit()
+        # self.setParent(None)# remove contents
+        e = "{}"
+        j = json.loads(e)
+        self.getAllRoad(j, f=True) # remove first contents
+        response = response.json()
+        self.update()
+        self.getAllRoad(response, f=True) # add new roads
         self.loadData.closeWindow()
-        self.setParent(None)# remove contents
-        self.getAllRoad(response)
-        
+        # super(RoadSetUp1, self).__init__()
         
 
 
@@ -320,11 +329,15 @@ class TableUi(QtWidgets.QMainWindow):
         # data = res.json()
         # self.dataViolationGlobal = res.json()
     
-    def finishedGetVio(self, response):
+    def finishedGetVio(self, response, f = None):
         self.vioThread.quit()
         self.loadData.closeWindow()
-        self.data = response.json()
-        self.dataViolationGlobal = response.json()
+        if f:
+            self.data = response
+            self.dataViolationGlobal = response
+        else:
+            self.data = response.json()
+            self.dataViolationGlobal = response.json()
         self.tableWidget.setRowCount(4) 
         self.tableWidget.setItem(0,0, QTableWidgetItem("Name"))
         self.tableWidget.setRowCount(len(self.data))
@@ -386,8 +399,13 @@ class TableUi(QtWidgets.QMainWindow):
         
     def finishedDelViolation(self, response):
         self.delThread.quit()
+        e = "{}"
+        j = json.loads(e)
+        self.finishedGetVio(j, f =True) # remove first contents
+        response = response.json()
+        self.finishedGetVio(response, f =True) # add new roads
         self.loadData.closeWindow()
-        self.finishedGetVio(response)
+        # self.finishedGetVio(response)
         # self.update()
         # self.repaint()
 
@@ -578,7 +596,7 @@ class Controller:
         if self.roadImage is not NULL:
             self.roadLoad.closeWindow()
             self.roadPaint=RoadSetUpPaint()
-            self.roadPaint.switch_window.connect(self.showFinishingUi) # for btn confirm
+            self.roadPaint.switch_window.connect(self.showFinishingUi) # for btn done
             self.roadPaint.show()
         else:
             print("ERROR: An error occure while extracting the road and background model")
@@ -620,7 +638,7 @@ class Controller:
                     self.road.flagRoad = False
                     self.roadImage = cv.imread(self.road.selectedRoadImage)
                 
-            except:
+            except AttributeError:
                 # for btn new
                 self.roadPaint.close()
                 try:
@@ -649,8 +667,8 @@ class Controller:
                 # for c in self.ROI:
                 #     serialized.append(json.dumps(c.tolist()))     
 
-                cv.imwrite("images/{}.jpg".format(roadID), self.roadImage) #writing the image with ROI to Client/images path
-                roadCapturedJPG = "images/"+roadID+".jpg"
+                cv.imwrite(PATH+"/images/{}.jpg".format(roadID), self.roadImage) #writing the image with ROI to Client/images path
+                roadCapturedJPG = PATH+"/images/"+roadID+".jpg"
                 #making the data a json type
                 data = {
                     'roadID' : roadID,
@@ -666,8 +684,10 @@ class Controller:
                 if not self.initDet.det.dets.stopped:
                     #if detection is running
                     #do nothing since ROI has been changed above
+                    print('det is running')
                     pass
             except:
+                print('det is not running')
                 # if detection is not running
                 self.thread = QThread()
                 self.initDet = Worker(self)
@@ -683,10 +703,10 @@ class Controller:
     def saveRoad(self,data):
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
         self.saveRoadThread = QThread()
-        self.saveRoad = ProcessData(action= '/RoadInsert', type=2, d= json.dumps(data), h = headers )
-        self.saveRoad.moveToThread(self.saveRoadThread)
-        self.saveRoadThread.started.connect(self.saveRoad.ret)
-        self.saveRoad.finished.connect(self.finishedSaveRoad)
+        self.sRoad = ProcessData(action= '/RoadInsert', type=2, d= json.dumps(data), h = headers )
+        self.sRoad.moveToThread(self.saveRoadThread)
+        self.saveRoadThread.started.connect(self.sRoad.ret)
+        self.sRoad.finished.connect(self.finishedSaveRoad)
         self.saveRoadThread.start()
         self.loadData = ProcessingDataUi()
         # r = requests.post(url = baseURL + "/RoadInsert",data=json.dumps(data),headers=headers)
@@ -757,7 +777,7 @@ class Worker(QtCore.QObject):
         self.vid = self.w.window.vidFile     
 
     def runBG(self):
-        self.bgImage, self.ROI = processRoad(self.vid)
+        self.bgImage, self.ROI = processRoad(self.vid, PATH)
         self.finished.emit()
         
     def initDet(self):
