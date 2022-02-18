@@ -10,6 +10,8 @@ from queue import PriorityQueue
 from threading import local
 import threading
 from tkinter import Image
+from functools import singledispatch
+from typing import Any, overload
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtWidgets import QFileDialog
 import sys
@@ -21,7 +23,7 @@ from PyQt5.QtWidgets import  QApplication,QFileDialog,QTableWidgetItem,QHeaderVi
 from PyQt5 import QtGui, QtCore
 from PyQt5.QtGui import QMovie
 from cv2 import QT_PUSH_BUTTON
-from flask import jsonify
+from flask import Response, jsonify
 from matplotlib import widgets
 from PyQt5.QtCore import Qt,QDateTime,QDate,QTime,QTimer,QThread, pyqtSignal, pyqtSlot, QThreadPool
 import numpy
@@ -72,6 +74,22 @@ class FinishingUi(QtWidgets.QWidget):#Finishing Loading UI
     def closeWindow(self):
         self.screenLabel.emit()#calling screenlabel 
         self.close()#closing Widget
+        
+class ProcessingDataUi(QtWidgets.QWidget):#Retrieving Loading UI
+    screenLabel=QtCore.pyqtSignal()
+    def __init__(self):
+        super(ProcessingDataUi, self).__init__()
+        uic.loadUi(PATH+'/processingDataUi.ui', self)
+        self.setWindowFlag(Qt.FramelessWindowHint)
+        self.animation=QMovie(PATH+'/icon/loadingAnimated.gif')#animation Logo
+        self.loading.setMovie(self.animation)
+        self.animation.start()#animation Statrt
+        self.show()
+        QtCore.QTimer.singleShot(500000, self.closeWindow)#run the window for 5 mins
+    def closeWindow(self):
+        self.screenLabel.emit()#calling screenlabel 
+        self.close()#closing Widget
+
 
 
 class roadSettingUp(QtWidgets.QWidget):#road Setting Up Loading
@@ -129,20 +147,36 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
         self.btnCancel.clicked.connect(self.close)          #close window
         self.btnConfirm.clicked.connect(self.loading)       #Loading Ui
         self.btnDelete.clicked.connect(self.dropRoad)
-        res = requests.get(url = baseURL + "/RoadFetchAll")
-        data = res.json()
-        self.dataRoadGlobal = res.json()
+        # use threading when retrieving data so that gui won't freeze if there's a slow network bandwith
+        self.roadThread = QThread()
+        self.roadRet = ProcessData(action= '/RoadFetchAll', type=1)
+        self.roadRet.moveToThread(self.roadThread)
+        self.roadThread.started.connect(self.roadRet.ret)
+        self.roadRet.finished.connect(self.getAllRoad)
+        self.roadThread.start()
+        self.loadingRetrieve = ProcessingDataUi()
+        
+        # data = res.json()
+        # self.dataRoadGlobal = res.json()
+        
+    # execute when all roads were fetched 
+    def getAllRoad(self, response):
+        self.roadThread.quit()
+        self.loadingRetrieve.closeWindow()
+        print('done retrieve')
+        self.data = response.json()
+        self.dataRoadGlobal = response.json()
         self.prevSelectedImage=NULL
         
-        if ((len(data)%2)==0):
-            row = self.roadCard(data,len(data))
+        if ((len(self.data)%2)==0):
+            row = self.roadCard(self.data,len(self.data))
         else:
             
-            length=len(data)-1
+            length=len(self.data)-1
             print(length)
-            row = self.roadCard(data,length)
+            row = self.roadCard(self.data,length)
             self.frame= QtWidgets.QFrame(self.mainArea)    #create a Qframe for container
-            self.frame.setObjectName(str(data[len(data)-1]['roadID']))       #set Qframe objectName or class
+            self.frame.setObjectName(str(self.data[len(self.data)-1]['roadID']))       #set Qframe objectName or class
             self.objName=self.frame.objectName() 
             #print(self.objName)
             self.frame.setMaximumSize(QtCore.QSize(301, 1000))  #maximum size of container
@@ -156,17 +190,19 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
             self.labelImage.setMouseTracking(True)
             self.labelImage.setFocusPolicy(QtCore.Qt.ClickFocus)
             self.labelImage.setText("") #emptying text 
-            self.labelImage.setPixmap(QtGui.QPixmap(PATH + "/" + str(data[len(data)-1]['roadCaptured'])))   #get show Image inside labelImage
+            self.labelImage.setPixmap(QtGui.QPixmap(PATH + "/" + str(self.data[len(self.data)-1]['roadCaptured'])))   #get show Image inside labelImage
             self.labelImage.setScaledContents(True)
             self.labelImage.setObjectName("label")  #set 
             self.verticalLayout.addWidget(self.labelImage)
             self.label = QtWidgets.QLabel(self.frame)
-            self.label.setText(str(data[len(data)-1]['roadName']))#Assign file label
-            self.labelImage.mousePressEvent =lambda event, data=data: self.selectImage(event,data[len(data)-1])  #mouse Event 
+            self.label.setText(str(self.data[len(self.data)-1]['roadName']))#Assign file label
+            self.labelImage.mousePressEvent =lambda event, data=self.data: self.selectImage(event,data[len(data)-1])  #mouse Event 
             self.verticalLayout.addWidget(self.label, 0, QtCore.Qt.AlignHCenter|QtCore.Qt.AlignTop)
             self.gridLayout.addWidget(self.frame,row+1,0,1,1) #added the frame inside grid layout   \
-            
-                
+        
+        # show window here if done
+        self.show()
+        
     
     def roadCard(self,data,length):
         print(length)
@@ -237,11 +273,25 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
         data = {"roadID": a}
 
-        r = requests.delete(url = baseURL + "/RoadDelete",json=data,headers=headers )
-        print(r)
-        self.update()
-        self.repaint()
+        self.delThread = QThread()
+        self.delRoad = ProcessData(action= '/RoadDelete', type=3, d= data, h = headers )
+        self.delRoad.moveToThread(self.delThread)
+        self.delThread.started.connect(self.delRoad.ret)
+        self.delRoad.finished.connect(self.finishedDelRoad)
+        self.delThread.start()
+        self.loadData = ProcessingDataUi()
+        
+        # r = requests.delete(url = baseURL + "/RoadDelete",json=data,headers=headers )
+        # print(r)
         # print (r.json())
+    
+    def finishedDelRoad(self, response):
+        self.delThread.quit()
+        self.loadData.closeWindow()
+        self.setParent(None)# remove contents
+        self.getAllRoad(response)
+        
+        
 
 
 #violation Record table
@@ -257,25 +307,39 @@ class TableUi(QtWidgets.QMainWindow):
         self.tableWidget.horizontalHeader().setSectionResizeMode(
             QHeaderView.Stretch)
         _translate = QtCore.QCoreApplication.translate
-
-        res = requests.get(url = baseURL + "/ViolationFetchAll")
-        data = res.json()
-        self.dataViolationGlobal = res.json()
+        
+        self.vioThread = QThread()
+        self.getVio = ProcessData(action= '/ViolationFetchAll', type=1)
+        self.getVio.moveToThread(self.vioThread)
+        self.vioThread.started.connect(self.getVio.ret)
+        self.getVio.finished.connect(self.finishedGetVio)
+        self.vioThread.start()
+        self.loadData = ProcessingDataUi()
+        
+        # res = requests.get(url = baseURL + "/ViolationFetchAll")
+        # data = res.json()
+        # self.dataViolationGlobal = res.json()
+    
+    def finishedGetVio(self, response):
+        self.vioThread.quit()
+        self.loadData.closeWindow()
+        self.data = response.json()
+        self.dataViolationGlobal = response.json()
         self.tableWidget.setRowCount(4) 
         self.tableWidget.setItem(0,0, QTableWidgetItem("Name"))
-        self.tableWidget.setRowCount(len(data))
-        for i in range(len(data)):
-            self.tableWidget.setItem(i,0, QTableWidgetItem(data[i]['violationID']))
+        self.tableWidget.setRowCount(len(self.data))
+        for i in range(len(self.data)):
+            self.tableWidget.setItem(i,0, QTableWidgetItem(self.data[i]['violationID']))
             self.tableWidget.item(i,0).setTextAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
-            self.tableWidget.setItem(i,1, QTableWidgetItem(data[i]['vehicleID']))
+            self.tableWidget.setItem(i,1, QTableWidgetItem(self.data[i]['vehicleID']))
             self.tableWidget.item(i,1).setTextAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
-            self.tableWidget.setItem(i,2, QTableWidgetItem(data[i]['roadName']))
+            self.tableWidget.setItem(i,2, QTableWidgetItem(self.data[i]['roadName']))
             self.tableWidget.item(i,2).setTextAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
-            self.tableWidget.setItem(i,3, QTableWidgetItem(data[i]['lengthOfViolation']))
+            self.tableWidget.setItem(i,3, QTableWidgetItem(self.data[i]['lengthOfViolation']))
             self.tableWidget.item(i,3).setTextAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
-            self.tableWidget.setItem(i,4, QTableWidgetItem(data[i]['lengthOfViolation']))
+            self.tableWidget.setItem(i,4, QTableWidgetItem(self.data[i]['lengthOfViolation']))
             self.tableWidget.item(i,4).setTextAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
-            self.tableWidget.setItem(i,5, QTableWidgetItem(data[i]['lengthOfViolation']))
+            self.tableWidget.setItem(i,5, QTableWidgetItem(self.data[i]['lengthOfViolation']))
             self.tableWidget.item(i,5).setTextAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
             # for j in range(5):
             #     self.tableWidget.setItem(i,j, QTableWidgetItem(data[i][j]))
@@ -299,18 +363,33 @@ class TableUi(QtWidgets.QMainWindow):
             self.newBtnDelete.setIconSize(QtCore.QSize(14,15))
             self.tableWidget.setCellWidget(i,6,self.newBtnPlay)
             self.tableWidget.setCellWidget(i,7,self.newBtnDelete)
-            self.newBtnDelete.clicked.connect(lambda ch, i=i: self.dropViolation(data[i]['violationID']))
+            self.newBtnDelete.clicked.connect(lambda ch, i=i: self.dropViolation(self.data[i]['violationID']))
             self.newBtnPlay.clicked.connect(lambda ch, i=i: self.buttonSome(i))
         self.btnDone.clicked.connect(self.close)
+        self.show()
     
     def dropViolation(self,violation_ID):
         a=str(violation_ID)
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
         data = {"violationID": a}
-
-        r = requests.delete(url = baseURL + "/ViolationDelete",json=data,headers=headers )
-        print(r)
-        self.update
+        
+        self.delThread = QThread()
+        self.delVio = ProcessData(action= '/ViolationDelete', type=3, d = data, h = headers)
+        self.delVio.moveToThread(self.delThread)
+        self.delThread.started.connect(self.delVio.ret)
+        self.delVio.finished.connect(self.finishedDelViolation)
+        self.delThread.start()
+        self.loadData = ProcessingDataUi()
+        # r = requests.delete(url = baseURL + "/ViolationDelete",json=data,headers=headers )
+        # print(r)
+        # self.update
+        
+    def finishedDelViolation(self, response):
+        self.delThread.quit()
+        self.loadData.closeWindow()
+        self.finishedGetVio(response)
+        # self.update()
+        # self.repaint()
 
     def buttonSome(self,i):
         print(i)
@@ -416,9 +495,20 @@ class MainUi(QtWidgets.QMainWindow):
 
     def savePlayback(self,data):
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-        r = requests.post(url = baseURL + "/PlaybackInsert",data=json.dumps(data),headers=headers)
-        print(r)
         
+        self.saveThread = QThread()
+        self.savePlay = ProcessData(action= '/PlaybackInsert', type=2, d= json.dumps(data), h = headers )
+        self.savePlay.moveToThread(self.saveThread)
+        self.saveThread.started.connect(self.savePlay.ret)
+        self.savePlay.finished.connect(self.finishedSavePlay)
+        self.saveThread.start()
+        self.loadData = ProcessingDataUi()
+        # r = requests.post(url = baseURL + "/PlaybackInsert",data=json.dumps(data),headers=headers)
+        # print(r)
+    
+    def finishedSavePlay(self, _):
+        self.saveThread.quit()
+        self.loadData.closeWindow()
         
 class welcome(QtWidgets.QWidget):
     switch_window = QtCore.pyqtSignal()
@@ -453,7 +543,7 @@ class Controller:
        
     def showTable(self):
         self.newWin=TableUi()
-        self.newWin.show()
+        # self.newWin.show()
     def showRoadSetup(self):
         # before showing road, execute background modelling and automatic road detection, must be loading
         self.road = RoadSetUp1(self)
@@ -461,7 +551,6 @@ class Controller:
         # disable new if vidfile has value
         # # self.road.selectImage.connect(self.select)
         self.road.settingUpRoad.connect(self.showFinishingUi) # for btn confirm new
-        self.road.show()
     def show_RoadPaint(self):
         if self.window.vidFile is not None:
             self.road.close()
@@ -477,6 +566,7 @@ class Controller:
             self.roadThread.finished.connect(self.finishedInBGModelAndRoad) # execute when the task in thread is finised
             self.roadThread.start()
             print("started")
+            print(threading.active_count())
         else:
             ctypes.windll.user32.MessageBoxW(0, "Please insert a video first", "Empty Video file", 1)
     
@@ -503,6 +593,7 @@ class Controller:
             self.initDet.det.dets.stop()
         except:
             pass
+        self.window.vidFile = None
         self.window.close()
         self.logout_Ui.close()
         self.login.show()
@@ -590,10 +681,19 @@ class Controller:
     #this function will request post to save the data to the database
     def saveRoad(self,data):
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-        r = requests.post(url = baseURL + "/RoadInsert",data=json.dumps(data),headers=headers)
-        print(r)
+        self.saveRoadThread = QThread()
+        self.saveRoad = ProcessData(action= '/RoadInsert', type=2, d= json.dumps(data), h = headers )
+        self.saveRoad.moveToThread(self.saveRoadThread)
+        self.saveRoadThread.started.connect(self.saveRoad.ret)
+        self.saveRoad.finished.connect(self.finishedSaveRoad)
+        self.saveRoadThread.start()
+        self.loadData = ProcessingDataUi()
+        # r = requests.post(url = baseURL + "/RoadInsert",data=json.dumps(data),headers=headers)
+        # print(r)
 
-
+    def finishedSaveRoad(self,_):
+        self.saveRoadThread.quit()
+        self.loadData.closeWindow()
     # this function will be executed when finished initializing detection and tracking models
     def finishedInitDet(self):
         if self.initDet.det.dets.nflag:
@@ -671,6 +771,7 @@ class Worker(QtCore.QObject):
         while self.w.initDet.det.dets.f == 0:
             print('wait', end="\r")
             pass
+        print(threading.active_count())
         while not self.w.initDet.det.dets.stopped:
             if self.w.initDet.det.dets.show_vid:
                 if f == self.w.initDet.det.dets.f:
@@ -722,8 +823,44 @@ class videoGet(QtCore.QObject):
         self.stopped = True     
             
     
-        
+class ProcessData(QtCore.QObject):
+    """
+    For retrieving \n
+    action = 'RoadFetchAll' / 'RoadDelete'/ etc\n
+    type = 1: retrieve, 2: post, 3: delete\n
+    \n
+    For posting or deleting \n
+    action = 'RoadFetchAll' / 'RoadDelete'/ etc\n
+    type = 1: retrieve, 2: post, 3: delete\n
+    d = data(json)\n
+    h = headers\n
+    """
+    finished = QtCore.pyqtSignal(requests.models.Response)
     
+    #overloading constructor
+    def __init__(self, action, type, d = None, h = None):
+        super(ProcessData, self).__init__()
+        if d and h:
+            self.data = d
+            self.headers = h
+        self.action = action
+        self.type = type
+        
+    def ret(self):
+        if self.type == 1: # retrieve
+            response = requests.get(url = baseURL + self.action)
+            self.finished.emit(response)
+        if self.type == 2: # post
+            response = requests.get(url = baseURL + self.action)
+            self.finished.emit(response)
+            
+        if self.type == 3: # delete
+            response = requests.delete(url = baseURL + self.action,json=self.data,headers=self.headers )
+            self.finished.emit(response)
+            
+        # emit result when done
+        
+            
 
 if __name__ == '__main__':
     app=QApplication(sys.argv)
