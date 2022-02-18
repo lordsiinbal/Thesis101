@@ -8,7 +8,6 @@ from winreg import QueryInfoKey
 
 
 # IMAGE, ROI = None, None
-qInfo = {'image': None, 'roi':None}
 
 def changePath():
 
@@ -22,13 +21,14 @@ def changePath():
     sys.path.append(os.getcwd())
 
 def processRoad(vid):
+    qInfo = {'image': None, 'roi':None}
     manager = multiprocessing.Manager()
     queue = manager.Queue()
     queue.put(qInfo)
     p = Process(target=getBgModelAndRoad, args=(vid, queue,))
     p.start()
     p.join()
-
+    qInfo = queue.get()
     return qInfo['image'], qInfo['roi']
 
 def getBgModelAndRoad(vid, queue):
