@@ -851,11 +851,11 @@ class ProcessData(QtCore.QObject):
             response = requests.get(url = baseURL + self.action)
             self.finished.emit(response)
         if self.type == 2: # post
-            response = requests.get(url = baseURL + self.action)
+            response = requests.post(url = baseURL + self.action, data=self.data,headers=self.headers)
             self.finished.emit(response)
             
         if self.type == 3: # delete
-            response = requests.delete(url = baseURL + self.action,json=self.data,headers=self.headers )
+            response = requests.delete(url = baseURL + self.action, json=self.data,headers=self.headers )
             self.finished.emit(response)
             
         # emit result when done
