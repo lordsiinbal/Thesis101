@@ -8,7 +8,6 @@ from winreg import QueryInfoKey
 
 
 # IMAGE, ROI = None, None
-
 def changePath():
 
     import sys
@@ -20,18 +19,18 @@ def changePath():
     # add to sys path
     sys.path.append(os.getcwd())
 
-def processRoad(vid):
+def processRoad(vid, p):
     qInfo = {'image': None, 'roi':None}
     manager = multiprocessing.Manager()
     queue = manager.Queue()
     queue.put(qInfo)
-    p = Process(target=getBgModelAndRoad, args=(vid, queue,))
+    p = Process(target=getBgModelAndRoad, args=(vid, queue, p,))
     p.start()
     p.join()
     qInfo = queue.get()
     return qInfo['image'], qInfo['roi']
 
-def getBgModelAndRoad(vid, queue):
+def getBgModelAndRoad(vid, queue, p):
     # changePath()
     import cv2 as cv
     # from Yolov5_DeepSort_Pytorch.track import detect
@@ -53,7 +52,7 @@ def getBgModelAndRoad(vid, queue):
     t2 = time.time()
     print('Time it took to Extract Road from the Background Model: %.3fs' % (t2-t1))
     # cv.imshow("road", road_surface)
-    cv.imwrite("images/road.jpg", IMAGE)
+    cv.imwrite(p+"/images/road.jpg", IMAGE)
     ret['image'] = IMAGE
     ret['roi'] = ROI
     queue.put(ret)
