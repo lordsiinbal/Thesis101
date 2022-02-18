@@ -25,7 +25,7 @@ from PyQt5.QtGui import QMovie
 from cv2 import QT_PUSH_BUTTON
 from flask import Response, jsonify
 from matplotlib import widgets
-from PyQt5.QtCore import Qt,QDateTime,QDate,QTime,QTimer,QThread, pyqtSignal, pyqtSlot, QThreadPool
+from PyQt5.QtCore import Qt,QDateTime,QDate,QTime,QTimer,QThread, pyqtSignal, pyqtSlot, QThreadPool, QProcess
 import numpy
 from sklearn.feature_selection import SelectFpr
 from sympy import false
@@ -44,7 +44,7 @@ import cv2 as cv
 import sys
 import os
 sys.path.append("../")
-from main import getBgModelAndRoad, detection # main function to run detection
+from main import processRoad, detection # main function to run detection
 from records.dbProcess import save, read
 
 PATH = os.getcwd()
@@ -533,6 +533,7 @@ class Controller:
         self.login =welcome()
         self.login.switch_window.connect(self.show_main)
         self.login.show()
+        
     def show_main(self):
         self.window = MainUi(self)
         self.window.switch_window.connect(self.showTable)
@@ -756,7 +757,7 @@ class Worker(QtCore.QObject):
         self.vid = self.w.window.vidFile     
 
     def runBG(self):
-        self.bgImage, self.ROI = getBgModelAndRoad(self.vid)
+        self.bgImage, self.ROI = processRoad(self.vid)
         self.finished.emit()
         
     def initDet(self):
