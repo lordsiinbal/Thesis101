@@ -70,7 +70,7 @@ class FinishingUi(QtWidgets.QWidget):#Finishing Loading UI
         self.loading.setMovie(self.animation)
         self.animation.start()#animation Statrt
         self.show()
-        QtCore.QTimer.singleShot(500000, self.closeWindow)#run the window for 5 mins
+        QtCore.QTimer.singleShot(numpy.iinfo(numpy.int32).max, self.closeWindow)#run the window for max in value
     def closeWindow(self):
         self.screenLabel.emit()#calling screenlabel 
         self.close()#closing Widget
@@ -85,7 +85,7 @@ class ProcessingDataUi(QtWidgets.QWidget):#Retrieving Loading UI
         self.loading.setMovie(self.animation)
         self.animation.start()#animation Statrt
         self.show()
-        QtCore.QTimer.singleShot(500000, self.closeWindow)#run the window for 5 mins
+        QtCore.QTimer.singleShot(numpy.iinfo(numpy.int32).max, self.closeWindow)#run the window for max in value
     def closeWindow(self):
         self.screenLabel.emit()#calling screenlabel 
         self.close()#closing Widget
@@ -102,7 +102,7 @@ class roadSettingUp(QtWidgets.QWidget):#road Setting Up Loading
         self.loading.setMovie(self.animation)
         self.animation.start()#start Animation
         self.show()
-        QtCore.QTimer.singleShot(500000, self.closeWindow)#run the window for 5 mins
+        QtCore.QTimer.singleShot(numpy.iinfo(numpy.int32).max, self.closeWindow)#run the window for 5 mins
     def closeWindow(self):
         self.screenLabel.emit()
         self.close()#cloase Window
@@ -120,7 +120,7 @@ class RoadSetUpPaint(QtWidgets.QMainWindow):
         self.roadNameValue=self.roadTextBox.text()
         self.switch_window.emit()
 
-        print(self.roadNameValue)
+        # print(self.roadNameValue)
         self.close()
 
 class LogoutUi(QtWidgets.QWidget):#Logout Ui
@@ -163,7 +163,7 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
     def getAllRoad(self, response, f = None):
         self.roadThread.quit()
         self.loadingRetrieve.closeWindow()
-        print('done retrieve')
+        # print('done retrieve')
         if f:
             self.data = response
             self.dataRoadGlobal = response
@@ -177,7 +177,7 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
         else:
             
             length=len(self.data)-1
-            print(length)
+            # print(length)
             row = self.roadCard(self.data,length)
             self.frame= QtWidgets.QFrame(self.mainArea)    #create a Qframe for container
             self.frame.setObjectName(str(self.data[len(self.data)-1]['roadID']))       #set Qframe objectName or class
@@ -194,7 +194,7 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
             self.labelImage.setMouseTracking(True)
             self.labelImage.setFocusPolicy(QtCore.Qt.ClickFocus)
             self.labelImage.setText("") #emptying text 
-            self.labelImage.setPixmap(QtGui.QPixmap(PATH + "/" + str(self.data[len(self.data)-1]['roadCaptured'])))   #get show Image inside labelImage
+            self.labelImage.setPixmap(QtGui.QPixmap(str(self.data[len(self.data)-1]['roadCaptured'])))   #get show Image inside labelImage
             self.labelImage.setScaledContents(True)
             self.labelImage.setObjectName("label")  #set 
             self.verticalLayout.addWidget(self.labelImage)
@@ -209,7 +209,7 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
         
     
     def roadCard(self,data,length):
-        print(length)
+        # print(length)
         x=0     #initialize x for items in each row
         row=0   #initialize row
         while x < length:
@@ -229,7 +229,7 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
                     self.labelImage.setMouseTracking(True)
                     self.labelImage.setFocusPolicy(QtCore.Qt.ClickFocus)
                     self.labelImage.setText("") #emptying text 
-                    self.labelImage.setPixmap(QtGui.QPixmap(PATH + "/" + str( data[x]['roadCaptured'])))   #get show Image inside labelImage
+                    self.labelImage.setPixmap(QtGui.QPixmap(str( data[x]['roadCaptured'])))   #get show Image inside labelImage
                     self.labelImage.setScaledContents(True)
                     self.labelImage.setObjectName("label")  #set 
                     self.verticalLayout.addWidget(self.labelImage)
@@ -291,13 +291,25 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
     
     def finishedDelRoad(self, response):
         self.delThread.quit()
+        #reload ui and buttons
+        uic.loadUi(PATH+'/roadSetUp_phase1.ui', self)
+        self.setWindowFlag(Qt.FramelessWindowHint)      #removing Title bar
+        #self.label.mousePressEvent = self.selectImage   #mouse Event for Qlabel
+        self.btnNew.clicked.connect(self.switch_window.emit)    #Showing Draw road Ui
+        self.btnCancel.clicked.connect(self.close)          #close window
+        self.btnConfirm.clicked.connect(self.loading)       #Loading Ui
+        self.btnDelete.clicked.connect(self.dropRoad)
         # self.setParent(None)# remove contents
-        e = "{}"
-        j = json.loads(e)
-        self.getAllRoad(j, f=True) # remove first contents
+        # e = "{}"
+        # j = json.loads(e)
+        # self.getAllRoad(j, f=True) # remove first contents 
+        # self.update()
+        # self.repaint()
         response = response.json()
-        self.update()
         self.getAllRoad(response, f=True) # add new roads
+        self.update()
+        # self.repaint()
+        
         self.loadData.closeWindow()
         # super(RoadSetUp1, self).__init__()
         
@@ -399,15 +411,25 @@ class TableUi(QtWidgets.QMainWindow):
         
     def finishedDelViolation(self, response):
         self.delThread.quit()
-        e = "{}"
-        j = json.loads(e)
-        self.finishedGetVio(j, f =True) # remove first contents
-        response = response.json()
-        self.finishedGetVio(response, f =True) # add new roads
-        self.loadData.closeWindow()
-        # self.finishedGetVio(response)
+        #reload ui and buttons
+        uic.loadUi(PATH+'/tableUi.ui', self)
+        self.setWindowFlag(Qt.FramelessWindowHint)
+        self.tableWidget.horizontalHeader().setStretchLastSection(True)
+        self.tableWidget.horizontalHeader().setSectionResizeMode(
+            QHeaderView.Stretch)
+        _translate = QtCore.QCoreApplication.translate
+        # e = "{}"
+        # j = json.loads(e)
+        # self.finishedGetVio(j, f =True) # remove first contents
         # self.update()
         # self.repaint()
+        # response = response.json()
+        self.finishedGetVio(response) # add new roads
+        self.update()
+        # self.repaint()
+        self.loadData.closeWindow()
+        # self.finishedGetVio(response)
+        
 
     def buttonSome(self,i):
         print(i)
@@ -584,8 +606,8 @@ class Controller:
             self.bgAndRoad.finished.connect(self.roadThread.quit)
             self.roadThread.finished.connect(self.finishedInBGModelAndRoad) # execute when the task in thread is finised
             self.roadThread.start()
-            print("started")
-            print(threading.active_count())
+            # print("started")
+            # print(threading.active_count())
         else:
             ctypes.windll.user32.MessageBoxW(0, "Please insert a video first", "Empty Video file", 1)
     
@@ -616,9 +638,9 @@ class Controller:
         self.window.close()
         self.logout_Ui.close()
         self.login.show()
-    def showSettingUproad(self):
-        self.windowRoadSettingUp=roadSettingUp()
-        self.windowRoadSettingUp.screenLabel.connect(self.showScreenImage)
+    # def showSettingUproad(self):
+    #     self.windowRoadSettingUp=roadSettingUp()
+    #     self.windowRoadSettingUp.screenLabel.connect(self.showScreenImage)
     def showFinishingUi(self):
         if self.window.vidFile is not None: # hcheck if there's a current vid file
             # initialize detection
@@ -653,22 +675,22 @@ class Controller:
                 #setting up the roadID
                 if self.road.dataRoadGlobal: #determining if the dataRoadGlobal is empty
                     roadIDLatest=str(self.road.dataRoadGlobal[len(self.road.dataRoadGlobal)-1]['roadID']).split("-")
-                    print(roadIDLatest)
+                    # print(roadIDLatest)
                     intRoadID=int(roadIDLatest[1]) + 1
                     roadID="R-" + str(intRoadID).zfill(7)
-                    print(roadID)
+                    # print(roadID)
                     
                 else:
                     type = 'road'
                     roadID = "R-000000"+str(read(type)+1)
-                print(self.ROI[0])
+                # print(self.ROI[0])
 
                 # serialized=[]
                 # for c in self.ROI:
                 #     serialized.append(json.dumps(c.tolist()))     
 
-                cv.imwrite(PATH+"/images/{}.jpg".format(roadID), self.roadImage) #writing the image with ROI to Client/images path
-                roadCapturedJPG = PATH+"/images/"+roadID+".jpg"
+                cv.imwrite(str(PATH)+"/images/{}.jpg".format(roadID), self.roadImage) #writing the image with ROI to Client/images path
+                roadCapturedJPG = str(PATH)+"\\\images\\\\"+roadID+".jpg"
                 #making the data a json type
                 data = {
                     'roadID' : roadID,
@@ -676,7 +698,8 @@ class Controller:
                     'roadCaptured' : roadCapturedJPG,
                     'roadBoundaryCoordinates' : pd.Series(self.ROI).to_json(orient='values')
                     # 
-                }  
+                }
+                # print(data['roadCaptured'])
                 self.saveRoad(data)
 
 
@@ -684,10 +707,10 @@ class Controller:
                 if not self.initDet.det.dets.stopped:
                     #if detection is running
                     #do nothing since ROI has been changed above
-                    print('det is running')
+                    # print('det is running')
                     pass
             except:
-                print('det is not running')
+                # print('det is not running')
                 # if detection is not running
                 self.thread = QThread()
                 self.initDet = Worker(self)
@@ -696,7 +719,7 @@ class Controller:
                 self.initDet.finished.connect(self.thread.quit)
                 self.thread.finished.connect(self.finishedInitDet) # execute when the task in thread is finised
                 self.thread.start()
-                print("started init det")
+                # print("started init det")
         else:
             ctypes.windll.user32.MessageBoxW(0, "Please insert a video first", "Empty Video file", 1)
     #this function will request post to save the data to the database
@@ -713,6 +736,7 @@ class Controller:
         # print(r)
 
     def finishedSaveRoad(self,_):
+        # print('road saved')
         self.saveRoadThread.quit()
         self.loadData.closeWindow()
     # this function will be executed when finished initializing detection and tracking models
@@ -752,15 +776,15 @@ class Controller:
     
     
     # #this function will display image    
-    def showScreenImage(self):
-        data = self.road.selected
-        print(data)
+    # def showScreenImage(self):
+    #     data = self.road.selected
+    #     # print(data)
 
-        self.window.labelScreen.setPixmap(QtGui.QPixmap("images/image 1.jpg")) #setting image inside QLabel
-        self.window.labelScreen.setMinimumSize(QtCore.QSize(0, 400))#setting minimum heigth
-        self.window.label.setText(data['roadName'])
-        self.window.verticalLayout_11.addWidget(self.window.frameWatch)#removing center aligment of frameWatch
-        self.window.btnAddVideo.hide()#hiding button Insert Video
+    #     self.window.labelScreen.setPixmap(QtGui.QPixmap("images/image 1.jpg")) #setting image inside QLabel
+    #     self.window.labelScreen.setMinimumSize(QtCore.QSize(0, 400))#setting minimum heigth
+    #     self.window.label.setText(data['roadName'])
+    #     self.window.verticalLayout_11.addWidget(self.window.frameWatch)#removing center aligment of frameWatch
+    #     self.window.btnAddVideo.hide()#hiding button Insert Video
         #Closing Road Setting 
     def select(self):
         print("Select Image")
@@ -792,7 +816,7 @@ class Worker(QtCore.QObject):
         while self.w.initDet.det.dets.f == 0:
             print('wait', end="\r")
             pass
-        print(threading.active_count())
+        # print(threading.active_count())
         while not self.w.initDet.det.dets.stopped:
             if self.w.initDet.det.dets.show_vid:
                 if f == self.w.initDet.det.dets.f:
@@ -820,7 +844,7 @@ class videoGet(QtCore.QObject):
         super(videoGet, self).__init__()
         self.w = window
         vid = window.initDet.det.dets.vid_path
-        print(vid)
+        # print(vid)
         self.stream = cv2.VideoCapture(vid)
         (self.grabbed, self.frame) = self.stream.read()
         self.fps = int(self.stream.get(cv2.CAP_PROP_FPS))

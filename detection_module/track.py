@@ -290,11 +290,11 @@ class det:
                         else: # set the prev frame xy to current xy
                             self.PREV_XY = xy
                         self.dt[4] += t5 - tim
-                        # LOGGER.info(f'Done. Read-frame: ({t1-tim:.3f}) YOLO:({t3 - t2:.3f}s), DeepSort:({t5 - t4:.3f}s), Stationary:({t9 - t8:.3f}s) Overall:({t5-tim:.3f}s)')
+                        LOGGER.info(f'Done. Read-frame: ({t1-tim:.3f}), YOLO:({t3 - t2:.3f}s), DeepSort:({t5 - t4:.3f}s), Stationary:({t9 - t8:.3f}s) Overall:({t5-tim:.3f}s)')
 
                     else:
                         self.deepsort.increment_ages()
-                        # LOGGER.info('No detections')
+                        LOGGER.info(f'Done. Read-frame: ({t1-tim:.3f}) YOLO:({t3 - t2:.3f}s) No detections ')
 
                     # Stream results
                     im = annotator.result()
