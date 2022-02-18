@@ -195,7 +195,7 @@ class VideoGet:
                 if (timeDiff<1.0/(self.fps*1.5)):
                     time.sleep((1.0/(self.fps*1.5)) - timeDiff)
                 else:
-                    print('g')
+                    print(' ',  end='\r')
                  
                 
 

@@ -46,18 +46,16 @@ from Client.api import baseURL
 import requests
 from Client.mainUi import TableUi
 
-"""Detection constructor, initializing detection models (yolo and deepsort)
-    
-        parameters are as follows:
-        opt = yolo required parameters, can be found and edited at params.py
-        source = input source/video
-        roi = road boundary coordinates
-        shape = input source shape
-    
-    """
+
 
 class det:
-
+    """Detection constructor, initializing detection models (yolo and deepsort)\n
+        opt = yolo required parameters, can be found and edited at params.py\n
+        source = input source/video\n
+        roi = road boundary coordinates\n
+        shape = input source shape\n
+    
+    """
     def __init__(self, opt, source, roi, shape):
         self.frame, self.ret, self.stopped = None, False, False
         # self.violationKeys = ['violationID', 'vehicleID','roadName', 'lengthOfViolation','startDateAndTime', 'endDateAndTime']
