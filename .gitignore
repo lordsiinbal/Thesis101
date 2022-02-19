@@ -7,7 +7,7 @@ detection_module/__pycache__/
 records/__pycache__/
 Road_Detection/__pycache__/
 Server/app/__pycache__/
-
+Client/images
 
 # Files
 *.weights
