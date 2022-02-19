@@ -247,7 +247,7 @@ class det:
                                         self.vehicleInfos['finalTime'][index] = float(int(time_sync()-self.vehicleInfos['startTime'][index]))
                                         sec = self.vehicleInfos['finalTime'][index] 
                                         t = str(dtime.timedelta(seconds=sec))
-                                        if sec >= 10: # means 5 mins
+                                        if sec == 300: # means 5 mins
                                             col = (0,0,255)
                                             
                                             print(self.window.getVioaltionRecord)

@@ -192,8 +192,8 @@ class VideoGet:
                 (self.grabbed, self.frame) = self.stream.read()
                 timeDiff = time_sync() - now
                 # print('%.3f and %.3f' % (timeDiff, 1.0/(self.fps*1.5)), end='\r')
-                if (timeDiff<1.0/(self.fps*1.5)):
-                    time.sleep((1.0/(self.fps*1.5)) - timeDiff)
+                if (timeDiff<1.0/(self.fps)):
+                    time.sleep((1.0/(self.fps)) - timeDiff)
                 else:
                     print(' ',  end='\r')
                  
