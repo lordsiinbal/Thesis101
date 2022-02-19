@@ -1,5 +1,6 @@
 # limit the number of cpus used by high performance libraries
 import json
+from queue import Queue
 import threading
 import os
 from flask import request
@@ -58,6 +59,8 @@ class det:
     """
     def __init__(self, opt, source, roi, shape):
         self.frame, self.ret, self.stopped = None, False, False
+        self.vidFrames = []
+        self.sfps = 30
         # self.violationKeys = ['violationID', 'vehicleID','roadName', 'lengthOfViolation','startDateAndTime', 'endDateAndTime']
         self.keys = ['id', 'startTime','finalTime', 'class']
         self.vehicleInfos = {k: [] for k in self.keys}
@@ -337,16 +340,17 @@ class det:
                             if vid_cap:  # video
                                 #calculating fps
                                 # fps = 19
-                                fps = np.ceil((1/(t0-self.t11))*1.5)
+                                self.sfps = np.ceil((1/(t0-self.t11))*1.5)
                                 
                                 # print(vid_fps)
                                 w = int(im.shape[1])
                                 h = int(im.shape[0])
-                                print(fps, w, h)
+                                print( self.sfps, w, h)
                             else:  # stream
-                                fps, w, h = 30, im.shape[1], im.shape[0]
-                            self.vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
+                                 self.sfps, w, h = 30, im.shape[1], im.shape[0]
+                            self.vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'),  self.sfps, (w, h))
                         self.vid_writer.write(im)
+                        self.vidFrames.append(im)
                     
             else:
                 video_getter.stop() 
