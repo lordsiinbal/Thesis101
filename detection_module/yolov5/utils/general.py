@@ -120,7 +120,7 @@ def isStationary(xy,  xywhs, confs, clss, PREV_XY, frm_id, fps, strt_time):
         for i in range(len(xy)):
             for x in range(len(PREV_XY)):
                 thresh = compute_thresh(xywhs[i][2].item(),xywhs[i][3].item()) # returns 5% of area of bbox allowance of vehicle movement
-                if np.abs(xy[i][0] - PREV_XY[x][0]) <=thresh and np.abs(xy[i][1] - PREV_XY[x][1]) <=thresh and thresh >=2:
+                if np.abs(xy[i][0] - PREV_XY[x][0]) <=thresh and np.abs(xy[i][1] - PREV_XY[x][1]) <=thresh and thresh >=4:
                     res[i] = 1
                     break
     stationary = np.where(res == 1)[0]
