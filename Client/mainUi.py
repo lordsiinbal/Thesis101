@@ -485,6 +485,7 @@ class MainUi(QtWidgets.QMainWindow):
             self.vQueue = self.w.initDet.det.dets.vidFrames.copy()
             # play playback video here
             # creat a thread object for playing video
+            self.pause = True
             self.nthread = QThread()
             self.getVid = videoGet(self)
             self.getVid.moveToThread(self.nthread)
@@ -503,6 +504,18 @@ class MainUi(QtWidgets.QMainWindow):
         self.stackedWidget.setCurrentWidget(self.playbackPage)
         self.btnWatch.setStyleSheet('background-color:none;border:none')
         self.btnPlayback.setStyleSheet("color:white;font-size:14px;background-color:#1D1F32;border-left:3px solid #678ADD;")
+        self.btnPlay.clicked.connect(self.pauseOrPlay)
+        
+    def pauseOrPlay(self):
+        try:
+            self.pause = not self.pause
+            print('Pause = ',  self.pause)
+            self.getVid.pauseOrPlay(self.pause)
+        except AttributeError:
+            ctypes.windll.user32.MessageBoxW(0, "Please insert a video first", "Nothing to play", 1)
+            
+
+    
     
     def update_image(self, qim):
         # print('update')
@@ -853,6 +866,7 @@ class videoGet(QtCore.QObject):
     def __init__(self, window):
         super(videoGet, self).__init__()
         self.w = window
+        self.pause = self.w.pause
         # vid = window.initDet.det.dets.vid_path
         # # print(vid)
         # self.stream = cv2.VideoCapture(vid)
@@ -862,17 +876,9 @@ class videoGet(QtCore.QObject):
      
         
     def run(self):
-        
         for frame in self.w.vQueue:
-        #  while not self.stopped:
             now = time.time()
             if not self.stopped:
-            #     self.stop()
-            # else:
-            # frame = self.w.vQueue
-                # cv2.imshow('s', frame)
-                # cv2.waitKey(1)
-                # time.sleep((1.0/(self.w.w.initDet.det.dets.sfps)))
                 QtImg = cvImgtoQtImg(frame)# Convert frame data to PyQt image format
                 qim = QtGui.QPixmap.fromImage(QtImg)
                 timediff = time.time() - now
@@ -880,12 +886,21 @@ class videoGet(QtCore.QObject):
                     time.sleep((1.0/(self.w.w.initDet.det.dets.sfps)) - timediff)
                 else:
                     print(' ',  end='\r')
+                    
                 self.imgUpdate.emit(qim)
-                # time.sleep((1.0/(self.w.w.initDet.det.dets.sfps)))
-        self.finished.emit()
+                
+            while self.pause:
+                # loop here until pause is lifted
+                print('paused',  end='\r')
+                pass
         self.stopped = True
+        self.finished.emit()
+        
     def stop(self):
         self.stopped = True     
+    
+    def pauseOrPlay(self, val):
+        self.pause = val
             
     
 class ProcessData(QtCore.QObject):

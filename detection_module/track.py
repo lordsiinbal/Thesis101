@@ -61,6 +61,7 @@ class det:
         self.frame, self.ret, self.stopped = None, False, False
         self.vidFrames = []
         self.sfps = 30
+        self.start_time = 0
         # self.violationKeys = ['violationID', 'vehicleID','roadName', 'lengthOfViolation','startDateAndTime', 'endDateAndTime']
         self.keys = ['id', 'startTime','finalTime', 'class']
         self.vehicleInfos = {k: [] for k in self.keys}
@@ -216,12 +217,12 @@ class det:
                         clss = det[:, 5]
                         xy = xywhs.cpu().detach().numpy()
                         xy = xy[:, :2]
-
-                        if frm_id != 0: # if on the 0th frame of vid, assume no previous frame
+                        
+                        if frame_idx > 0: # if on the 1st frame of vid, assume no previous frame
                             
                             # After eliminating vehicles outside ROI, eliminate moving vehicles
                             t8 = time_sync()
-                            xywhs, confs, clss, self.PREV_XY = isStationary(xy, xywhs, confs, clss, self.PREV_XY, frm_id, vid_fps)
+                            xywhs, confs, clss, self.PREV_XY = isStationary(xy, xywhs, confs, clss, self.PREV_XY, frm_id, vid_fps, self.start_time)
                             t9 = time_sync()
                             # pass detections to deepsort
                             t4 = time_sync()
@@ -295,9 +296,10 @@ class det:
                                         self.vehicleInfos['class'].append(self.names[c])
                                         label = f'{id} {self.names[c]}: {t}'
                                         annotator.box_label(bboxes, label, color=(0,165,255))
+                                
                         else: # set the prev frame xy to current xy
                             self.PREV_XY = xy
-                        self.dt[4] += t5 - tim
+                            self.start_time = time.time()
                         LOGGER.info(f'Done. Read-frame: ({t1-tim:.3f}), YOLO:({t3 - t2:.3f}s), DeepSort:({t5 - t4:.3f}s), Stationary:({t9 - t8:.3f}s) Overall:({t5-tim:.3f}s)')
 
                     else:
