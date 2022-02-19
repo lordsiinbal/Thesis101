@@ -705,6 +705,7 @@ class Controller:
                 }
                 # print(data['roadCaptured'])
                 self.roadIDGlobal = roadID
+                
                 self.saveRoad(data)
 
             
