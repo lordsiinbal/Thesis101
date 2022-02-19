@@ -164,6 +164,8 @@ class det:
         print("it has started")
         self.flag = True
         temp ="Test"
+        # tempId = []
+        flagID = True
         for frame_idx, (path, img, im0s, vid_cap, s, frm_id, vid_fps, video_getter, im, ret, tim) in enumerate(self.dataset):
             if not self.stopped:
                 self.vid_fps = vid_fps
@@ -251,15 +253,22 @@ class det:
                                         if sec == 10: # means 5 mins
                                             col = (0,0,255)
                                             
-                                            if self.window.getViolationRecord: #determining if the dataRoadViolation is empty
-                                                violationIDLatest=str(self.window.getViolationRecord[len(self.window.getViolationRecord)-1]['violationID']).split("-")
-                                                
+                                            if flagID:
+
+                                                if self.window.getViolationRecord: #determining if the dataRoadViolation is empty
+                                                    violationIDLatest=str(self.window.getViolationRecord[len(self.window.getViolationRecord)-1]['violationID']).split("-")
+                                                    
+                                                    intViolationID=int(violationIDLatest[1]) + 1
+                                                    violationID="V-" + str(intViolationID).zfill(7)
+                                                    
+                                                    
+                                                else:
+                                                    violationID = "V-0000001"
+                                            else:
+                                                violationIDLatest=violationID.split("-")
+                                                    
                                                 intViolationID=int(violationIDLatest[1]) + 1
                                                 violationID="V-" + str(intViolationID).zfill(7)
-                                                
-                                                
-                                            else:
-                                                violationID = "V-0000001"
 
                                             
                                             # save violation here
@@ -270,12 +279,13 @@ class det:
                                                             'roadName' : self.window.window.label.text(),
                                                             'roadID' : self.window.roadIDGlobal,
                                                             'lengthOfViolation' : str(dtime.timedelta(seconds=sec)),
-                                                            'startDateAndTime' :datetime.fromtimestamp(self.vehicleInfos['startTime'][index]).strftime("%A, %B %d, %Y %I:%M:%S"),
-                                                            'endDateAndTime' : datetime.fromtimestamp(float(int(time_sync()))).strftime("%A, %B %d, %Y %I:%M:%S")
+                                                            'startDateAndTime' :str(datetime.fromtimestamp(self.vehicleInfos['startTime'][index]).strftime("%m/%d, %I:%M:%S %p")),
+                                                            'endDateAndTime' : str(datetime.fromtimestamp(float(int(time_sync()))).strftime("%m/%d, %I:%M:%S %p"))
                                             }
-                                            if data['violationID'] != temp:             
+                                            if data['violationID'] != temp :             
                                                 self.saveViolation(data) #calling the saveViolation Function to save the data to the database
-                                                
+                                                # tempId.append(id)
+                                                flagID = False
                                                 temp = data['violationID']
 
                                         elif sec > 300: #exceed 5 mins
