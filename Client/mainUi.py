@@ -249,6 +249,7 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
         self.selectedROI= json.loads(self.selected['roadBoundaryCoordinates'])
         self.selectedROI= numpy.asarray(self.selectedROI,dtype=numpy.int32)
         self.selectedRoadImage  = self.selected['roadCaptured']
+        self.selectedRoadID = self.selected['roadID']
         self.selectedRoadName = self.selected['roadName']
         self.settingUpRoad.emit()
         self.close()
@@ -658,6 +659,7 @@ class Controller:
                         # if detection is currently running
                         self.initDet.det.dets.changeROI(self.road.selectedROI)
                         self.window.label.setText(self.road.selectedRoadName)
+                        
                         print('ROI has been changed in running confirm')
                     except:
                         # if it is not running, pass, then ruin code below
@@ -665,7 +667,7 @@ class Controller:
                         pass
                     self.road.flagRoad = False
                     self.roadImage = cv.imread(self.road.selectedRoadImage)
-                
+                    self.roadIDGlobal = self.road.selectedRoadID
             except AttributeError:
                 # for btn new
                 self.roadPaint.close()
@@ -689,11 +691,7 @@ class Controller:
                 else:
                     type = 'road'
                     roadID = "R-000000"+str(read(type)+1)
-                # print(self.ROI[0])
-
-                # serialized=[]
-                # for c in self.ROI:
-                #     serialized.append(json.dumps(c.tolist()))     
+ 
 
                 cv.imwrite(str(PATH)+"/images/{}.jpg".format(roadID), self.roadImage) #writing the image with ROI to Client/images path
                 roadCapturedJPG = str(PATH)+"\\\images\\\\"+roadID+".jpg"
@@ -706,9 +704,10 @@ class Controller:
                     # 
                 }
                 # print(data['roadCaptured'])
+                self.roadIDGlobal = roadID
                 self.saveRoad(data)
 
-
+            
             try:
                 if not self.initDet.det.dets.stopped:
                     #if detection is running
@@ -728,6 +727,7 @@ class Controller:
                 # print("started init det")
         else:
             ctypes.windll.user32.MessageBoxW(0, "Please insert a video first", "Empty Video file", 1)
+        
     #this function will request post to save the data to the database
     def saveRoad(self,data):
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
@@ -759,6 +759,9 @@ class Controller:
             self.window.btnAddVideo.hide()
             self.window.labelScreen.setMinimumSize(QtCore.QSize(0, 400))
             
+            response = requests.get(url = baseURL + "/ViolationFetchAll")
+            self.getVioaltionRecord = response.json()
+
             # run detection here on separate thread
             self.thread = QThread()
             self.runDets = Worker(self)
@@ -811,7 +814,7 @@ class Worker(QtCore.QObject):
         self.finished.emit()
         
     def initDet(self):
-        self.det = detection(self.vid, self.w.ROI, self.w.roadImage)
+        self.det = detection(self.vid, self.w)
         self.finished.emit()
 
     def runDet(self):
