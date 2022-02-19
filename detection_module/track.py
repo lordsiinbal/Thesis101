@@ -163,6 +163,7 @@ class det:
     def detect(self):
         print("it has started")
         self.flag = True
+        temp ="Test"
         for frame_idx, (path, img, im0s, vid_cap, s, frm_id, vid_fps, video_getter, im, ret, tim) in enumerate(self.dataset):
             if not self.stopped:
                 self.vid_fps = vid_fps
@@ -232,7 +233,7 @@ class det:
 
                             # im0 = cropped frame
                             # im = full frame
-                            temp = "Test"     
+                            
                             # draw boxes for visualization
                             if len(outputs) > 0:
                                 for j, (output, conf) in enumerate(zip(outputs, confs)):
@@ -250,18 +251,17 @@ class det:
                                         if sec == 10: # means 5 mins
                                             col = (0,0,255)
                                             
-                                            print(self.window.getVioaltionRecord)
-                                            if self.window.getVioaltionRecord : #determining if the dataRoadViolation is empty
-                                                violationIDLatest=str(self.window.getVioaltionRecord[len(self.window.getVioaltionRecord)-1]['violationID']).split("-")
-                                                print(violationIDLatest)
+                                            if self.window.getViolationRecord: #determining if the dataRoadViolation is empty
+                                                violationIDLatest=str(self.window.getViolationRecord[len(self.window.getViolationRecord)-1]['violationID']).split("-")
+                                                
                                                 intViolationID=int(violationIDLatest[1]) + 1
                                                 violationID="V-" + str(intViolationID).zfill(7)
-                                                print(violationID)
+                                                
                                                 
                                             else:
                                                 violationID = "V-0000001"
 
-                                            print(self.window.window.label.text())
+                                            
                                             # save violation here
                                             #making the data a json type
                                             data = {
@@ -272,12 +272,12 @@ class det:
                                                             'lengthOfViolation' : str(dtime.timedelta(seconds=sec)),
                                                             'startDateAndTime' :datetime.fromtimestamp(self.vehicleInfos['startTime'][index]).strftime("%A, %B %d, %Y %I:%M:%S"),
                                                             'endDateAndTime' : datetime.fromtimestamp(float(int(time_sync()))).strftime("%A, %B %d, %Y %I:%M:%S")
-                                                        }
-                                            
-                                            if data['violationID'] != temp: 
+                                            }
+                                            if data['violationID'] != temp:             
                                                 self.saveViolation(data) #calling the saveViolation Function to save the data to the database
-                                                temp = data['violationID']
                                                 
+                                                temp = data['violationID']
+
                                         elif sec > 300: #exceed 5 mins
                                             col = (0,0,255)
                                         else:
@@ -369,7 +369,6 @@ class det:
     
     def saveViolation(self,data):
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-        print("violation 1")
         print(data)
         r = requests.post(url = baseURL + "/ViolationInsert",data=json.dumps(data),headers=headers)
         print(r)
@@ -397,4 +396,3 @@ class det:
     #     print('Results saved to %s' % save_path)
     #     if platform == 'darwin':  # MacOS
     #         os.system('open ' + save_path)
-

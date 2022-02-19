@@ -355,9 +355,9 @@ class TableUi(QtWidgets.QMainWindow):
         self.tableWidget.setItem(0,0, QTableWidgetItem("Name"))
         self.tableWidget.setRowCount(len(self.data))
         for i in range(len(self.data)):
-            self.tableWidget.setItem(i,0, QTableWidgetItem(self.data[i]['violationID']))
+            self.tableWidget.setItem(i,0, QTableWidgetItem(self.data[i]['vehicleID']))
             self.tableWidget.item(i,0).setTextAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
-            self.tableWidget.setItem(i,1, QTableWidgetItem(self.data[i]['vehicleID']))
+            self.tableWidget.setItem(i,1, QTableWidgetItem(self.data[i]['violationID']))
             self.tableWidget.item(i,1).setTextAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
             self.tableWidget.setItem(i,2, QTableWidgetItem(self.data[i]['roadName']))
             self.tableWidget.item(i,2).setTextAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
@@ -703,7 +703,7 @@ class Controller:
                     
                 else:
                     type = 'road'
-                    roadID = "R-0000001"
+                    roadID = "R-000000"+str(read(type)+1)
  
 
                 cv.imwrite(str(PATH)+"/images/{}.jpg".format(roadID), self.roadImage) #writing the image with ROI to Client/images path
@@ -718,7 +718,6 @@ class Controller:
                 }
                 # print(data['roadCaptured'])
                 self.roadIDGlobal = roadID
-                
                 self.saveRoad(data)
 
             
@@ -774,7 +773,7 @@ class Controller:
             self.window.labelScreen.setMinimumSize(QtCore.QSize(0, 400))
             
             response = requests.get(url = baseURL + "/ViolationFetchAll")
-            self.getVioaltionRecord = response.json()
+            self.getViolationRecord = response.json()
 
             # run detection here on separate thread
             self.thread = QThread()
@@ -949,4 +948,3 @@ if __name__ == '__main__':
     controller.show_login()
 
     sys.exit(app.exec_())
-
