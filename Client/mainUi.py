@@ -586,9 +586,13 @@ class welcome(QtWidgets.QWidget):
 
 """Class for navigating"""      
 class Controller:
+    EXIT_CODE_REBOOT = -12345678
     def __init__(self):
         pass
 
+    def restart(self): # restart app
+        app.exit(Controller.EXIT_CODE_REBOOT)
+        
     def show_login(self):
         self.login =welcome()
         self.login.switch_window.connect(self.show_main)
@@ -652,12 +656,14 @@ class Controller:
         # stop detection
         try:
             self.initDet.det.dets.stop()
+            # time.sleep(0.5)
         except:
             pass
-        self.window.vidFile = None
-        self.window.close()
-        self.logout_Ui.close()
-        self.login.show()
+        self.restart()
+        # self.window.vidFile = None
+        # self.window.close()
+        # self.logout_Ui.close()
+        # self.login.show()
     # def showSettingUproad(self):
     #     self.windowRoadSettingUp=roadSettingUp()
     #     self.windowRoadSettingUp.screenLabel.connect(self.showScreenImage)
@@ -942,10 +948,14 @@ class ProcessData(QtCore.QObject):
             
 
 if __name__ == '__main__':
-    app=QApplication(sys.argv)
-    # app.processEvents()
-    controller = Controller()
-    controller.show_login()
 
-    sys.exit(app.exec_())
-
+    currentExitCode = Controller.EXIT_CODE_REBOOT
+    while currentExitCode == Controller.EXIT_CODE_REBOOT:
+        app=QApplication(sys.argv)
+        # app.processEvents()
+        controller = Controller()
+        controller.show_login()
+        currentExitCode = app.exec_()
+        app = None
+        # sys.exit(app.exec_())
+    # return currentExitCode
