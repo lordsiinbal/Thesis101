@@ -7,7 +7,7 @@ from pathlib import Path
 yolo_model='yolov5s.pt'
 deep_sort_model='osnet_x0_25'
 output='inference/output'
-imgsz=[1280]
+imgsz=[640]
 conf_thres=0.25 # .25
 iou_thres=0.5 # .5
 fourcc='mp4v'
