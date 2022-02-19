@@ -45,7 +45,7 @@ from deep_sort.deep_sort import DeepSort
 from records.dbProcess import save, read
 from Client.api import baseURL
 import requests
-from Client.mainUi import TableUi
+
 
 
 
@@ -57,7 +57,7 @@ class det:
         shape = input source shape\n
     
     """
-    def __init__(self, opt, source, roi, shape):
+    def __init__(self, opt, source, window):
         self.frame, self.ret, self.stopped = None, False, False
         self.vidFrames = []
         self.sfps = 30
@@ -126,8 +126,8 @@ class det:
             bs = len(self.dataset)  # batch_size
         else:
             # getting the mask of roi
-            self.mask = np.zeros(shape, np.uint8)
-            cv2.drawContours(self.mask, roi, -1, (255,255,255), thickness= -1)
+            self.mask = np.zeros(window.roadImage.shape, np.uint8)
+            cv2.drawContours(self.mask, window.ROI, -1, (255,255,255), thickness= -1)
             self.dataset = LoadImages(self.source, img_size=self.imgsz, stride=stride, auto=pt and not jit, mask = self.mask)
             bs = 1  # batch_size
         self.vid_path, self.vid_writer = [None] * bs, [None] * bs
@@ -145,15 +145,15 @@ class det:
         
         self.t11 = time_sync()
         self.opt = opt
-        self.roi = roi
-        self.shape = shape
+        self.roi = window.ROI
+        self.shape = window.roadImage.shape
         self.num_processes = multiprocessing.cpu_count()
         self.t = Thread(target=self.detect, args=()) # use multiprocess instead of thread
         self.flag = False
         self.nflag = True
         self.f = 0
         self.t.daemon = True
-    
+        self.window = window
     
     def run(self):
         self.dataset.begin()
@@ -247,27 +247,28 @@ class det:
                                         self.vehicleInfos['finalTime'][index] = float(int(time_sync()-self.vehicleInfos['startTime'][index]))
                                         sec = self.vehicleInfos['finalTime'][index] 
                                         t = str(dtime.timedelta(seconds=sec))
-                                        if sec == 300: # means 5 mins
+                                        if sec >= 10: # means 5 mins
                                             col = (0,0,255)
                                             
-                                            # if TableUi.dataViolationGlobal: #determining if the dataRoadGlobal is empty
-                                            #     roadIDLatest=str(self.road.dataRoadGlobal[len(self.road.dataRoadGlobal)-1]['roadID']).split("-")
-                                            #     print(roadIDLatest)
-                                            #     intRoadID=int(roadIDLatest[1]) + 1
-                                            #     roadID="R-" + str(intRoadID).zfill(7)
-                                            #     print(roadID)
+                                            print(self.window.getVioaltionRecord)
+                                            if self.window.getVioaltionRecord : #determining if the dataRoadViolation is empty
+                                                violationIDLatest=str(self.window.getVioaltionRecord[len(self.window.getVioaltionRecord)-1]['violationID']).split("-")
+                                                print(violationIDLatest)
+                                                intViolationID=int(violationIDLatest[1]) + 1
+                                                violationID="V-" + str(intViolationID).zfill(7)
+                                                print(violationID)
                                                 
-                                            # else:
-                                            #     type = 'road'
-                                            #     roadID = "R-000000"+str(read(type)+1)
+                                            else:
+                                                violationID = "V-0000001"
 
-
+                                            print(self.window.window.label.text())
                                             # save violation here
                                             #making the data a json type
                                             data = {
-                                                            'violationID' : str(read('violation')+1),
+                                                            'violationID' :  violationID,
                                                             'vehicleID' : str(id),
-                                                            'roadName' : "San Felipe",
+                                                            'roadName' : self.window.window.label.text(),
+                                                            'roadID' : self.window.roadIDGlobal,
                                                             'lengthOfViolation' : str(dtime.timedelta(seconds=sec)),
                                                             'startDateAndTime' :datetime.fromtimestamp(self.vehicleInfos['startTime'][index]).strftime("%A, %B %d, %Y %I:%M:%S"),
                                                             'endDateAndTime' : datetime.fromtimestamp(float(int(time_sync()))).strftime("%A, %B %d, %Y %I:%M:%S")
