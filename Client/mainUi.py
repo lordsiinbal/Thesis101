@@ -479,12 +479,13 @@ class MainUi(QtWidgets.QMainWindow):
     def activePlayback(self):
         try:
             self.w.initDet.det.dets.show_vid = False
-            self.w.initDet.det.dets.stop()
+            # self.w.initDet.det.dets.stop()
             self.saveVid()
+            self.vQueue = self.w.initDet.det.dets.vidFrames.copy()
             # play playback video here
             # creat a thread object for playing video
             self.nthread = QThread()
-            self.getVid = videoGet(self.w)
+            self.getVid = videoGet(self)
             self.getVid.moveToThread(self.nthread)
             self.nthread.started.connect(self.getVid.run)
             self.getVid.finished.connect(self.nthread.quit)
@@ -494,12 +495,17 @@ class MainUi(QtWidgets.QMainWindow):
         except Exception as er:
             print(er)
             pass
+        
+        
+        self.image.setMinimumSize(QtCore.QSize(0, 400))
+        self.image.setMaximumSize(QtCore.QSize(1280, 720))
         self.stackedWidget.setCurrentWidget(self.playbackPage)
         self.btnWatch.setStyleSheet('background-color:none;border:none')
         self.btnPlayback.setStyleSheet("color:white;font-size:14px;background-color:#1D1F32;border-left:3px solid #678ADD;")
     
     def update_image(self, qim):
-        self.w.window.labelScreen.setPixmap(qim)
+        # print('update')
+        self.w.window.image.setPixmap(qim)
         
     def finishedPlayBack(self):
         print('finished playing video')
@@ -528,8 +534,8 @@ class MainUi(QtWidgets.QMainWindow):
         duration = self.w.initDet.det.dets.frm_id / self.w.initDet.det.dets.vid_fps
         duration = str(dtime.timedelta(seconds=float(int(duration))))
         self.playbackInfo['duration'].append(duration)
-        self.playbackInfo['roadName'].append('road name')
-        self.playbackInfo['dateAndTime'].append(dtime.date.today())
+        self.playbackInfo['roadName'].append(self.w.road.label.text())
+        self.playbackInfo['dateAndTime'].append(str(dtime.date.today()))
         # save('playBack', self.playbackInfo) # saved to records/playBackDb.csv
         self.savePlayback(self.playbackInfo)
 
@@ -843,27 +849,37 @@ class videoGet(QtCore.QObject):
     def __init__(self, window):
         super(videoGet, self).__init__()
         self.w = window
-        vid = window.initDet.det.dets.vid_path
-        # print(vid)
-        self.stream = cv2.VideoCapture(vid)
-        (self.grabbed, self.frame) = self.stream.read()
-        self.fps = int(self.stream.get(cv2.CAP_PROP_FPS))
+        # vid = window.initDet.det.dets.vid_path
+        # # print(vid)
+        # self.stream = cv2.VideoCapture(vid)
+        # (self.grabbed, self.frame) = self.stream.read()
+        # self.fps = int(self.stream.get(cv2.CAP_PROP_FPS))
         self.stopped = False
      
         
     def run(self):
-         while not self.stopped:
-            if not self.grabbed:
-                self.stop()
-            else:
-                (self.grabbed, self.frame) = self.stream.read()
-                cv2.imshow('s', self.frame)
-                cv2.waitKey(1)
-                time.sleep((1.0/(self.fps)))
-                QtImg = cvImgtoQtImg(self.frame)# Convert frame data to PyQt image format
+        
+        for frame in self.w.vQueue:
+        #  while not self.stopped:
+            now = time.time()
+            if not self.stopped:
+            #     self.stop()
+            # else:
+            # frame = self.w.vQueue
+                # cv2.imshow('s', frame)
+                # cv2.waitKey(1)
+                # time.sleep((1.0/(self.w.w.initDet.det.dets.sfps)))
+                QtImg = cvImgtoQtImg(frame)# Convert frame data to PyQt image format
                 qim = QtGui.QPixmap.fromImage(QtImg)
+                timediff = time.time() - now
+                if (timediff<(1.0/(self.w.w.initDet.det.dets.sfps))):
+                    time.sleep((1.0/(self.w.w.initDet.det.dets.sfps)) - timediff)
+                else:
+                    print(' ',  end='\r')
                 self.imgUpdate.emit(qim)
-  
+                # time.sleep((1.0/(self.w.w.initDet.det.dets.sfps)))
+        self.finished.emit()
+        self.stopped = True
     def stop(self):
         self.stopped = True     
             
