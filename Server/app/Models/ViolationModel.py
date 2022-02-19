@@ -1,3 +1,4 @@
+import datetime
 from mongoengine import *
 
 
@@ -9,8 +10,8 @@ class dc_violation(Document):
     roadID = StringField()
     # violationRecord = FileField()
     lengthOfViolation  = StringField()
-    startDateAndTime = DateField()
-    endDateAndTime = DateField()
+    startDateAndTime = StringField()
+    endDateAndTime = StringField()
 
     def to_json(self):
         return{
@@ -20,6 +21,6 @@ class dc_violation(Document):
             "roadID": self.roadID,
             # "violationRecord": self.violationRecord,
             "lengthOfViolation": self.lengthOfViolation,
-            "StartdateAndTime": self.startDateAndTime,
-            "EnddateAndTime": self.endDateAndTime
+            "startDateAndTime": self.startDateAndTime,
+            "endDateAndTime": self.endDateAndTime
         }

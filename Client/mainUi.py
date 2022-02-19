@@ -34,6 +34,7 @@ import requests
 import pandas as pd
 from sys import *
 import cv2 as cv
+import dateutil.parser
 
 #NOTE: Si pag save kang road saka playback yaon igdi sa file, control F 'save road' saka 'save playback' ka nalang
 # si pag save kang violation nasa track.py sa detection_module control-F 'save violation' ka nalang ulit
@@ -362,10 +363,10 @@ class TableUi(QtWidgets.QMainWindow):
             self.tableWidget.setItem(i,2, QTableWidgetItem(self.data[i]['roadName']))
             self.tableWidget.item(i,2).setTextAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
             self.tableWidget.setItem(i,3, QTableWidgetItem(self.data[i]['lengthOfViolation']))
-            self.tableWidget.item(i,3).setTextAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
-            self.tableWidget.setItem(i,4, QTableWidgetItem(self.data[i]['lengthOfViolation']))
+            self.tableWidget.item(i,3).setTextAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)        
+            self.tableWidget.setItem(i,4, QTableWidgetItem(str(self.data[i]['startDateAndTime'])))
             self.tableWidget.item(i,4).setTextAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
-            self.tableWidget.setItem(i,5, QTableWidgetItem(self.data[i]['lengthOfViolation']))
+            self.tableWidget.setItem(i,5, QTableWidgetItem(str(self.data[i]['endDateAndTime'])))
             self.tableWidget.item(i,5).setTextAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
             # for j in range(5):
             #     self.tableWidget.setItem(i,j, QTableWidgetItem(data[i][j]))
@@ -409,6 +410,7 @@ class TableUi(QtWidgets.QMainWindow):
         # r = requests.delete(url = baseURL + "/ViolationDelete",json=data,headers=headers )
         # print(r)
         # self.update
+
         
     def finishedDelViolation(self, response):
         self.delThread.quit()
