@@ -231,7 +231,7 @@ class det:
 
                             # im0 = cropped frame
                             # im = full frame
-                            
+                            temp = "Test"     
                             # draw boxes for visualization
                             if len(outputs) > 0:
                                 for j, (output, conf) in enumerate(zip(outputs, confs)):
@@ -246,7 +246,7 @@ class det:
                                         self.vehicleInfos['finalTime'][index] = float(int(time_sync()-self.vehicleInfos['startTime'][index]))
                                         sec = self.vehicleInfos['finalTime'][index] 
                                         t = str(dtime.timedelta(seconds=sec))
-                                        if sec >= 10: # means 5 mins
+                                        if sec == 10: # means 5 mins
                                             col = (0,0,255)
                                             
                                             print(self.window.getVioaltionRecord)
@@ -272,7 +272,11 @@ class det:
                                                             'startDateAndTime' :datetime.fromtimestamp(self.vehicleInfos['startTime'][index]).strftime("%A, %B %d, %Y %I:%M:%S"),
                                                             'endDateAndTime' : datetime.fromtimestamp(float(int(time_sync()))).strftime("%A, %B %d, %Y %I:%M:%S")
                                                         }
-                                            self.saveViolation(data) #calling the saveViolation Function to save the data to the database
+                                            
+                                            if data['violationID'] != temp: 
+                                                self.saveViolation(data) #calling the saveViolation Function to save the data to the database
+                                                temp = data['violationID']
+                                                
                                         elif sec > 300: #exceed 5 mins
                                             col = (0,0,255)
                                         else:
