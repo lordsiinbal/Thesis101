@@ -113,7 +113,7 @@ def compute_thresh(w, h):
 # NOTE: resason for doing this is.... instead of doing the filtering of stationary in outpt loop after the deepsort update
 # it is more efficient to only pass vehicles that aren't moving in deepsort so that the swapping of ID's would be less likely
 # to occur.
-def isStationary(xy,  xywhs, confs, clss, PREV_XY, frm_id, fps):
+def isStationary(xy,  xywhs, confs, clss, PREV_XY, frm_id, fps, strt_time):
     xy = np.asarray((xy), dtype=int)
     res = np.zeros(len(xy), dtype=int)
     if len(xy) !=0:
@@ -127,7 +127,11 @@ def isStationary(xy,  xywhs, confs, clss, PREV_XY, frm_id, fps):
     xywhs = xywhs[stationary]
     confs = confs[stationary]
     clss = clss[stationary]
-    return xywhs, confs, clss, xy if frm_id%fps == 0 else PREV_XY
+    if time.time()-strt_time > 0: # means a second has passed
+        xy = PREV_XY
+        strt_time = time.time() # initiate again a new timer
+    return xywhs, confs, clss, xy 
+    
 
 def apply_roi_in_scene(roi, im1):
     im = np.copy(im1)
