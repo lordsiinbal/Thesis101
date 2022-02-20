@@ -163,6 +163,9 @@ class det:
     def detect(self):
         print("it has started")
         self.flag = True
+        temp ="Test"
+        # tempId = []
+        flagID = True
         for frame_idx, (path, img, im0s, vid_cap, s, frm_id, vid_fps, video_getter, im, ret, tim) in enumerate(self.dataset):
             if not self.stopped:
                 self.vid_fps = vid_fps
@@ -250,21 +253,27 @@ class det:
                                         self.vehicleInfos['finalTime'][index] = float(int(time_sync()-self.vehicleInfos['startTime'][index]))
                                         sec = self.vehicleInfos['finalTime'][index] 
                                         t = str(dtime.timedelta(seconds=sec))
-                                        if sec == 300: # means 5 mins
+                                        if sec == 10: # means 5 mins
                                             col = (0,0,255)
                                             
-                                            print(self.window.getVioaltionRecord)
-                                            if self.window.getVioaltionRecord : #determining if the dataRoadViolation is empty
-                                                violationIDLatest=str(self.window.getVioaltionRecord[len(self.window.getVioaltionRecord)-1]['violationID']).split("-")
-                                                print(violationIDLatest)
+                                            if flagID:
+
+                                                if self.window.getViolationRecord: #determining if the dataRoadViolation is empty
+                                                    violationIDLatest=str(self.window.getViolationRecord[len(self.window.getViolationRecord)-1]['violationID']).split("-")
+                                                    
+                                                    intViolationID=int(violationIDLatest[1]) + 1
+                                                    violationID="V-" + str(intViolationID).zfill(7)
+                                                    
+                                                    
+                                                else:
+                                                    violationID = "V-0000001"
+                                            else:
+                                                violationIDLatest=violationID.split("-")
+                                                    
                                                 intViolationID=int(violationIDLatest[1]) + 1
                                                 violationID="V-" + str(intViolationID).zfill(7)
-                                                print(violationID)
-                                                
-                                            else:
-                                                violationID = "V-0000001"
 
-                                            print(self.window.window.label.text())
+                                            
                                             # save violation here
                                             #making the data a json type
                                             data = {
@@ -273,10 +282,15 @@ class det:
                                                             'roadName' : self.window.window.label.text(),
                                                             'roadID' : self.window.roadIDGlobal,
                                                             'lengthOfViolation' : str(dtime.timedelta(seconds=sec)),
-                                                            'startDateAndTime' :datetime.fromtimestamp(self.vehicleInfos['startTime'][index]).strftime("%A, %B %d, %Y %I:%M:%S"),
-                                                            'endDateAndTime' : datetime.fromtimestamp(float(int(time_sync()))).strftime("%A, %B %d, %Y %I:%M:%S")
-                                                        }
-                                            self.saveViolation(data) #calling the saveViolation Function to save the data to the database
+                                                            'startDateAndTime' :str(datetime.fromtimestamp(self.vehicleInfos['startTime'][index]).strftime("%m/%d, %I:%M:%S %p")),
+                                                            'endDateAndTime' : str(datetime.fromtimestamp(float(int(time_sync()))).strftime("%m/%d, %I:%M:%S %p"))
+                                            }
+                                            if data['violationID'] != temp :             
+                                                self.saveViolation(data) #calling the saveViolation Function to save the data to the database
+                                                # tempId.append(id)
+                                                flagID = False
+                                                temp = data['violationID']
+
                                         elif sec > 300: #exceed 5 mins
                                             col = (0,0,255)
                                         else:
@@ -370,7 +384,6 @@ class det:
     
     def saveViolation(self,data):
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-        print("violation 1")
         print(data)
         r = requests.post(url = baseURL + "/ViolationInsert",data=json.dumps(data),headers=headers)
         print(r)
@@ -398,4 +411,3 @@ class det:
     #     print('Results saved to %s' % save_path)
     #     if platform == 'darwin':  # MacOS
     #         os.system('open ' + save_path)
-
