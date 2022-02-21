@@ -1,5 +1,8 @@
 from asyncio.windows_events import NULL
+from base64 import encode
 from email import header
+from encodings import utf_8
+import encodings
 from importlib import reload
 from itertools import count
 import json
@@ -195,7 +198,7 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
             self.labelImage.setMouseTracking(True)
             self.labelImage.setFocusPolicy(QtCore.Qt.ClickFocus)
             self.labelImage.setText("") #emptying text 
-            self.labelImage.setPixmap(QtGui.QPixmap(str(self.data[len(self.data)-1]['roadCaptured'])))   #get show Image inside labelImage
+            self.labelImage.setPixmap(QtGui.QPixmap(roadPath = self.roadCapturedDecoder(len(self.data)-1,self.data)  ))   #get show Image inside labelImage
             self.labelImage.setScaledContents(True)
             self.labelImage.setObjectName("label")  #set 
             self.verticalLayout.addWidget(self.labelImage)
@@ -230,7 +233,7 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
                     self.labelImage.setMouseTracking(True)
                     self.labelImage.setFocusPolicy(QtCore.Qt.ClickFocus)
                     self.labelImage.setText("") #emptying text 
-                    self.labelImage.setPixmap(QtGui.QPixmap(str( data[x]['roadCaptured'])))   #get show Image inside labelImage
+                    self.labelImage.setPixmap(QtGui.QPixmap(roadPath = self.roadCapturedDecoder(x,data)))   #get show Image inside labelImage
                     self.labelImage.setScaledContents(True)
                     self.labelImage.setObjectName("label")  #set 
                     self.verticalLayout.addWidget(self.labelImage)
@@ -242,7 +245,17 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
                     x=x+1       #iterate x
                 row=row+1       #iterate row
         return row
-   
+
+    def roadCapturedDecoder(self, x,data):
+        # print(numpy.array(data[x]['roadCaptured']))
+        # roi = open("images/"+data[x]['roadID']+".txt", "w")
+        # roi.write(data[x]['roadCaptured'].replace("b", "").replace("'", ""))
+        # roi.close()
+        roadCap =data[x]['roadCaptured'].replace("b", "").replace("'", "")
+
+        cv2.imwrite('images/{}.jpg'.format(data[x]['roadID']), numpy.asarray(roadCap, dtype = numpy.uint32))
+        roadAddress="images/" + data[x]['roadID'] + ".jpg"
+        return roadAddress
 
     def loading(self):
         self.flagRoad= True
@@ -714,13 +727,17 @@ class Controller:
                     roadID = "R-000000"+str(read(type)+1)
  
 
-                cv.imwrite(str(PATH)+"/images/{}.jpg".format(roadID), self.roadImage) #writing the image with ROI to Client/images path
-                roadCapturedJPG = str(PATH)+"\\\images\\\\"+roadID+".jpg"
+                # cv.imwrite(str(PATH)+"/images/{}.jpg".format(roadID), self.roadImage) #writing the image with ROI to Client/images path
+                # roadCapturedJPG = str(PATH)+"\\\images\\\\"+roadID+".jpg"
                 #making the data a json type
+                roi = open("asd.txt", "w")
+                roi.write(str(data['roadCaptured']))
+                roi.close()
+                
                 data = {
                     'roadID' : roadID,
                     'roadName' : self.roadPaint.roadNameValue,
-                    'roadCaptured' : roadCapturedJPG,
+                    'roadCaptured' :  self.roadImage.tolist(),
                     'roadBoundaryCoordinates' : pd.Series(self.ROI).to_json(orient='values')
                     # 
                 }

@@ -1,5 +1,8 @@
+from encodings import utf_8
 from flask import jsonify, Blueprint
 from mongoengine import *
+import numpy
+import pandas as pd
 
 
 get = Blueprint('get',__name__)
@@ -18,7 +21,25 @@ def UserFetchAll():
 
 @get.route('/RoadFetchAll', methods=['GET'])
 def RoadFetchAll():
-    return jsonify(dc_road.objects)
+    # roadPic=dc_road.objects()
+    # photo = roadPic.roadCaptured.read()
+    # # content_type =roadPic.roadCaptured.content_type
+    # print(photo)
+    # # print(jsonify(dc_road.objects))
+    data = []
+
+    for roadPicture in dc_road.objects:
+
+        
+
+        data.append({
+            'roadID' : roadPicture.roadID,
+            'roadName' : roadPicture.roadName,
+            'roadBoundaryCoordinates' :roadPicture.roadBoundaryCoordinates,
+            'roadCaptured' : str(roadPicture.roadCaptured.read())
+        })
+# numpy.asarray().tolist()
+    return jsonify(data)
 
 @get.route('/ViolationFetchAll', methods=['GET'])
 def ViolationFetchAll():
