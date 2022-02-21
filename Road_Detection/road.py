@@ -61,7 +61,7 @@ def detect_road(img_orig):
     upper = lower * 3
 
 
-    edges = cv2.Canny(img,lower,upper,1) # default 75, 200
+    edges = cv2.Canny(img,lower,upper,3) # default 75, 200
 
 
     # Inverting the edges image then running erosion to make the edges thicker and eliminate false edges
