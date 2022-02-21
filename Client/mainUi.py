@@ -661,7 +661,7 @@ class Controller:
         # stop detection
         try:
             self.initDet.det.dets.stop()
-            # time.sleep(0.5)
+            time.sleep(0.2)
         except:
             pass
         self.restart()
