@@ -282,7 +282,7 @@ class det:
                                                             'startDateAndTime' :str(datetime.fromtimestamp(self.vehicleInfos['startTime'][index]).strftime("%m/%d, %I:%M:%S %p")),
                                                             'endDateAndTime' : str(datetime.fromtimestamp(float(int(time_sync()))).strftime("%m/%d, %I:%M:%S %p"))
                                             }
-                                            if data['violationID'] != temp :             
+                                            if data['violationID'] != temp:             
                                                 self.saveViolation(data) #calling the saveViolation Function to save the data to the database
                                                 # tempId.append(id)
                                                 flagID = False

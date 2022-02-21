@@ -3,7 +3,7 @@ from mongoengine import *
 class dc_road(Document):
     roadID = StringField()
     roadName  = StringField()
-    roadCaptured  = StringField()
+    roadCaptured  = FileField()
     roadBoundaryCoordinates  = StringField()
 
     def to_json(self):
