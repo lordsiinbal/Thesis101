@@ -1,0 +1,9 @@
+02/21, 01:23:45 PM
+inference: python track.py --source data/ --yolo_model yolov5s6.pt --img 640  --deep_sort_model osnet_ain_x0_25 --classes 2 3 5 7 --agnostic-nms --save-vid --conf-thres 0.3 --save-crop
+
+runs\track\exp\XVR_ch5_main_20220114090004_20220114100004.mp4
+{'vehicleID': '122', 'class': 'car', 'frameStart': 3804, 'timeStart': '0:03:10.200000', 'lengthOfViolation': '0:05:00', 'imagePath': WindowsPath('runs/track/exp/crops/car/122.jpg')}
+{'vehicleID': '126', 'class': 'car', 'frameStart': 3843, 'timeStart': '0:03:12.150000', 'lengthOfViolation': '0:05:00', 'imagePath': WindowsPath('runs/track/exp/crops/car/126.jpg')}
+{'vehicleID': '266', 'class': 'car', 'frameStart': 8084, 'timeStart': '0:06:44.200000', 'lengthOfViolation': '0:05:00', 'imagePath': WindowsPath('runs/track/exp/crops/car/266.jpg')}
+{'vehicleID': '440', 'class': 'car', 'frameStart': 13610, 'timeStart': '0:11:20.500000', 'lengthOfViolation': '0:05:00', 'imagePath': WindowsPath('runs/track/exp/crops/car/440.jpg')}
+{'vehicleID': '1368', 'class': 'truck', 'frameStart': 41723, 'timeStart': '0:34:46.150000', 'lengthOfViolation': '0:05:00', 'imagePath': WindowsPath('runs/track/exp/crops/truck/1368.jpg')}
