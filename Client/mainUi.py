@@ -246,7 +246,10 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
 
     def loading(self):
         self.flagRoad= True
-        
+         # saving roi to txt file for evaluation
+        f = open("roi.txt", "w")
+        f.write(self.selected['roadBoundaryCoordinates'])
+        f.close()
         self.selectedROI= json.loads(self.selected['roadBoundaryCoordinates'])
         self.selectedROI= numpy.asarray(self.selectedROI,dtype=numpy.int32)
         self.selectedRoadImage  = self.selected['roadCaptured']
@@ -688,6 +691,7 @@ class Controller:
                         pass
                     self.road.flagRoad = False
                     self.roadImage = cv.imread(self.road.selectedRoadImage)
+                    print('selected road image shape', self.roadImage.shape)
                     self.roadIDGlobal = self.road.selectedRoadID
             except AttributeError:
                 # for btn new
@@ -724,6 +728,7 @@ class Controller:
                     'roadBoundaryCoordinates' : pd.Series(self.ROI).to_json(orient='values')
                     # 
                 }
+               
                 # print(data['roadCaptured'])
                 self.roadIDGlobal = roadID
                 self.saveRoad(data)

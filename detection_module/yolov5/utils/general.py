@@ -107,7 +107,7 @@ os.environ['NUMEXPR_MAX_THREADS'] = str(NUM_THREADS)  # NumExpr max threads
 
 def compute_thresh(w, h):
     area = w*h
-    thresh = area * 0.0005
+    thresh = area * 0.0009
     thresh = thresh.astype(int)
     return thresh
 
