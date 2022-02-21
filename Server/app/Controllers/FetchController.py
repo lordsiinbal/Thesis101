@@ -26,17 +26,19 @@ def RoadFetchAll():
     # # content_type =roadPic.roadCaptured.content_type
     # print(photo)
     # # print(jsonify(dc_road.objects))
+    
+
     data = []
 
     for roadPicture in dc_road.objects:
-
-        
-
+        # roi = open('asd.txt', "w")
+        # # roi.write(str(roadPicture.roadCaptured.read().decode()))
+        # roi.close()
         data.append({
             'roadID' : roadPicture.roadID,
             'roadName' : roadPicture.roadName,
             'roadBoundaryCoordinates' :roadPicture.roadBoundaryCoordinates,
-            'roadCaptured' : str(roadPicture.roadCaptured.read())
+            'roadCaptured' : str(roadPicture.roadCaptured.read().decode())
         })
 # numpy.asarray().tolist()
     return jsonify(data)
