@@ -29,5 +29,7 @@ pip install -r requirements.txt
 
 ## Repositories that have helped us:
 yolov5 - https://github.com/ultralytics/yolov5
+
 yolov5_deepsort_pytorch - https://github.com/mikel-brostrom/Yolov5_DeepSort_Pytorch
+
 deep-person-reid - https://github.com/KaiyangZhou/deep-person-reid
