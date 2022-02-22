@@ -218,14 +218,17 @@ class det:
                         xywhs = xyxy2xywh(det[:, 0:4])
                         confs = det[:, 4]
                         clss = det[:, 5]
-                        xy = xywhs.cpu().detach().numpy()
+                        xy = wh = xywhs.cpu().detach().numpy()
+                        wh = wh[:, 2:]
                         xy = xy[:, :2]
+                        
+                        
                         
                         if frame_idx > 0: # if on the 1st frame of vid, assume no previous frame
                             
                             # After eliminating vehicles outside ROI, eliminate moving vehicles
                             t8 = time_sync()
-                            xywhs, confs, clss, self.PREV_XY = isStationary(xy, xywhs, confs, clss, self.PREV_XY, frm_id, vid_fps, self.start_time)
+                            xywhs, confs, clss, self.PREV_XY, self.start_time = isStationary(xy, wh, xywhs, confs, clss, self.PREV_XY, frm_id, vid_fps, self.start_time)
                             t9 = time_sync()
                             # pass detections to deepsort
                             t4 = time_sync()
@@ -250,7 +253,7 @@ class det:
                                         self.vehicleInfos['finalTime'][index] = float(int(time_sync()-self.vehicleInfos['startTime'][index]))
                                         sec = self.vehicleInfos['finalTime'][index] 
                                         t = str(dtime.timedelta(seconds=sec))
-                                        if sec == 10: # means 5 mins
+                                        if sec == 300: # means 5 mins
                                             col = (0,0,255)
                                             
                                             if flagID:
@@ -306,10 +309,12 @@ class det:
                                         self.vehicleInfos['class'].append(self.names[c])
                                         label = f'{id} {self.names[c]}: {t}'
                                         annotator.box_label(bboxes, label, color=(0,165,255))
+                            self.dt[4] += t5 - tim
                             LOGGER.info(f'Done. Read-frame: ({t1-tim:.3f}), YOLO:({t3 - t2:.3f}s), DeepSort:({t5 - t4:.3f}s), Stationary:({t9 - t8:.3f}s) Overall:({t5-tim:.3f}s)')
                         else: # set the prev frame xy to current xy
                             self.PREV_XY = xy
                             self.start_time = time.time()
+                            print('in',frame_idx, ' frame')
 
                     else:
                         self.deepsort.increment_ages()
@@ -320,9 +325,11 @@ class det:
                     im = apply_roi_in_scene(self.roi, im)
                     if self.show_vid:
                         self.frame, self.ret = im, ret
+                        # cv2.imshow('a', self.frame)
+                        # key = cv2.waitKey(1)
                         # saving only when quitted
                         # if key == ord('q'):  # q to quit
-                        #     video_getter.stop()
+                            # video_getter.stop()
                             # Print results
                             # startTime = []
                             # endTime = []
@@ -371,7 +378,7 @@ class det:
             else:
                 video_getter.stop() 
                 t = tuple(x / self.seen * 1E3 for x in self.dt)  # speeds per image
-                LOGGER.info(f'Speed: %.1fms pre-process, %.1fms inference, %.1fms NMS, %.1fms deep sort update per image at shape {(1, 3, *self.imgsz)}. \nAverage speed of %.1fms per frame' % t)
+                LOGGER.info(f'Speed: %.1fms pre-process, %.1fms inference, %.1fms NMS, %.1fms deep sort update per image at shape {(1, 3, *self.imgsz)}. \nAverage speed of %.1fms per detection' % t)
                 raise StopIteration        
                 
     def stop(self):
