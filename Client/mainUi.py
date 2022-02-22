@@ -484,7 +484,7 @@ class MainUi(QtWidgets.QMainWindow):
 
     def activePlayback(self):
         try:
-            self.w.initDet.det.dets.show_vid = False
+            self.w.initDet.det.dets.save_img = False
             # self.w.initDet.det.dets.stop()
             self.saveVid()
             self.vQueue = self.w.initDet.det.dets.vidFrames.copy()
@@ -532,7 +532,7 @@ class MainUi(QtWidgets.QMainWindow):
     def activeWatch(self):
         try:
             self.getVid.stop()
-            self.w.initDet.det.dets.show_vid = True
+            self.w.initDet.det.dets.save_img = True
         except:
             pass
         self.stackedWidget.setCurrentWidget(self.watchingPage)
@@ -853,7 +853,7 @@ class Worker(QtCore.QObject):
             pass
         # print(threading.active_count())
         while not self.w.initDet.det.dets.stopped:
-            if self.w.initDet.det.dets.show_vid:
+            if self.w.initDet.det.dets.save_img:
                 if f == self.w.initDet.det.dets.f:
                     img = numpy.copy(self.w.initDet.det.dets.frame) #make a copy of frame
                     QtImg = cvImgtoQtImg(img)# Convert frame data to PyQt image format

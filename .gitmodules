@@ -2,3 +2,9 @@
 	path = Client
 	url = https://github.com/lordsiinbal/Thesis101
 	branch = master
+[submodule "yolov5"]
+	path = yolov5
+	url = https://github.com/ultralytics/yolov5
+[submodule "deep_sort"]
+	path = deep_sort
+	url = https://github.com/mikel-brostrom/Yolov5_DeepSort_Pytorch
