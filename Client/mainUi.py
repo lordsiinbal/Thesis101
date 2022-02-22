@@ -1,5 +1,8 @@
 from asyncio.windows_events import NULL
+from base64 import encode
 from email import header
+from encodings import utf_8
+import encodings
 from importlib import reload
 from itertools import count
 import json
@@ -35,6 +38,8 @@ import pandas as pd
 from sys import *
 import cv2 as cv
 import dateutil.parser
+import os.path
+from os import path
 
 #NOTE: Si pag save kang road saka playback yaon igdi sa file, control F 'save road' saka 'save playback' ka nalang
 # si pag save kang violation nasa track.py sa detection_module control-F 'save violation' ka nalang ulit
@@ -194,7 +199,7 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
             self.labelImage.setMouseTracking(True)
             self.labelImage.setFocusPolicy(QtCore.Qt.ClickFocus)
             self.labelImage.setText("") #emptying text 
-            self.labelImage.setPixmap(QtGui.QPixmap(str(self.data[len(self.data)-1]['roadCaptured'])))   #get show Image inside labelImage
+            self.labelImage.setPixmap(QtGui.QPixmap(self.roadCapturedDecoder(len(self.data)-1,self.data)  ))   #get show Image inside labelImage
             self.labelImage.setScaledContents(True)
             self.labelImage.setObjectName("label")  #set 
             self.verticalLayout.addWidget(self.labelImage)
@@ -229,7 +234,7 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
                     self.labelImage.setMouseTracking(True)
                     self.labelImage.setFocusPolicy(QtCore.Qt.ClickFocus)
                     self.labelImage.setText("") #emptying text 
-                    self.labelImage.setPixmap(QtGui.QPixmap(str( data[x]['roadCaptured'])))   #get show Image inside labelImage
+                    self.labelImage.setPixmap(QtGui.QPixmap(self.roadCapturedDecoder(x,data)))   #get show Image inside labelImage
                     self.labelImage.setScaledContents(True)
                     self.labelImage.setObjectName("label")  #set 
                     self.verticalLayout.addWidget(self.labelImage)
@@ -241,7 +246,49 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
                     x=x+1       #iterate x
                 row=row+1       #iterate row
         return row
-   
+
+    def roadCapturedDecoder(self, x,data):
+        # print(numpy.array(data[x]['roadCaptured']))
+        # roi = open("images/"+data[x]['roadID']+".txt", "w")
+        # roi.write(data[x]['roadCaptured'].replace("b", "").replace("'", ""))
+        # roi.close()
+        # roadCap =data[x]['roadCaptured'].split("'")
+        # roi = open("images/"+data[x]['roadID']+".txt", "w")
+        # roi.write(roadCap[1])
+        # roi.close()
+        # with open(r"images/"+data[x]['roadID']+".txt", encoding='UTF8') as f:
+        #     contents = f.read()
+
+        # contents=numpy.fromstring(data[x]['roadCaptured'], dtype=numpy.int32,)
+        # contents=numpy.frombuffer(data[x]['roadCaptured'].encode(),'utf-8')
+        
+        # contents=data[x]['roadCaptured']
+        # roi = open("images/"+data[x]['roadID']+".txt", "w")
+        # roi.write(str(data[0]['roadCaptured']))
+        # roi.close()
+        # # contents= numpy.array(data[x]['roadCaptured'])
+        # # contents1=numpy.fromstring(contents, dtype='uint8')
+        # # content=cv2.cvtColor(contents,cv2.COLOR_BGR2GRAY )
+        # path = r'images/road.jpg'
+        # asd=cv2.imread(path)
+        # print(asd)
+        # roi = open("images/"+data[x]['roadID']+".txt", "w")
+        # roi.write(str(data[0]['roadCaptured']))
+        # roi.close()
+        roadAddress="images/" + data[x]['roadID'] + ".jpg"
+        # f = open("images/"+data[x]['roadID']+".txt", "r")
+        if not path.exists("image/"+ data[x]['roadID']+".txt"): #verifying if the file is exist in the directory
+            roadReplaced=str(data[x]['roadCaptured'].replace("[", "").replace("]","").replace(" ", "")) #eliminating the none number except comma
+            roadConverted=numpy.fromstring(roadReplaced, dtype=int, sep=',') #converting from string to number and making it a numpy array
+            # print(len(roadConverted))
+            roadArr=roadConverted.reshape(720,1280, 3) #reshaping the array to 720xx1280
+            # print(numpy.array(roadArr,dtype=numpy.uint32))
+                
+        
+            # print(numpy.array(data[0]['roadCaptured'],dtype=numpy.int32))
+            
+            cv2.imwrite(r'images/{}.jpg'.format(data[x]['roadID']),  numpy.array(roadArr,dtype=numpy.int32)) #writing the array to image with datatype int32
+        return roadAddress
 
     def loading(self):
         self.flagRoad= True
@@ -714,17 +761,20 @@ class Controller:
                     # print(roadID)
                     
                 else:
-                    type = 'road'
-                    roadID = "R-000000"+str(1)
+                    roadID = "R-0000001"
  
 
-                cv.imwrite(str(PATH)+"/images/{}.jpg".format(roadID), self.roadImage) #writing the image with ROI to Client/images path
-                roadCapturedJPG = str(PATH)+"\\\images\\\\"+roadID+".jpg"
+                # cv.imwrite(str(PATH)+"/images/{}.jpg".format(roadID), self.roadImage) #writing the image with ROI to Client/images path
+                # roadCapturedJPG = str(PATH)+"\\\images\\\\"+roadID+".jpg"
                 #making the data a json type
+                roi = open("asd.txt", "w")
+                roi.write(str(data['roadCaptured']))
+                roi.close()
+                
                 data = {
                     'roadID' : roadID,
                     'roadName' : self.roadPaint.roadNameValue,
-                    'roadCaptured' : roadCapturedJPG,
+                    'roadCaptured' :  self.roadImage.tolist(),
                     'roadBoundaryCoordinates' : pd.Series(self.ROI).to_json(orient='values')
                     # 
                 }
