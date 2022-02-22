@@ -10,6 +10,7 @@ Server/app/__pycache__/
 Server/app/Controllers/__pycache__/
 Server/app/Models/__pycache__/
 Client/images
+Server/run/Images
 
 # Files
 *.weights
