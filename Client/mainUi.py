@@ -46,7 +46,6 @@ import sys
 import os
 sys.path.append("../")
 from main import processRoad, detection # main function to run detection
-from records.dbProcess import save, read
 
 PATH = os.getcwd()
 
@@ -548,7 +547,8 @@ class MainUi(QtWidgets.QMainWindow):
     def saveVid(self):
         
         # save playback here
-        self.playbackInfo['playbackID'].append(read('playback')+1)
+        # self.playbackInfo['playbackID'].append(read('playback')+1)
+        self.playbackInfo['playbackID'].append(1)
         self.playbackInfo['playbackVideo'].append(self.w.initDet.det.dets.vid_path) # si path ini kang video playback nasa detection_module/runs/
         duration = self.w.initDet.det.dets.frm_id / self.w.initDet.det.dets.vid_fps
         duration = str(dtime.timedelta(seconds=float(int(duration))))
