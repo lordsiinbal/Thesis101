@@ -1,4 +1,4 @@
-# DetectCore 
+# DetectCore -- road detection only
 
 A python application that detects, tracks and save illegaly parked vehicles.
 
@@ -13,7 +13,7 @@ If gpu supported, install CUDA here: https://developer.nvidia.com/cuda-toolkit
 clone this repo
 
 ```bash 
-git clone -b new_main https://github.com/lordsiinbal/Thesis101.git
+git clone -b gui-road https://github.com/lordsiinbal/Thesis101.git
 ```
 
 Update submodule (deep_sort/deep_sort/deep/reid)

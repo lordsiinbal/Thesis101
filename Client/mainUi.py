@@ -791,15 +791,17 @@ class Controller:
                     # print('det is running')
                     pass
             except:
+                pass
+                # eto yung code sa detection, kinoment ko lang
                 # print('det is not running')
                 # if detection is not running
-                self.thread = QThread()
-                self.initDet = Worker(self)
-                self.initDet.moveToThread(self.thread)
-                self.thread.started.connect(self.initDet.initDet)
-                self.initDet.finished.connect(self.thread.quit)
-                self.thread.finished.connect(self.finishedInitDet) # execute when the task in thread is finised
-                self.thread.start()
+                # self.thread = QThread()
+                # self.initDet = Worker(self)
+                # self.initDet.moveToThread(self.thread)
+                # self.thread.started.connect(self.initDet.initDet)
+                # self.initDet.finished.connect(self.thread.quit)
+                # self.thread.finished.connect(self.finishedInitDet) # execute when the task in thread is finised
+                # self.thread.start()
                 # print("started init det")
         else:
             ctypes.windll.user32.MessageBoxW(0, "Please insert a video first", "Empty Video file", 1)

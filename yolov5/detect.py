@@ -243,7 +243,7 @@ class det:
                                         if self.vehicleInfos['timer'][index] >= 300*fps: # means 5 mins
                                             col = (0,0,255)
                                             if not self.vehicleInfos['isSaved'][index]: # if not yet saved
-                                                if self.window.getViolationRecord: #determining if the dataRoadViolation is empty
+                                                if self.window.getViolationRecord: #determining if the dataRoadViolation is not empty
                                                     violationIDLatest=str(self.window.getViolationRecord[len(self.window.getViolationRecord)-1]['violationID']).split("-")
                                                     intViolationID=int(violationIDLatest[1]) + 1
                                                     violationID="V-" + str(intViolationID).zfill(7)
