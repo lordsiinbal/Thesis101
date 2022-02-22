@@ -1,4 +1,4 @@
-# DetectCore -- road detection only
+# DetectCore -- road detection only -- removed detection code
 
 A python application that detects, tracks and save illegaly parked vehicles.
 
@@ -14,17 +14,6 @@ clone this repo
 
 ```bash 
 git clone -b gui-road https://github.com/lordsiinbal/Thesis101.git
-```
-
-Update submodule (deep_sort/deep_sort/deep/reid)
-
-```bash 
-git submodule update --init
-```
-
-Install dependencies
-```bash 
-pip install -r requirements.txt
 ```
 
 ## Usage:
