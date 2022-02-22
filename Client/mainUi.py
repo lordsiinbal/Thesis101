@@ -715,7 +715,7 @@ class Controller:
                     
                 else:
                     type = 'road'
-                    roadID = "R-000000"+str(read(type)+1)
+                    roadID = "R-000000"+str(1)
  
 
                 cv.imwrite(str(PATH)+"/images/{}.jpg".format(roadID), self.roadImage) #writing the image with ROI to Client/images path
