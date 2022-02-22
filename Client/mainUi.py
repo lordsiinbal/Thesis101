@@ -166,8 +166,6 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
         
     # execute when all roads were fetched 
     def getAllRoad(self, response, f = None):
-        self.roadThread.quit()
-        self.loadingRetrieve.closeWindow()
         # print('done retrieve')
         if f:
             self.data = response
@@ -210,6 +208,8 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
             self.gridLayout.addWidget(self.frame,row+1,0,1,1) #added the frame inside grid layout   \
         
         # show window here if done
+        self.roadThread.quit()
+        self.loadingRetrieve.closeWindow()
         self.show()
         
     
@@ -733,8 +733,7 @@ class Controller:
                         
                         print('ROI has been changed in running confirm')
                     except:
-                        # if it is not running, pass, then ruin code below
-                        self.windowFinishing=FinishingUi()
+                        self.initializeDetection()
                         pass
                     self.road.flagRoad = False
                     self.roadImage = cv.imread(self.road.selectedRoadImage)
@@ -742,14 +741,12 @@ class Controller:
                     self.roadIDGlobal = self.road.selectedRoadID
             except AttributeError:
                 # for btn new
-                self.roadPaint.close()
                 try:
                     # if detection is currently running
                     self.initDet.det.dets.changeROI(self.ROI)
                     self.window.label.setText(self.roadPaint.roadNameValue)
                     print('ROI has been changed in running new')
                 except:
-                    self.windowFinishing=FinishingUi()
                     # if it is not running, pass then execute code below
                     pass
                 #setting up the roadID
@@ -779,26 +776,8 @@ class Controller:
                
                 # print(data['roadCaptured'])
                 self.roadIDGlobal = roadID
+                self.roadPaint.close()
                 self.saveRoad(data)
-
-            
-            try:
-                if not self.initDet.det.dets.stopped:
-                    #if detection is running
-                    #do nothing since ROI has been changed above
-                    # print('det is running')
-                    pass
-            except:
-                # print('det is not running')
-                # if detection is not running
-                self.thread = QThread()
-                self.initDet = Worker(self)
-                self.initDet.moveToThread(self.thread)
-                self.thread.started.connect(self.initDet.initDet)
-                self.initDet.finished.connect(self.thread.quit)
-                self.thread.finished.connect(self.finishedInitDet) # execute when the task in thread is finised
-                self.thread.start()
-                # print("started init det")
         else:
             ctypes.windll.user32.MessageBoxW(0, "Please insert a video first", "Empty Video file", 1)
         
@@ -819,6 +798,23 @@ class Controller:
         # print('road saved')
         self.saveRoadThread.quit()
         self.loadData.closeWindow()
+        try:
+            if not self.initDet.det.dets.stopped: # if detection is not stopped
+                #if detection is running, do nothing, don't reinitialize the detection
+                pass
+        except:
+            self.initializeDetection()
+        
+        
+    def initializeDetection(self):
+        self.windowFinishing=FinishingUi()
+        self.thread = QThread()
+        self.initDet = Worker(self)
+        self.initDet.moveToThread(self.thread)
+        self.thread.started.connect(self.initDet.initDet)
+        self.initDet.finished.connect(self.thread.quit)
+        self.thread.finished.connect(self.finishedInitDet) # execute when the task in thread is finised
+        self.thread.start()
     # this function will be executed when finished initializing detection and tracking models
     def finishedInitDet(self):
         if self.initDet.det.dets.nflag:
@@ -992,6 +988,7 @@ class ProcessData(QtCore.QObject):
             self.finished.emit(response)
         if self.type == 2: # post
             response = requests.post(url = baseURL + self.action, data=self.data,headers=self.headers)
+            print('donee road')
             self.finished.emit(response)
             
         if self.type == 3: # delete
