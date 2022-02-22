@@ -51,7 +51,6 @@ import sys
 import os
 sys.path.append("../")
 from main import processRoad, detection # main function to run detection
-from records.dbProcess import save, read
 
 PATH = os.getcwd()
 
@@ -531,7 +530,7 @@ class MainUi(QtWidgets.QMainWindow):
 
     def activePlayback(self):
         try:
-            self.w.initDet.det.dets.show_vid = False
+            self.w.initDet.det.dets.save_img = False
             # self.w.initDet.det.dets.stop()
             self.saveVid()
             self.vQueue = self.w.initDet.det.dets.vidFrames.copy()
@@ -579,7 +578,7 @@ class MainUi(QtWidgets.QMainWindow):
     def activeWatch(self):
         try:
             self.getVid.stop()
-            self.w.initDet.det.dets.show_vid = True
+            self.w.initDet.det.dets.save_img = True
         except:
             pass
         self.stackedWidget.setCurrentWidget(self.watchingPage)
@@ -595,7 +594,8 @@ class MainUi(QtWidgets.QMainWindow):
     def saveVid(self):
         
         # save playback here
-        self.playbackInfo['playbackID'].append(read('playback')+1)
+        # self.playbackInfo['playbackID'].append(read('playback')+1)
+        self.playbackInfo['playbackID'].append(1)
         self.playbackInfo['playbackVideo'].append(self.w.initDet.det.dets.vid_path) # si path ini kang video playback nasa detection_module/runs/
         duration = self.w.initDet.det.dets.frm_id / self.w.initDet.det.dets.vid_fps
         duration = str(dtime.timedelta(seconds=float(int(duration))))
@@ -761,7 +761,6 @@ class Controller:
                     # print(roadID)
                     
                 else:
-                    
                     roadID = "R-0000001"
  
 
@@ -902,7 +901,7 @@ class Worker(QtCore.QObject):
             pass
         # print(threading.active_count())
         while not self.w.initDet.det.dets.stopped:
-            if self.w.initDet.det.dets.show_vid:
+            if self.w.initDet.det.dets.save_img:
                 if f == self.w.initDet.det.dets.f:
                     img = numpy.copy(self.w.initDet.det.dets.frame) #make a copy of frame
                     QtImg = cvImgtoQtImg(img)# Convert frame data to PyQt image format

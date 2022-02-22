@@ -2,6 +2,7 @@
 
 from multiprocessing import Process, Queue
 import multiprocessing
+import sys
 from threading import Thread
 from typing import Iterable
 from winreg import QueryInfoKey
@@ -14,7 +15,7 @@ def changePath():
     import os
 
     # change Directory
-    os.chdir(os.path.join(os.getcwd(), '../detection_module\\'))
+    os.chdir(os.path.join(os.getcwd(), '../yolov5\\'))
     print(os.getcwd())
     # add to sys path
     sys.path.append(os.getcwd())
@@ -60,12 +61,13 @@ def getBgModelAndRoad(vid, queue, p):
 
 class detection:
     def __init__(self, vid, window):
-        changePath()
-        from detection_module.track import det
+        # changePath()
+        sys.path.append('/yolov5/')
+        from yolov5.detect import det
         import params
         import torch
 
-        params.imgsz *= 2 if len(params.imgsz) == 1 else 1  # expand
+        # params.imgsz *= 2 if len(params.imgsz) == 1 else 1  # expand
         with torch.no_grad():
             # calling the yolov5 and deepsort module
             # initializing the detection
