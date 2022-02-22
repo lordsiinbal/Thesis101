@@ -27,6 +27,21 @@ Install dependencies
 pip install -r requirements.txt
 ```
 
+## Usage:
+
+### Running the mongodb server
+Open cmd or terminal and change directory to 'Server/run', then run this command:
+```bash 
+python run.py
+```
+This will run the mongodb server
+
+### Running the application
+Open another cmd or terminal and change directory to 'Client/', then run this command:
+```bash 
+python mainui.py
+```
+
 ## Repositories that have helped us:
 yolov5 - https://github.com/ultralytics/yolov5
 
