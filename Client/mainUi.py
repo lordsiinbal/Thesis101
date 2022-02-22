@@ -276,7 +276,7 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
         # roi = open("images/"+data[x]['roadID']+".txt", "w")
         # roi.write(str(data[0]['roadCaptured']))
         # roi.close()
-        roadAddress="images/" + data[x]['roadID'] + ".jpg"
+        self.roadAddress="images/" + data[x]['roadID'] + ".jpg"
         # f = open("images/"+data[x]['roadID']+".txt", "r")
         if not path.exists("image/"+ data[x]['roadID']+".txt"): #verifying if the file is exist in the directory
             roadReplaced=str(data[x]['roadCaptured'].replace("[", "").replace("]","").replace(" ", "")) #eliminating the none number except comma
@@ -289,7 +289,7 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
             # print(numpy.array(data[0]['roadCaptured'],dtype=numpy.int32))
             
             cv2.imwrite(r'images/{}.jpg'.format(data[x]['roadID']),  numpy.array(roadArr,dtype=numpy.int32)) #writing the array to image with datatype int32
-        return roadAddress
+        return self.roadAddress
 
     def loading(self):
         self.flagRoad= True
@@ -299,7 +299,7 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
         f.close()
         self.selectedROI= json.loads(self.selected['roadBoundaryCoordinates'])
         self.selectedROI= numpy.asarray(self.selectedROI,dtype=numpy.int32)
-        self.selectedRoadImage  = self.selected['roadCaptured']
+        self.selectedRoadImage  = self.roadAddress
         self.selectedRoadID = self.selected['roadID']
         self.selectedRoadName = self.selected['roadName']
         self.settingUpRoad.emit()
@@ -768,9 +768,7 @@ class Controller:
                 # cv.imwrite(str(PATH)+"/images/{}.jpg".format(roadID), self.roadImage) #writing the image with ROI to Client/images path
                 # roadCapturedJPG = str(PATH)+"\\\images\\\\"+roadID+".jpg"
                 #making the data a json type
-                roi = open("asd.txt", "w")
-                roi.write(str(data['roadCaptured']))
-                roi.close()
+
                 
                 data = {
                     'roadID' : roadID,
