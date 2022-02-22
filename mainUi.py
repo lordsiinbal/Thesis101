@@ -1,5 +1,6 @@
 from asyncio.windows_events import NULL
 from itertools import count
+from select import select
 from threading import local
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtWidgets import QFileDialog
@@ -8,13 +9,14 @@ from msilib.schema import File
 import sys
 import cv2
 import time
-from PyQt5.QtWidgets import  QApplication,QFileDialog,QTableWidgetItem,QHeaderView
+from PyQt5.QtWidgets import  QApplication,QFileDialog,QTableWidgetItem,QHeaderView,QLabel,QWidget
 from PyQt5 import QtGui, QtCore
-from PyQt5.QtGui import QMovie
+from PyQt5.QtGui import QMovie,QPixmap, QPainter, QPen,QColor,QBrush,QTransform,QCursor
 from cv2 import QT_PUSH_BUTTON
-from matplotlib import widgets
-from PyQt5.QtCore import Qt,QDateTime,QDate,QTime,QTimer
+from matplotlib import image, widgets
+from PyQt5.QtCore import Qt,QDateTime,QDate,QTime,QTimer,QPoint,Qt
 from sympy import false
+from PIL import ImageQt
 def cvImgtoQtImg(cvImg):  #Define the function of opencv image to PyQt image
     QtImgBuf = cv2.cvtColor(cvImg, cv2.COLOR_BGR2BGRA)
     QtImg = QtGui.QImage(QtImgBuf.data, QtImgBuf.shape[1], QtImgBuf.shape[0], QtGui.QImage.Format_RGB32)
@@ -50,17 +52,100 @@ class roadSettingUp(QtWidgets.QWidget):#road Setting Up Loading
     def closeWindow(self):
         self.screenLabel.emit()
         self.close()#cloase Window
+
+
+class myQLabel(QWidget):
+    def __init__(self,parent=None):
+        super(myQLabel, self).__init__(parent)
+        self.verticalLayout =QtWidgets.QGridLayout(self)
+        self.label = QLabel(self)
+        self.label.setObjectName("image")
+        self.verticalLayout.addWidget(self.label)
+        canvas =QPixmap("image 1.jpg")
+        canvas.scaled(1080,720)
+        self.label.setScaledContents(True)
+        self.label.setPixmap(canvas)
+        self.drawAction=False
+        self.last_x, self.last_y = None, None
+    
+    def paintEvent(self,event):
+        pm=QtGui.QPixmap(self.label.pixmap()) 
+        painter=QtGui.QPainter(pm)
+        painter.setPen(QPen(QColor(255,0,0),50 ,Qt.SolidLine,Qt.RoundCap,Qt.RoundJoin))
+        transform=QTransform().scale(pm.width()/self.label.width(),
+                                    pm.height()/self.label.height()
+                                    )
+        painter.drawLine(100,100,50,50)
+        painter.end()
+        self.label.setPixmap(pm)    
+    def mouseMoveEvent(self,e):
+        if self.drawAction==False:
+            return
+        else:
+            if self.last_x is None:
+                self.last_x=e.x()
+                self.last_y=e.y()
+                return
+        pm=QtGui.QPixmap(self.label.pixmap()) 
+        painter=QtGui.QPainter(pm)
+        painter.setPen(QPen(QColor(255,0,0),50 ,Qt.SolidLine,Qt.RoundCap,Qt.RoundJoin))
+        transform=QTransform().scale(pm.width()/self.label.width(),
+                                    pm.height()/self.label.height()
+                                    )
+        painter.drawPoint(transform.map(e.pos()))
+        painter.end()
+        self.label.setPixmap(pm)
+        self.last_x=e.x()
+        self.last_y=e.y()
+    def mouseReleaseEvent(self,e):
+        self.last_x=None
+        self.last_y=None
+
 class RoadSetUpPaint(QtWidgets.QMainWindow):
     switch_window = QtCore.pyqtSignal() 
     def __init__(self):
-        super(RoadSetUpPaint, self).__init__()
+        super().__init__()
+        self.show()
         uic.loadUi('roadSetUp_paint.ui', self)
         self.setWindowFlag(Qt.FramelessWindowHint)
         self.btnCancel.clicked.connect(self.close)#Button Cancel
-        self.btnDone.clicked.connect(self.loading)#mouse Event 
+        self.btnDone.clicked.connect(self.loading)#mouse Event
+        self.verticalLayout = QtWidgets.QVBoxLayout(self.imageMainContainer)
+        self.image_main=myQLabel(self.imageMainContainer)
+        self.verticalLayout.addWidget(self.image_main)
+        self.btnBrush.clicked.connect(self.enableDraw)
+    def enableDraw(self):
+        self.image_main.drawAction=True
+
     def loading(self):#funtion for loading 
         self.switch_window.emit()
         self.close()
+        self.paintedImage= self.image_main.findChild(QLabel,"image")
+        image = ImageQt.fromqpixmap(self.paintedImage.pixmap())
+        image.save('test.jpg')
+    
+        
+class CctvWindow(QtWidgets.QWidget):
+    def __init__(self):
+        super(CctvWindow,self).__init__()
+        uic.loadUi('cctvWindow.ui', self)
+        self.setWindowFlag(Qt.FramelessWindowHint)
+
+
+class IpAddWindow(QtWidgets.QWidget):
+    def __init__(self):
+        super(IpAddWindow, self).__init__()
+        uic.loadUi('addIP_add.ui', self)
+        self.setWindowFlag(Qt.FramelessWindowHint)#removing title bar
+        self.btnCancel.clicked.connect(self.close)
+        
+
+        
+    
+
+
+
+
 
 class LogoutUi(QtWidgets.QWidget):#Logout Ui
     confirmLogout=QtCore.pyqtSignal()
@@ -84,7 +169,7 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
         #self.label.mousePressEvent = self.selectImage   #mouse Event for Qlabel
         self.btnNew.clicked.connect(self.switch_window.emit)    #Showing Draw road Ui
         self.btnCancel.clicked.connect(self.close)          #close window
-        self.btnConfirm.clicked.connect(self.loading)       #Loading Ui
+        self.btnConfirm.clicked.connect(self.settingUpRoad.emit)       #Loading Ui
         data=[
             [0,"images/image 1.jpg","FileName1"],[1,"images/image 1.jpg","FileName2"],
             [2,"images/image 1.jpg","FileName3"],[3,"images/image 1.jpg","FileName4"],
@@ -121,9 +206,9 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
                 self.gridLayout.addWidget(self.frame,row,y,1,1) #added the frame inside grid layout
                 x=x+1       #iterate x
             row=row+1       #iterate row
-    def loading(self):
+    """def loading(self):
         self.settingUpRoad.emit()
-        self.close()
+        self.close()"""
     def selectImage(self,event,x):
         if self.prevSelectedImage != NULL:         #border of previous selected image is set to none  
             self.newFrame=self.mainArea.findChild(QtWidgets.QFrame,self.prevSelectedImage)
@@ -148,7 +233,7 @@ class TableUi(QtWidgets.QMainWindow):
         self.tableWidget.horizontalHeader().setSectionResizeMode(
             QHeaderView.Stretch)
         _translate = QtCore.QCoreApplication.translate
-        data=[['01','Violated','San Felipe','5 minutes','01/26/22'],
+        data=[['01','Violated','San Felipe','5 minutes','01/26/2022'],
               ['02','Violated','SM Area','7 minutes','01/29/22'],
               ['03','Violated','Terminal 2','10 minutes','01/27/22'],
               ['04','Violated','Terminal 1','6 minutes','02/06/22'],
@@ -206,6 +291,8 @@ class MainUi(QtWidgets.QMainWindow):
     switch_window = QtCore.pyqtSignal()
     roadSwitch=QtCore.pyqtSignal()
     logout=QtCore.pyqtSignal()
+    addIp=QtCore.pyqtSignal()
+    addCctv=QtCore.pyqtSignal()
     def __init__(self):
         super(MainUi, self).__init__()
         uic.loadUi('frontEndUi.ui', self)
@@ -215,8 +302,11 @@ class MainUi(QtWidgets.QMainWindow):
         self.btnRoadSetup.clicked.connect(self.roadSwitch.emit)
         self.btnLogout.clicked.connect(self.logout.emit)
         self.btnAddVideo.clicked.connect(self.setUpVideo)
+        self.btnIpAdd.clicked.connect(self.addIp.emit)
+        self.btnCctv.clicked.connect(self.addCctv.emit)
         self.btnPlayback.clicked.connect(self.activePlayback)
         self.btnWatch.clicked.connect(self.activeWatch)
+
         timer = QTimer(self)
 		# adding action to timer
         timer.timeout.connect(self.showTime)
@@ -250,6 +340,7 @@ class MainUi(QtWidgets.QMainWindow):
     #Function display Video    
     def setUpVideo(self): #Initialize click event
         self.roadSwitch.emit()
+    
        
 
 class welcome(QtWidgets.QWidget):
@@ -276,10 +367,35 @@ class Controller:
         self.window = MainUi()
         self.window.switch_window.connect(self.showTable)
         self.window.roadSwitch.connect(self.showRoadSetup)
+        self.window.addIp.connect(self.showUseIpAdd)
         self.window.logout.connect(self.show_logout)
+        self.window.addCctv.connect(self.showUseCctv)
         self.window.show()
         self.login.close()
-       
+
+    def showUseCctv(self):
+        self.cctvWidget=CctvWindow()
+        self.cctvWidget.show()
+        self.cctvWidget.btnDone.clicked.connect(self.setCctvSelected)
+    def setCctvSelected(self):
+        self.window.Selected.setText("CCTV is Active:")
+        self.cctvWidget.close()
+
+    def showUseIpAdd(self):
+        self.IpAddWindow=IpAddWindow()
+        self.IpAddWindow.btnDone.clicked.connect(self.setIpSetected)         
+        self.IpAddWindow.show()
+    def setIpSetected(self):
+        ipAdd=self.IpAddWindow.textBox.text()
+        if ipAdd==None:
+            self.window.File.setText("")    
+            return
+        else:
+            self.window.Selected.setText("IP Address Selected:")    
+            self.window.File.setText(ipAdd)
+            self.IpAddWindow.close()
+          
+
     def showTable(self):
         self.newWin=TableUi()
         self.newWin.show()
@@ -289,6 +405,7 @@ class Controller:
         #self.road.selectImage.connect(self.select)
         self.road.settingUpRoad.connect(self.showSettingUproad)
         self.road.show()
+
     def show_RoadPaint(self):
         self.roadPaint=RoadSetUpPaint()
         self.roadPaint.switch_window.connect(self.showFinishingUi)
@@ -315,7 +432,7 @@ class Controller:
         self.window.labelScreen.setMinimumSize(QtCore.QSize(0, 400))#setting minimum heigth
         self.window.label.setText("San Felipe")
         self.window.verticalLayout_11.addWidget(self.window.frameWatch)#removing center aligment of frameWatch
-        self.window.btnAddVideo.hide()#hiding button Insert Video
+        self.window.frameButtons_2.hide()
         #Closing Road Setting 
     def select(self):
         print("Select Image")       
