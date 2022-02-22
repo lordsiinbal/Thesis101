@@ -2,6 +2,8 @@
 import os
 from flask import  request, jsonify, Blueprint
 from mongoengine import *
+import cv2
+import numpy as np
 
 post = Blueprint('post',__name__)
 
@@ -28,23 +30,26 @@ def RoadInsert():
     roadInsert = dc_road()
     roadInsert.roadID = data['roadID']
     roadInsert.roadName = data['roadName']
-    roadInsert.roadCaptured = data['roadCaptured']
+    
     roadInsert.roadBoundaryCoordinates = data['roadBoundaryCoordinates']
-    # filename = data['roadID']+".txt"
-    # # roi = open('%s.txt' %filename, "w")
-    # # roi.write(data['roadBoundaryCoordinates'])
-   
-    # # roi.close()
+
+    
+
+    # cv2.imwrite('Images/{}.jpg'.format(data['roadID']), np.array(data['roadCaptured']))
+    filename = "Images/"+data['roadID'] +".txt"
+    roi = open(filename, "w")
+    roi.write(str(data['roadCaptured']))
+    roi.close()
     # with open(filename, 'w') as roi:
     #     roi.write(data['roadBoundaryCoordinates'])
     # print("filesave  ", filename)
-
-    # # with open('%s.txt' % data['roadID'], 'rb') as fd:
-    # #     dc_road.roadBoundaryCoordinates.put(fd, content_type = 'text/plain')
+    
+    # with open('Images/%s.jpg' % data['roadID'], 'rb') as fd:
+    #     roadInsert.roadCaptured.put(fd, content_type = 'image/jpeg')
     # # f = GridFSProxy()
-    # to_read = open('%s.txt' % data['roadID'], 'rb')
-    # roadInsert.roadBoundaryCoordinates.put(to_read, content_type = 'text/plain', filename=os.path.basename(to_read.name))
-    # to_read.close()
+    to_read = open('Images/%s.txt' % data['roadID'], 'rb')
+    roadInsert.roadCaptured.put(to_read, content_type = 'text/plain', filename=os.path.basename(to_read.name))
+    to_read.close()
     # # roadInsert.roadBoundaryCoordinates = f
     
     # file=open(filename, "r")
@@ -54,7 +59,9 @@ def RoadInsert():
     # print(roadInsert.roadBoundaryCoordinates.filename)
     # print(roadInsert.roadBoundaryCoordinates.content_type)
     roadInsert.save()
-    return jsonify({"roadID":  roadInsert.roadID, "roadName": roadInsert.roadName,"roadCaptured": roadInsert.roadCaptured, "roadBoundaryCoordinates": roadInsert.roadBoundaryCoordinates})
+    # print('Images/%s.jpg' % data['roadID'])
+    os.remove('Images/%s.txt' % data['roadID']) 
+    return jsonify({"roadID":  roadInsert.roadID, "roadName": roadInsert.roadName, "roadBoundaryCoordinates": roadInsert.roadBoundaryCoordinates})
 
 @post.route('/ViolationInsert', methods=['POST'])
 def ViolationInsert():
