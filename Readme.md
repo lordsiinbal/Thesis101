@@ -2,12 +2,6 @@
 
 A python application that detects, tracks and save illegaly parked vehicles.
 
-## Requirements
-
-Install Pytorch >= 1.7 here: https://pytorch.org/get-started/locally/
-
-If gpu supported, install CUDA here: https://developer.nvidia.com/cuda-toolkit
-
 ## Installation guide:
 
 clone this repo
