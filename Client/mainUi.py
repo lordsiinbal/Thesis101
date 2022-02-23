@@ -152,27 +152,54 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
         self.btnCancel.clicked.connect(self.close)          #close window
         self.btnConfirm.clicked.connect(self.loading)       #Loading Ui
         self.btnDelete.clicked.connect(self.dropRoad)
+        
+        
+        # self.rThread.start()
+        # self.loadingRetrieve = ProcessingDataUi()
         # use threading when retrieving data so that gui won't freeze if there's a slow network bandwith
+        
         self.rThread = QThread()
-        self.roadRet = ProcessData(action= '/RoadFetchAll', type=1)
+        self.roadRet = ProcessData(action= '/RoadFetchIds', type=1)
         self.roadRet.moveToThread(self.rThread)
         self.rThread.started.connect(self.roadRet.ret)
-        self.roadRet.finished.connect(self.getAllRoad)
+        self.roadRet.finished.connect(self.check_if_road_exists)
         self.rThread.start()
         self.loadingRetrieve = ProcessingDataUi()
         
         # data = res.json()
         # self.dataRoadGlobal = res.json()
         
+    def check_if_road_exists(self, response):
+        self.data = response.json() # all road infos, but without road-captured
+        self.ids_to_be_fetched = []
+        self.existing_roads = []
+        for x in range(len(self.data)):
+            if not path.exists("images/"+ self.data[x]['roadID']+".jpg"): # check if image is missing/not existing in local
+                self.ids_to_be_fetched.append(self.data[x]['roadID']) # append to list of ids to be fetched
+            else:
+                self.existing_roads.append(self.data[x])
+        self.data = self.existing_roads
+        self.rThread.quit() # end Qthread
+        
+        headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+        # thread for fetching only roads that doesn't exist in ROOT/Client/images/
+        self.newThread = QThread()
+        self.gRoad = ProcessData(action= '/RoadFetch', type=4, ids_to_be_fetched= json.dumps(self.ids_to_be_fetched), h=headers)
+        self.gRoad.moveToThread(self.newThread)
+        self.newThread.started.connect(self.gRoad.ret)
+        self.gRoad.finished.connect(self.getAllRoad)
+        self.newThread.start()
+    
     # execute when all roads were fetched 
-    def getAllRoad(self, response, f = None):
+    def getAllRoad(self, response):
+        self.newThread.quit()
         # print('done retrieve')
-        if f:
-            self.data = response
-            self.dataRoadGlobal = response
-        else:
-            self.data = response.json()
-            self.dataRoadGlobal = response.json()
+        toAppend = self.data
+        if len(response.json()) >= 1 : # uif response has something to append
+            for r in response.json():
+                toAppend.append(r)
+                
+        self.data = self.dataRoadGlobal = toAppend
         self.prevSelectedImage=NULL
         
         
@@ -327,7 +354,7 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
         # self.update()
         # self.repaint()
         response = response.json()
-        self.getAllRoad(response, f=True) # add new roads
+        self.getAllRoad(response) # add new roads
         self.update()
         # self.repaint()
         
@@ -932,11 +959,11 @@ class videoGet(QtCore.QObject):
 class ProcessData(QtCore.QObject):
     """
     For retrieving \n
-    action = 'RoadFetchAll' / 'RoadDelete'/ etc\n
+    action = 'RoadFetch' / 'RoadDelete'/ etc\n
     type = 1: retrieve, 2: post, 3: delete\n
     \n
     For posting or deleting \n
-    action = 'RoadFetchAll' / 'RoadDelete'/ etc\n
+    action = 'RoadFetch' / 'RoadDelete'/ etc\n
     type = 1: retrieve, 2: post, 3: delete\n
     d = data(json)\n
     h = headers\n
@@ -944,13 +971,17 @@ class ProcessData(QtCore.QObject):
     finished = QtCore.pyqtSignal(requests.models.Response)
     
     #overloading constructor
-    def __init__(self, action, type, d = None, h = None):
+    def __init__(self, action, type, d = None, h = None, ids_to_be_fetched = None):
         super(ProcessData, self).__init__()
         if d and h:
             self.data = d
             self.headers = h
+        if ids_to_be_fetched and h:
+            self.ids_to_be_fetched = ids_to_be_fetched
+            self.headers = h
         self.action = action
         self.type = type
+      
         
     def ret(self):
         if self.type == 1: # retrieve
@@ -960,9 +991,11 @@ class ProcessData(QtCore.QObject):
             response = requests.post(url = baseURL + self.action, data=self.data,headers=self.headers)
             print('donee road')
             self.finished.emit(response)
-            
         if self.type == 3: # delete
             response = requests.delete(url = baseURL + self.action, json=self.data,headers=self.headers )
+            self.finished.emit(response)
+        if self.type == 4: # retrieve
+            response = requests.get(url = baseURL + self.action, data = self.ids_to_be_fetched , headers=self.headers)
             self.finished.emit(response)
             
         # emit result when done
