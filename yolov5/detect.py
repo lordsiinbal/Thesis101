@@ -223,8 +223,9 @@ class det:
 
                             
                             # Write results
+                            ts = time_sync()
                             if len(outputs) > 0:
-                                for j, (output, conf) in enumerate(zip(outputs, confs)):
+                                for _, (output, __) in enumerate(zip(outputs, confs)):
                                     bboxes = output[0:4]
                                     id = output[4]
                                     cls = output[5]
@@ -284,9 +285,9 @@ class det:
                                         self.vehicleInfos['class'].append(self.names[c])
                                         label = f'{id} {self.names[c]}: {t}'
                                         annotator.box_label(bboxes, label, color=(0,165,255))
-                            
+                            tss = time_sync()
                             self.dt[4] += t5 - tim
-                            LOGGER.info(f'Done. Read-frame: ({t1-tim:.3f}), YOLO:({t3 - t2:.3f}s), DeepSort:({t5 - t4:.3f}s), Stationary:({t9 - t8:.3f}s) Overall:({t5-tim:.3f}s)')
+                            LOGGER.info(f'Done. Read-frame: ({t1-tim:.3f}), YOLO:({t3 - t2:.3f}s), DeepSort:({t5 - t4:.3f}s), Stationary:({t9 - t8:.3f}s), Displaying: ({tss-ts:.3f}s) Overall:({t5-tim:.3f}s)')
                         else: # set the prev frame xy to current xy
                             self.PREV_XY = xy
                             self.start_time = time_sync()
