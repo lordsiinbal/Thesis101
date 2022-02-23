@@ -10,7 +10,7 @@ import ctypes
 import datetime as dtime
 from itertools import count
 from queue import PriorityQueue
-from threading import Thread, local
+from threading import local
 import threading
 from tkinter import Image
 from functools import singledispatch
@@ -143,8 +143,7 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
     switch_window = QtCore.pyqtSignal()
     selectImage=QtCore.pyqtSignal()
     settingUpRoad=QtCore.pyqtSignal()
-    finished = QtCore.pyqtSignal()
-    def __init__(self):
+    def __init__(self, w):
         super(RoadSetUp1, self).__init__()
         uic.loadUi(PATH+'/roadSetUp_phase1.ui', self)
         self.setWindowFlag(Qt.FramelessWindowHint)      #removing Title bar
@@ -167,9 +166,9 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
         
     # execute when all roads were fetched 
     def getAllRoad(self, response, f = None):
-        # print('done retrieve')  
         self.rThread.quit()
         self.loadingRetrieve.closeWindow()
+        # print('done retrieve')
         if f:
             self.data = response
             self.dataRoadGlobal = response
@@ -178,13 +177,6 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
             self.dataRoadGlobal = response.json()
         self.prevSelectedImage=NULL
         
-        self.displayRoads()
-        
-        # show window here if done
-      
-        self.show()
-    
-    def displayRoads(self):
         if ((len(self.data)%2)==0):
             row = self.roadCard(self.data,len(self.data))
         else:
@@ -215,7 +207,11 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
             self.label.setText(str(self.data[len(self.data)-1]['roadName']))#Assign file label
             self.labelImage.mousePressEvent =lambda event, data=self.data: self.selectImage(event,data[len(data)-1])  #mouse Event 
             self.verticalLayout.addWidget(self.label, 0, QtCore.Qt.AlignHCenter|QtCore.Qt.AlignTop)
-            self.gridLayout.addWidget(self.frame,row+1,0,1,1) #added the frame inside grid layout   \ 
+            self.gridLayout.addWidget(self.frame,row+1,0,1,1) #added the frame inside grid layout   \
+        
+        # show window here if done
+        self.show()
+        
     
     def roadCard(self,data,length):
         # print(length)
@@ -667,7 +663,7 @@ class Controller:
         # self.newWin.show()
     def showRoadSetup(self):
         # before showing road, execute background modelling and automatic road detection, must be loading
-        self.road = RoadSetUp1()
+        self.road = RoadSetUp1(self)
         self.road.switch_window.connect(self.show_RoadPaint) # for btn new
         # disable new if vidfile has value
         # # self.road.selectImage.connect(self.select)
@@ -992,6 +988,7 @@ class ProcessData(QtCore.QObject):
             self.finished.emit(response)
         if self.type == 2: # post
             response = requests.post(url = baseURL + self.action, data=self.data,headers=self.headers)
+            print('donee road')
             self.finished.emit(response)
             
         if self.type == 3: # delete
