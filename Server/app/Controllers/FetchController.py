@@ -1,5 +1,5 @@
 from encodings import utf_8
-from flask import jsonify, Blueprint
+from flask import jsonify, Blueprint, request
 from mongoengine import *
 import numpy
 import pandas as pd
@@ -42,6 +42,44 @@ def RoadFetchAll():
         })
 # numpy.asarray().tolist()
     return jsonify(data)
+
+@get.route('/RoadFetch', methods=['GET'])
+def RoadFetch():
+    # roadPic=dc_road.objects()
+    # photo = roadPic.roadCaptured.read()
+    # # content_type =roadPic.roadCaptured.content_type
+    # print(photo)
+    # # print(jsonify(dc_road.objects))
+    
+
+    data = []
+    ids = request.get_json()
+    for id in ids:
+        roadData = dc_road.objects.get(roadID=id)
+        data.append({
+            'roadID' : roadData.roadID,
+            'roadName' : roadData.roadName,
+            'roadBoundaryCoordinates' :roadData.roadBoundaryCoordinates,
+            'roadCaptured' : str(roadData.roadCaptured.read().decode())
+        }) 
+    return jsonify(data)
+
+
+# to lesssen time in loading in fethc road, get only road ids to check first if it exists in local device
+@get.route('/RoadFetchIds', methods=['GET'])
+def RoadFetchIds():
+
+    data = []
+
+    for roadPicture in dc_road.objects:
+        data.append({
+            'roadID' : roadPicture.roadID,
+            'roadName' : roadPicture.roadName,
+            'roadBoundaryCoordinates' :roadPicture.roadBoundaryCoordinates
+        })
+# numpy.asarray().tolist()
+    return jsonify(data)
+
 
 @get.route('/ViolationFetchAll', methods=['GET'])
 def ViolationFetchAll():
