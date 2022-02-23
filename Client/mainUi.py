@@ -153,12 +153,12 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
         self.btnConfirm.clicked.connect(self.loading)       #Loading Ui
         self.btnDelete.clicked.connect(self.dropRoad)
         # use threading when retrieving data so that gui won't freeze if there's a slow network bandwith
-        self.roadThread = QThread()
+        self.rThread = QThread()
         self.roadRet = ProcessData(action= '/RoadFetchAll', type=1)
-        self.roadRet.moveToThread(self.roadThread)
-        self.roadThread.started.connect(self.roadRet.ret)
+        self.roadRet.moveToThread(self.rThread)
+        self.rThread.started.connect(self.roadRet.ret)
         self.roadRet.finished.connect(self.getAllRoad)
-        self.roadThread.start()
+        self.rThread.start()
         self.loadingRetrieve = ProcessingDataUi()
         
         # data = res.json()
@@ -175,10 +175,21 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
             self.dataRoadGlobal = response.json()
         self.prevSelectedImage=NULL
         
+        
+        self.roadAddress = []
+        self.dThread = QThread()
+        self.dRoad = Decoder(self, len(self.data), self.data)
+        self.dRoad.moveToThread(self.dThread)
+        self.dThread.started.connect(self.dRoad.roadCapturedDecoder)
+        self.dRoad.finished.connect(self.roadDisplay)
+        self.dThread.start()
+        
+        
+    
+    def roadDisplay(self):
         if ((len(self.data)%2)==0):
             row = self.roadCard(self.data,len(self.data))
         else:
-            
             length=len(self.data)-1
             # print(length)
             row = self.roadCard(self.data,length)
@@ -197,7 +208,7 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
             self.labelImage.setMouseTracking(True)
             self.labelImage.setFocusPolicy(QtCore.Qt.ClickFocus)
             self.labelImage.setText("") #emptying text 
-            self.labelImage.setPixmap(QtGui.QPixmap(self.roadCapturedDecoder(len(self.data)-1,self.data)  ))   #get show Image inside labelImage
+            self.labelImage.setPixmap(QtGui.QPixmap(self.roadAddress[-1]))   #get show Image inside labelImage
             self.labelImage.setScaledContents(True)
             self.labelImage.setObjectName("label")  #set 
             self.verticalLayout.addWidget(self.labelImage)
@@ -208,7 +219,8 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
             self.gridLayout.addWidget(self.frame,row+1,0,1,1) #added the frame inside grid layout   \
         
         # show window here if done
-        self.roadThread.quit()
+        self.rThread.quit()
+        self.dThread.quit()
         self.loadingRetrieve.closeWindow()
         self.show()
         
@@ -234,7 +246,7 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
                     self.labelImage.setMouseTracking(True)
                     self.labelImage.setFocusPolicy(QtCore.Qt.ClickFocus)
                     self.labelImage.setText("") #emptying text 
-                    self.labelImage.setPixmap(QtGui.QPixmap(self.roadCapturedDecoder(x,data)))   #get show Image inside labelImage
+                    self.labelImage.setPixmap(QtGui.QPixmap(self.roadAddress[x]) )  #get show Image inside labelImage
                     self.labelImage.setScaledContents(True)
                     self.labelImage.setObjectName("label")  #set 
                     self.verticalLayout.addWidget(self.labelImage)
@@ -246,48 +258,7 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
                     x=x+1       #iterate x
                 row=row+1       #iterate row
         return row
-
-    def roadCapturedDecoder(self, x,data):
-        # print(numpy.array(data[x]['roadCaptured']))
-        # roi = open("images/"+data[x]['roadID']+".txt", "w")
-        # roi.write(data[x]['roadCaptured'].replace("b", "").replace("'", ""))
-        # roi.close()
-        # roadCap =data[x]['roadCaptured'].split("'")
-        # roi = open("images/"+data[x]['roadID']+".txt", "w")
-        # roi.write(roadCap[1])
-        # roi.close()
-        # with open(r"images/"+data[x]['roadID']+".txt", encoding='UTF8') as f:
-        #     contents = f.read()
-
-        # contents=numpy.fromstring(data[x]['roadCaptured'], dtype=numpy.int32,)
-        # contents=numpy.frombuffer(data[x]['roadCaptured'].encode(),'utf-8')
-        
-        # contents=data[x]['roadCaptured']
-        # roi = open("images/"+data[x]['roadID']+".txt", "w")
-        # roi.write(str(data[0]['roadCaptured']))
-        # roi.close()
-        # # contents= numpy.array(data[x]['roadCaptured'])
-        # # contents1=numpy.fromstring(contents, dtype='uint8')
-        # # content=cv2.cvtColor(contents,cv2.COLOR_BGR2GRAY )
-        # path = r'images/road.jpg'
-        # asd=cv2.imread(path)
-        # print(asd)
-        # roi = open("images/"+data[x]['roadID']+".txt", "w")
-        # roi.write(str(data[0]['roadCaptured']))
-        # roi.close()
-        self.roadAddress="images/" + data[x]['roadID'] + ".jpg"
-        # f = open("images/"+data[x]['roadID']+".txt", "r")
-        if not path.exists("images/"+ data[x]['roadID']+".jpg"): #verifying if the file is exist in the directory
-            roadReplaced=str(data[x]['roadCaptured'].replace("[", "").replace("]","").replace(" ", "")) #eliminating the none number except comma
-            roadConverted=numpy.fromstring(roadReplaced, dtype=int, sep=',') #converting from string to number and making it a numpy array
-            # print(len(roadConverted))
-            roadArr=roadConverted.reshape(720,1280, 3) #reshaping the array to 720xx1280
-            # print(numpy.array(roadArr,dtype=numpy.uint32))
-            # print(numpy.array(data[0]['roadCaptured'],dtype=numpy.int32))
-            cv2.imwrite(r'images/{}.jpg'.format(data[x]['roadID']),  numpy.array(roadArr,dtype=numpy.int32)) #writing the array to image with datatype int32
-        
-        return self.roadAddress
-
+    
     def loading(self):
         self.flagRoad= True
          # saving roi to txt file for evaluation
@@ -995,8 +966,29 @@ class ProcessData(QtCore.QObject):
             self.finished.emit(response)
             
         # emit result when done
-        
-            
+ 
+class Decoder(QtCore.QObject):  
+    finished = QtCore.pyqtSignal()
+    
+    def __init__(self, window, len, data):
+        super(Decoder, self).__init__()
+        self.window = window
+        self.len = len
+        self.data = data
+    
+    def roadCapturedDecoder(self):
+        for x in range(self.len):
+            self.window.roadAddress.append("images/" + self.data[x]['roadID'] + ".jpg")
+            if not path.exists("images/"+ self.data[x]['roadID']+".jpg"): #verifying if the file is exist in the directory
+                roadReplaced=str(self.data[x]['roadCaptured'].replace("[", "").replace("]","").replace(" ", "")) #eliminating the none number except comma
+                roadConverted=numpy.fromstring(roadReplaced, dtype=int, sep=',') #converting from string to number and making it a numpy array
+                # print(len(roadConverted))
+                roadArr=roadConverted.reshape(720,1280, 3) #reshaping the array to 720xx1280
+                # print(numpy.array(roadArr,dtype=numpy.uint32))
+                # print(numpy.array(data[0]['roadCaptured'],dtype=numpy.int32))
+                
+                cv2.imwrite(r'images/{}.jpg'.format(self.data[x]['roadID']),  numpy.array(roadArr,dtype=numpy.int32)) #writing the array to image with datatype int32
+        self.finished.emit() 
 
 if __name__ == '__main__':
 

@@ -238,7 +238,8 @@ class det:
                                         self.vehicleInfos['finalTime'][index] = float(int(time_sync()-self.vehicleInfos['startTime'][index]))
                                         
                                         t = self.vehicleInfos['timer'][index]/fps
-                                        t = str(timedelta(seconds=float(t)))
+                                        t = str(timedelta(seconds=float(t))).split(".")[0]
+                                        
                                         
                                         col = (0,165,255)
                                         if self.vehicleInfos['timer'][index] >= 300*fps: # means 5 mins
@@ -280,7 +281,7 @@ class det:
                                         self.vehicleInfos['isSaved'].append(False)
                                         self.vehicleInfos['timer'].append(0)
                                         self.vehicleInfos['timeStart'].append(str(timedelta(seconds=frm_id/fps)))
-                                        t = str(timedelta(seconds=float(int(0))))
+                                        t = str(timedelta(seconds=float(int(0)))).split(".")[0]
                                         c = int(cls)  # integer class
                                         self.vehicleInfos['class'].append(self.names[c])
                                         label = f'{id} {self.names[c]}: {t}'
@@ -311,8 +312,8 @@ class det:
                                     self.vid_writer[i].release()  # release previous video writer
                                 if vid_cap:  # video
                                     fps = vid_cap.get(cv2.CAP_PROP_FPS)
-                                    w = int(im0.shape[0])
-                                    h = int(im0.shape[1])
+                                    w = int(im0.shape[1])
+                                    h = int(im0.shape[0])
                                 else:  # stream
                                     fps, w, h = 30, im0.shape[1], im0.shape[0]
                                 save_path = str(Path(save_path).with_suffix('.mp4'))  # force *.mp4 suffix on results videos
