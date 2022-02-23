@@ -267,7 +267,7 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
         f.close()
         self.selectedROI= json.loads(self.selected['roadBoundaryCoordinates'])
         self.selectedROI= numpy.asarray(self.selectedROI,dtype=numpy.int32)
-        roadAddressReading = "image/"+ self.selected['roadID'] + ".jpg"
+        roadAddressReading = "images/"+ self.selected['roadID'] + ".jpg"
         self.selectedRoadImage  = roadAddressReading
         self.selectedRoadID = self.selected['roadID']
         self.selectedRoadName = self.selected['roadName']
@@ -707,7 +707,7 @@ class Controller:
                         pass
                     self.road.flagRoad = False
                     self.roadImage = cv.imread(self.road.selectedRoadImage)
-                    print('selected road image shape', self.roadImage.shape)
+                    # print('selected road image shape', self.roadImage.shape)
                     self.roadIDGlobal = self.road.selectedRoadID
             except AttributeError:
                 # for btn new
