@@ -13,7 +13,7 @@ If gpu supported, install CUDA here: https://developer.nvidia.com/cuda-toolkit
 clone this repo
 
 ```bash 
-git clone -b new_main https://github.com/lordsiinbal/Thesis101.git
+git clone https://github.com/lordsiinbal/Thesis101.git
 ```
 
 Update submodule (deep_sort/deep_sort/deep/reid)
