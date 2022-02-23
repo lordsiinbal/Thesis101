@@ -298,7 +298,8 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
         f.close()
         self.selectedROI= json.loads(self.selected['roadBoundaryCoordinates'])
         self.selectedROI= numpy.asarray(self.selectedROI,dtype=numpy.int32)
-        self.selectedRoadImage  = self.roadAddress
+        roadAddressReading = "image/"+ self.selected['roadID'] + ".txt"
+        self.selectedRoadImage  = roadAddressReading
         self.selectedRoadID = self.selected['roadID']
         self.selectedRoadName = self.selected['roadName']
         self.settingUpRoad.emit()
