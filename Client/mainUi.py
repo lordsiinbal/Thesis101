@@ -159,7 +159,7 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
         # use threading when retrieving data so that gui won't freeze if there's a slow network bandwith
         
         self.rThread = QThread()
-        self.roadRet = ProcessData(action= '/RoadFetchIds', type=1)
+        self.roadRet = ProcessData(action= '/RoadFetchIds', type=1) # fetch all roads but only ids
         self.roadRet.moveToThread(self.rThread)
         self.rThread.started.connect(self.roadRet.ret)
         self.roadRet.finished.connect(self.check_if_road_exists)
@@ -169,6 +169,7 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
         # data = res.json()
         # self.dataRoadGlobal = res.json()
         
+    # check if those fetch id's are existing
     def check_if_road_exists(self, response):
         self.data = response.json() # all road infos, but without road-captured
         self.ids_to_be_fetched = []
@@ -994,7 +995,7 @@ class ProcessData(QtCore.QObject):
         if self.type == 3: # delete
             response = requests.delete(url = baseURL + self.action, json=self.data,headers=self.headers )
             self.finished.emit(response)
-        if self.type == 4: # retrieve
+        if self.type == 4: # retrieve with params
             response = requests.get(url = baseURL + self.action, data = self.ids_to_be_fetched , headers=self.headers)
             self.finished.emit(response)
             
