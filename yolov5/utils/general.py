@@ -82,7 +82,7 @@ def isStationary(xy, wh, xywhs, confs, clss, PREV_XY, frm_id, fps, strt_time):
     xywhs = xywhs[stationary]
     confs = confs[stationary]
     clss = clss[stationary]
-    if time.time()-strt_time >= 1: # means a second has passed
+    if time.time()-strt_time >= 1 or frm_id%fps == 0: # means a second has passed
         # print(time.time()-strt_time, '= sec')
         PREV_XY = xy
         strt_time = time.time() # initiate again a new timer
