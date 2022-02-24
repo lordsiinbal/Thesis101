@@ -1327,6 +1327,19 @@ background-color:#CFCFCF
                    <layout class="QVBoxLayout" name="verticalLayout_23">
                     <item alignment="Qt::AlignTop">
                      <widget class="QFrame" name="frame_4">
+                      <property name="styleSheet">
+                       <string notr="true">QPushButton{
+background-color:#678ADD;
+color:white;
+border:none
+}
+#size{
+background-color: #678ADD;
+font-size:12px;
+border:none;
+color:white;
+}</string>
+                      </property>
                       <property name="frameShape">
                        <enum>QFrame::StyledPanel</enum>
                       </property>
@@ -1334,58 +1347,111 @@ background-color:#CFCFCF
                        <enum>QFrame::Raised</enum>
                       </property>
                       <layout class="QVBoxLayout" name="verticalLayout_24">
-                       <property name="spacing">
-                        <number>0</number>
-                       </property>
-                       <property name="leftMargin">
-                        <number>0</number>
-                       </property>
-                       <property name="topMargin">
-                        <number>0</number>
-                       </property>
-                       <property name="rightMargin">
-                        <number>0</number>
-                       </property>
-                       <property name="bottomMargin">
-                        <number>0</number>
-                       </property>
                        <item>
                         <widget class="QPushButton" name="drawTool">
+                         <property name="minimumSize">
+                          <size>
+                           <width>36</width>
+                           <height>36</height>
+                          </size>
+                         </property>
+                         <property name="maximumSize">
+                          <size>
+                           <width>1678977</width>
+                           <height>100</height>
+                          </size>
+                         </property>
                          <property name="cursor">
                           <cursorShape>PointingHandCursor</cursorShape>
                          </property>
                          <property name="text">
-                          <string>Draw</string>
+                          <string/>
+                         </property>
+                         <property name="icon">
+                          <iconset>
+                           <normaloff>icon/iconBrush.svg</normaloff>icon/iconBrush.svg</iconset>
                          </property>
                         </widget>
                        </item>
                        <item>
-                        <widget class="QPushButton" name="eraseTool">
+                        <widget class="QPushButton" name="eraserTool">
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>36</height>
+                          </size>
+                         </property>
+                         <property name="maximumSize">
+                          <size>
+                           <width>16777215</width>
+                           <height>36</height>
+                          </size>
+                         </property>
                          <property name="cursor">
                           <cursorShape>PointingHandCursor</cursorShape>
                          </property>
                          <property name="text">
-                          <string>Erase</string>
+                          <string/>
+                         </property>
+                         <property name="icon">
+                          <iconset>
+                           <normaloff>icon/iconEraser.png</normaloff>icon/iconEraser.png</iconset>
                          </property>
                         </widget>
                        </item>
-                       <item>
+                       <item alignment="Qt::AlignHCenter">
                         <widget class="QPushButton" name="addSize">
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>0</height>
+                          </size>
+                         </property>
                          <property name="cursor">
                           <cursorShape>PointingHandCursor</cursorShape>
                          </property>
                          <property name="text">
-                          <string>+</string>
+                          <string/>
+                         </property>
+                         <property name="icon">
+                          <iconset>
+                           <normaloff>icon/arrowUpIcon.svg</normaloff>icon/arrowUpIcon.svg</iconset>
                          </property>
                         </widget>
                        </item>
                        <item>
-                        <widget class="QPushButton" name="subtractSize">
+                        <widget class="QLineEdit" name="sizeLabel">
+                         <property name="text">
+                          <string>20</string>
+                         </property>
+                         <property name="echoMode">
+                          <enum>QLineEdit::Normal</enum>
+                         </property>
+                         <property name="cursorPosition">
+                          <number>2</number>
+                         </property>
+                         <property name="alignment">
+                          <set>Qt::AlignCenter</set>
+                         </property>
+                        </widget>
+                       </item>
+                       <item alignment="Qt::AlignHCenter|Qt::AlignBottom">
+                        <widget class="QPushButton" name="subSize">
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>0</height>
+                          </size>
+                         </property>
                          <property name="cursor">
                           <cursorShape>PointingHandCursor</cursorShape>
                          </property>
                          <property name="text">
-                          <string>-</string>
+                          <string/>
+                         </property>
+                         <property name="icon">
+                          <iconset>
+                           <normaloff>icon/arrowDownIcon.svg</normaloff>icon/arrowDownIcon.svg</iconset>
                          </property>
                         </widget>
                        </item>

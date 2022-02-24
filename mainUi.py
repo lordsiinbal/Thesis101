@@ -17,6 +17,7 @@ from matplotlib import image, widgets
 from PyQt5.QtCore import Qt,QDateTime,QDate,QTime,QTimer,QPoint,Qt,QRect
 from sympy import false
 from PIL import ImageQt
+import numpy as np
 def cvImgtoQtImg(cvImg):  #Define the function of opencv image to PyQt image
     QtImgBuf = cv2.cvtColor(cvImg, cv2.COLOR_BGR2BGRA)
     QtImg = QtGui.QImage(QtImgBuf.data, QtImgBuf.shape[1], QtImgBuf.shape[0], QtGui.QImage.Format_RGB32)
@@ -69,7 +70,7 @@ class myQLabel(QWidget):
         #self.labelDraw
         #self.labelDraw.fill(Qt.white)
 
-        pixmap = QPixmap(self.image.width(),self.image.height()) # width, height
+        pixmap = QPixmap(parent.width(),parent.height()) # width, height
         pixmap.fill(Qt.transparent)
         self.draw.setPixmap(pixmap)
         #self.verticalLayout.addWidget(self.label)
@@ -82,13 +83,18 @@ class myQLabel(QWidget):
         self.eraser_selected=False
         self._size=20
         "For Auto Segmentaion"
+        roi=[[[[312,0]],[[311,1]],[[311,2]],[[310,3]],[[309,3]],[[308,4]],[[307,5]],[[306,6]],[[305,6]],[[304,7]]]]
         pm=QtGui.QPixmap(self.draw.pixmap()) 
         painter=QtGui.QPainter(pm)
-        painter.setPen(QPen(QColor(0,255,0),1 ,Qt.SolidLine,Qt.RoundCap,Qt.RoundJoin))
+        painter.setPen(QPen(QColor(0,255,0),100 ,Qt.SolidLine,Qt.RoundCap,Qt.RoundJoin))
         transform=QTransform().scale(pm.width()/self.draw.width(),
-                                    pm.height()/self.draw.height()
-                                    )
-        painter.drawLine(100,100,50,50)
+                                    pm.height()/self.draw.height())         
+        #loop through roi location
+        for i in range(1):
+            for j in range(len(roi[0])):
+                location=roi[i][j]
+                painter.drawPoint(location[0][0],location[0][1])
+                    
         painter.end()
         self.draw.setPixmap(pm)
         """End of Auto Segmentation"""
@@ -102,7 +108,7 @@ class myQLabel(QWidget):
         self.draw.setPixmap(pm)
         canvasPainter = QtGui.QPainter(self)
         canvasPainter.drawImage(self.rect(), self.image, self.image.rect())
-        
+
     def mousePressEvent(self, event):
         """Handle when mouse is pressed."""
         if event.button() == Qt.LeftButton:
@@ -110,15 +116,13 @@ class myQLabel(QWidget):
             
     def mouseMoveEvent(self,point):
         painter = QPainter(self.draw.pixmap())
-        
         if self.eraser_selected == False:
             self.last_x=point.x()
             self.last_y=point.y()
-            pen = QPen(QColor(Qt.red), self._size)
-            painter.setPen(pen)
-            painter.drawLine(self.last_x,self.last_y,point.x(),point.y())
+            painter.setPen(QPen(QColor(255,0,0),self._size ,Qt.SolidLine,Qt.RoundCap,Qt.RoundJoin))
+            painter.drawPoint(point.pos())
             # Update the mouse's position for next movement
-            self.last_mouse_pos = point
+            self.last_mouse_pos = point.pos()
             self.last_x=point.x()
             self.last_y=point.y()
         elif self.eraser_selected == True:
@@ -255,33 +259,15 @@ class TableUi(QtWidgets.QMainWindow):
         self.tableWidget.horizontalHeader().setSectionResizeMode(
             QHeaderView.Stretch)
         _translate = QtCore.QCoreApplication.translate
-        data=[['01','Violated','San Felipe','5 minutes','01/26/2022'],
-              ['02','Violated','SM Area','7 minutes','01/29/22'],
-              ['03','Violated','Terminal 2','10 minutes','01/27/22'],
-              ['04','Violated','Terminal 1','6 minutes','02/06/22'],
-              ['01','Violated','San Felipe','5 minutes','01/26/22'],
-              ['02','Violated','SM Area','7 minutes','01/29/22'],
-              ['03','Violated','Terminal 2','10 minutes','01/27/22'],
-              ['04','Violated','Terminal 1','6 minutes','02/06/22'],
-              ['01','Violated','San Felipe','5 minutes','01/26/22'],
-              ['02','Violated','SM Area','7 minutes','01/29/22'],
-              ['03','Violated','Terminal 2','10 minutes','01/27/22'],
-              ['04','Violated','Terminal 1','6 minutes','02/06/22'],
-              ['01','Violated','San Felipe','5 minutes','01/26/22'],
-              ['02','Violated','SM Area','7 minutes','01/29/22'],
-              ['03','Violated','Terminal 2','10 minutes','01/27/22'],
-              ['04','Violated','Terminal 1','6 minutes','02/06/22'],
-              ['01','Violated','San Felipe','5 minutes','01/26/22'],
-              ['02','Violated','SM Area','7 minutes','01/29/22'],
-              ['03','Violated','Terminal 2','10 minutes','01/27/22'],
-              ['04','Violated','Terminal 1','6 minutes','02/06/22']
+        data=[['01','Violated','San Felipe','0:00:10','01/26/202290/000','01/26/202290/000'],
+              ['02','Violated','SM Area','7 minutes','01/26/202290/000','01/26/202290/000'],
               ]
-        
+        print(self.size())
         #self.tableWidget.setRowCount(4) 
         #self.tableWidget.setItem(0,0, QTableWidgetItem("Name"))
         self.tableWidget.setRowCount(len(data))
         for i in range(len(data)):
-            for j in range(5):
+            for j in range(6):
                 self.tableWidget.setItem(i,j, QTableWidgetItem(data[i][j]))
                 self.tableWidget.item(i,j).setTextAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
             #Adding BUtton in each row  
@@ -349,8 +335,8 @@ class MainUi(QtWidgets.QMainWindow):
         self.dateDay.setDate(current_date)
         self.dateMonthYear.setDate(current_date)
 
-
-
+    
+    
     def activePlayback(self):
         self.stackedWidget.setCurrentWidget(self.playbackPage)
         self.btnWatch.setStyleSheet('background-color:none;border:none')
@@ -369,10 +355,36 @@ class MainUi(QtWidgets.QMainWindow):
         self.verticalLayout = QtWidgets.QVBoxLayout(self.roadSetUpImage)
         self.image_main=myQLabel(self.roadSetUpImage)
         self.verticalLayout.addWidget(self.image_main)
-        self.eraseTool.clicked.connect(self.eraseSelected)
+        self.eraserTool.clicked.connect(self.eraseSelected)
+        self.drawTool.clicked.connect(self.drawSelected)
+        self.addSize.clicked.connect(self.addSizeFunction)
+        self.subSize.clicked.connect(self.subSizeFunction)
+        self.sizeLabel.returnPressed.connect(self.enterSize)
+    def enterSize(self):
+        value=self.sizeLabel.text()
+        self.image_main._size=int(value)
+        if self.image_main.eraser_selected==True:
+            self.cursorForEraser()
+    def subSizeFunction(self):
+        self.image_main._size=self.image_main._size-1
+        self.sizeLabel.setText(str(self.image_main._size))
+        if self.image_main.eraser_selected==True:
+            self.cursorForEraser()
+    def addSizeFunction(self):
+        self.image_main._size=self.image_main._size+1
+        self.sizeLabel.setText(str(self.image_main._size))
+        if self.image_main.eraser_selected==True:
+            self.cursorForEraser()
+    def drawSelected(self):
+         self.image_main.eraser_selected=False
+         self.image_main.setCursor(QtGui.QCursor((QtCore.Qt.ArrowCursor)))
+
     def eraseSelected(self):
         self.image_main.eraser_selected=True
-        pixmap = QtGui.QPixmap(QtCore.QSize(1, 1)*20)
+        self.cursorForEraser()
+        #self.image_main.setOverrideCursor(cursor)
+    def cursorForEraser(self):
+        pixmap = QtGui.QPixmap(QtCore.QSize(1, 1)*self.image_main._size)
         pixmap.fill(QtCore.Qt.transparent)
         painter = QtGui.QPainter(pixmap)
         painter.setPen(QtGui.QPen(QtCore.Qt.black, 2))
@@ -380,7 +392,6 @@ class MainUi(QtWidgets.QMainWindow):
         painter.end()
         cursor = QtGui.QCursor(pixmap)
         self.image_main.setCursor(cursor)
-        #self.image_main.setOverrideCursor(cursor)
 
         
 
