@@ -14,7 +14,7 @@ from PyQt5 import QtGui, QtCore
 from PyQt5.QtGui import QMovie,QPixmap, QPainter, QPen,QColor,QBrush,QTransform,QCursor
 from cv2 import QT_PUSH_BUTTON
 from matplotlib import image, widgets
-from PyQt5.QtCore import Qt,QDateTime,QDate,QTime,QTimer,QPoint,Qt
+from PyQt5.QtCore import Qt,QDateTime,QDate,QTime,QTimer,QPoint,Qt,QRect
 from sympy import false
 from PIL import ImageQt
 def cvImgtoQtImg(cvImg):  #Define the function of opencv image to PyQt image
@@ -55,52 +55,80 @@ class roadSettingUp(QtWidgets.QWidget):#road Setting Up Loading
 
 
 class myQLabel(QWidget):
-    def __init__(self,parent=None):
+    def __init__(self,parent):
         super(myQLabel, self).__init__(parent)
-        self.verticalLayout =QtWidgets.QGridLayout(self)
-        self.label = QLabel(self)
-        self.label.setObjectName("image")
-        self.verticalLayout.addWidget(self.label)
+        #self.verticalLayout = QtWidgets.QVBoxLayout(self)
+        #self.image = QLabel(self)
+        self.image = QtGui.QImage("image 1.jpg")
+        self.draw=QLabel(self)
+        #self.image.setGeometry(QtCore.QRect(0, 0,parent.width(),parent.height()))
+        self.draw.setGeometry(QtCore.QRect(0, 0,parent.width(),parent.height()))
+        #self.draw.setGeometry(0,0,parent.width(),parent.height())
+        #self.labelDraw=QLabel()
+        #self.labelDraw.setPixmap(QPixmap(self.width,self.height)) # width, height
+        #self.labelDraw
+        #self.labelDraw.fill(Qt.white)
+
+        pixmap = QPixmap(self.image.width(),self.image.height()) # width, height
+        pixmap.fill(Qt.transparent)
+        self.draw.setPixmap(pixmap)
+        #self.verticalLayout.addWidget(self.label)
         canvas =QPixmap("image 1.jpg")
-        canvas.scaled(1080,720)
-        self.label.setScaledContents(True)
-        self.label.setPixmap(canvas)
-        self.drawAction=False
+        #canvas.scaled(1080,720)
+        """self.image.setScaledContents(True)"""
+        #self.image.setPixmap(canvas)
+        self.drawAction=True
         self.last_x, self.last_y = None, None
-    
-    def paintEvent(self,event):
-        pm=QtGui.QPixmap(self.label.pixmap()) 
+        self.eraser_selected=False
+        self._size=20
+        "For Auto Segmentaion"
+        pm=QtGui.QPixmap(self.draw.pixmap()) 
         painter=QtGui.QPainter(pm)
-        painter.setPen(QPen(QColor(255,0,0),50 ,Qt.SolidLine,Qt.RoundCap,Qt.RoundJoin))
-        transform=QTransform().scale(pm.width()/self.label.width(),
-                                    pm.height()/self.label.height()
+        painter.setPen(QPen(QColor(0,255,0),1 ,Qt.SolidLine,Qt.RoundCap,Qt.RoundJoin))
+        transform=QTransform().scale(pm.width()/self.draw.width(),
+                                    pm.height()/self.draw.height()
                                     )
         painter.drawLine(100,100,50,50)
         painter.end()
-        self.label.setPixmap(pm)    
-    def mouseMoveEvent(self,e):
-        if self.drawAction==False:
-            return
-        else:
-            if self.last_x is None:
-                self.last_x=e.x()
-                self.last_y=e.y()
-                return
-        pm=QtGui.QPixmap(self.label.pixmap()) 
+        self.draw.setPixmap(pm)
+        """End of Auto Segmentation"""
+    def paintEvent(self, event):
+        """Create QPainter object.This is to prevent
+            the chance of the painting being
+            lostif the user changes windows."""
+        pm=QtGui.QPixmap(self.draw.pixmap()) 
         painter=QtGui.QPainter(pm)
-        painter.setPen(QPen(QColor(255,0,0),50 ,Qt.SolidLine,Qt.RoundCap,Qt.RoundJoin))
-        transform=QTransform().scale(pm.width()/self.label.width(),
-                                    pm.height()/self.label.height()
-                                    )
-        painter.drawPoint(transform.map(e.pos()))
         painter.end()
-        self.label.setPixmap(pm)
-        self.last_x=e.x()
-        self.last_y=e.y()
+        self.draw.setPixmap(pm)
+        canvasPainter = QtGui.QPainter(self)
+        canvasPainter.drawImage(self.rect(), self.image, self.image.rect())
+        
+    def mousePressEvent(self, event):
+        """Handle when mouse is pressed."""
+        if event.button() == Qt.LeftButton:
+            self.last_mouse_pos = event.pos()
+            
+    def mouseMoveEvent(self,point):
+        painter = QPainter(self.draw.pixmap())
+        
+        if self.eraser_selected == False:
+            self.last_x=point.x()
+            self.last_y=point.y()
+            pen = QPen(QColor(Qt.red), self._size)
+            painter.setPen(pen)
+            painter.drawLine(self.last_x,self.last_y,point.x(),point.y())
+            # Update the mouse's position for next movement
+            self.last_mouse_pos = point
+            self.last_x=point.x()
+            self.last_y=point.y()
+        elif self.eraser_selected == True:
+            # Use the eras
+            eraser = QRect(point.x(), point.y(), self._size, self._size)
+            painter.setCompositionMode(QPainter.CompositionMode_Clear)
+            painter.eraseRect(eraser)
     def mouseReleaseEvent(self,e):
         self.last_x=None
         self.last_y=None
-
 class RoadSetUpPaint(QtWidgets.QMainWindow):
     switch_window = QtCore.pyqtSignal() 
     def __init__(self):
@@ -139,12 +167,6 @@ class IpAddWindow(QtWidgets.QWidget):
         self.setWindowFlag(Qt.FramelessWindowHint)#removing title bar
         self.btnCancel.clicked.connect(self.close)
         
-
-        
-    
-
-
-
 
 
 class LogoutUi(QtWidgets.QWidget):#Logout Ui
@@ -299,7 +321,7 @@ class MainUi(QtWidgets.QMainWindow):
         self.showMaximized()
         self.setWindowFlag(Qt.FramelessWindowHint) 
         self.btnRecord.clicked.connect(self.switch_window.emit)
-        self.btnRoadSetup.clicked.connect(self.roadSwitch.emit)
+        self.btnRoadSetup.clicked.connect(self.activeRoadSetUp)
         self.btnLogout.clicked.connect(self.logout.emit)
         self.btnAddVideo.clicked.connect(self.setUpVideo)
         self.btnIpAdd.clicked.connect(self.addIp.emit)
@@ -332,11 +354,36 @@ class MainUi(QtWidgets.QMainWindow):
     def activePlayback(self):
         self.stackedWidget.setCurrentWidget(self.playbackPage)
         self.btnWatch.setStyleSheet('background-color:none;border:none')
+        self.btnRoadSetup.setStyleSheet('background-color:none;border:none')
         self.btnPlayback.setStyleSheet("color:white;font-size:14px;background-color:#1D1F32;border-left:3px solid #678ADD;")
     def activeWatch(self):
         self.stackedWidget.setCurrentWidget(self.watchingPage)
         self.btnPlayback.setStyleSheet('background-color:none;border:none')
+        self.btnRoadSetup.setStyleSheet('background-color:none;border:none')
         self.btnWatch.setStyleSheet("color:white;font-size:14px;background-color:#1D1F32;border-left:3px solid #678ADD;")
+    def activeRoadSetUp(self):
+        self.stackedWidget.setCurrentWidget(self.roadSetupPage)
+        self.btnPlayback.setStyleSheet('background-color:none;border:none')
+        self.btnWatch.setStyleSheet('background-color:none;border:none')
+        self.btnRoadSetup.setStyleSheet("color:white;font-size:14px;background-color:#1D1F32;border-left:3px solid #678ADD;")
+        self.verticalLayout = QtWidgets.QVBoxLayout(self.roadSetUpImage)
+        self.image_main=myQLabel(self.roadSetUpImage)
+        self.verticalLayout.addWidget(self.image_main)
+        self.eraseTool.clicked.connect(self.eraseSelected)
+    def eraseSelected(self):
+        self.image_main.eraser_selected=True
+        pixmap = QtGui.QPixmap(QtCore.QSize(1, 1)*20)
+        pixmap.fill(QtCore.Qt.transparent)
+        painter = QtGui.QPainter(pixmap)
+        painter.setPen(QtGui.QPen(QtCore.Qt.black, 2))
+        painter.drawRect(pixmap.rect())
+        painter.end()
+        cursor = QtGui.QCursor(pixmap)
+        self.image_main.setCursor(cursor)
+        #self.image_main.setOverrideCursor(cursor)
+
+        
+
     #Function display Video    
     def setUpVideo(self): #Initialize click event
         self.roadSwitch.emit()
