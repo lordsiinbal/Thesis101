@@ -54,6 +54,7 @@ def RoadFetch():
 
     data = []
     ids = request.get_json()
+    #get only missing roads in client/images
     for id in ids:
         roadData = dc_road.objects.get(roadID=id)
         data.append({
