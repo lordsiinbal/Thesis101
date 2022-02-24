@@ -319,6 +319,7 @@ class det:
                                 save_path = str(Path(save_path).with_suffix('.mp4'))  # force *.mp4 suffix on results videos
                                 self.vid_writer[i] = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
                             self.vid_writer[i].write(im0)
+                            self.vidFrames.append(im0)
                 
             else:
                 video_getter.stop() 

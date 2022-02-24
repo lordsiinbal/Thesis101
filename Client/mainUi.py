@@ -534,15 +534,22 @@ class MainUi(QtWidgets.QMainWindow):
             self.vQueue = self.w.initDet.det.dets.vidFrames.copy()
             # play playback video here
             # creat a thread object for playing video
-            self.pause = True
-            self.nthread = QThread()
-            self.getVid = videoGet(self)
-            self.getVid.moveToThread(self.nthread)
-            self.nthread.started.connect(self.getVid.run)
-            self.getVid.finished.connect(self.nthread.quit)
-            self.nthread.finished.connect(self.finishedPlayBack) # execute when the task in thread is finised
-            self.getVid.imgUpdate.connect(self.update_image)
-            self.nthread.start()
+            isViolation = False
+            # if from violation record 
+            if isViolation:
+                pass
+                # playback from violation record
+            else:
+                # playback from currently playing video
+                self.pause = True
+                self.nthread = QThread()
+                self.getVid = videoGet(self)
+                self.getVid.moveToThread(self.nthread)
+                self.nthread.started.connect(self.getVid.run)
+                self.getVid.finished.connect(self.nthread.quit)
+                self.nthread.finished.connect(self.finishedPlayBack) # execute when the task in thread is finised
+                self.getVid.imgUpdate.connect(self.update_image)
+                self.nthread.start()
         except Exception as er:
             print(er)
             pass
