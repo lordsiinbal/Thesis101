@@ -12,7 +12,7 @@ sys.path.insert(0, './yolov5')
 
 
 from yolov5.utils.general import (LOGGER, apply_roi_in_scene, check_img_size, non_max_suppression, scale_coords,
-                                  check_imshow, xyxy2xywh, increment_path, isStationary, apply_classifier)
+                                  check_imshow, xyxy2xywh, increment_path, isStationary, isInsideROI)
 from deep_sort.deep_sort import DeepSort
 from deep_sort.utils.parser import get_config
 from yolov5.utils.plots import Annotator, colors, save_one_box
@@ -139,7 +139,7 @@ def detect(opt):
     PREV_XY = numpy.asarray(PREV_XY, dtype=float)
     start_time = time_sync()
                 
-    for frame_idx, (path, img, im0s, vid_cap, s, fps, tim, im, frm_id) in enumerate(dataset):
+    for frame_idx, (path, img, im0s, vid_cap, s, fps, tim, frm_id) in enumerate(dataset):
         t1 = time_sync()
         img = torch.from_numpy(img).to(device)
         img = img.half() if half else img.float()  # uint8 to fp16/32
@@ -173,7 +173,7 @@ def detect(opt):
                 p, im0, _ = path[i], im0s[i].copy(), dataset.count
                 s += f'{i}: '
             else:
-                p, im0, _ = path, im.copy(), getattr(dataset, 'frame', 0)
+                p, im0, _ = path, im0s.copy(), getattr(dataset, 'frame', 0)
 
             p = Path(p)  # to Path
             save_path = str(save_dir / p.name)  # im.jpg, vid.mp4, ...
@@ -202,9 +202,14 @@ def detect(opt):
                 
                 if frame_idx > 0 or PREV_XY.all() != 0:
                     t6 = time_sync()
-                    xywhs, confs, clss, PREV_XY, start_time= isStationary(xy, wh, xywhs, confs, clss, PREV_XY, fps, start_time)
+                    xy, xywhs, confs, clss, PREV_XY, start_time= isStationary(xy, wh, xywhs, confs, clss, PREV_XY, fps, start_time)
                     t7 = time_sync()
                     dt[4] += t7 - t6
+                    
+                    t11 = time_sync()
+                    xywhs, confs, clss = isInsideROI(xy, xywhs, confs, clss, ROI)
+                    t12 = time_sync()
+                
 
                     # pass detections to deepsort
                     t4 = time_sync()
@@ -275,7 +280,7 @@ def detect(opt):
                             annotator.box_label(bboxes, label, color=col)           
                     dt[5] += t5-t1
                     LOGGER.info(
-                        f'{s}Done. Read-Frame: ({t1-tim:.3f}s), YOLO:({t3 - t2:.3f}s), NMS:({t00-t3:.3f}s), DeepSort:({t5 - t4:.3f}s), isStationary:({t7 - t6:.3f}s), Overall:({t5-tim:.3f}s)')
+                        f'{s}Done. Read-Frame: ({t1-tim:.3f}s), YOLO:({t3 - t2:.3f}s), NMS:({t00-t3:.3f}s), DeepSort:({t5 - t4:.3f}s), isStationary:({t7 - t6:.3f}s), isInsideROI:({t12-t11:.3f}s) Overall:({t5-tim:.3f}s)')
                 else:  # set the prev frame xy to current xy
                     PREV_XY = xy
                     start_time = time_sync()
@@ -309,7 +314,9 @@ def detect(opt):
                         h = int(im0.shape[0])
                     else:  # stream
                         fps, w, h = 30, im0.shape[1], im0.shape[0]
-
+                    keys = ['id', 'startTime', 'finalTime', 'class',
+                    'frameStart', 'timeStart', 'isSaved', 'timer']
+                    vehicleInfos = {k: [] for k in keys}
                     vid_writer = cv2.VideoWriter(
                         save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
                 vid_writer.write(im0)

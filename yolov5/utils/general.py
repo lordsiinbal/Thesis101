@@ -47,6 +47,21 @@ cv2.setNumThreads(0)  # prevent OpenCV from multithreading (incompatible with Py
 os.environ['NUMEXPR_MAX_THREADS'] = str(NUM_THREADS)  # NumExpr max threads
 
 
+def isInsideROI(xy, xywhs, confs, clss, ROI):
+    xy = np.transpose(xy)
+    res = np.zeros(len(np.transpose(xy)), dtype=int)
+    for c in ROI:
+        for i in range(len(np.transpose(xy))):
+            res[i] = cv2.pointPolygonTest(
+                c, (int(xy[0, i]), int(xy[1, i])), False)  # checking each objects center point if it is inside the ROI
+                
+    insideROI = np.where(res == 1)[0]
+    xywhs = xywhs[insideROI]
+    confs = confs[insideROI]
+    clss = clss[insideROI]
+    
+    return xywhs, confs, clss
+
 def compute_thresh(w, h):
     area = w*h
     thresh = area * 0.0003
@@ -82,10 +97,13 @@ def isStationary(xy, wh, xywhs, confs, clss, PREV_XY, fps, start_time):
     xywhs = xywhs[stationary]
     confs = confs[stationary]
     clss = clss[stationary]
+    
     if time.time()-start_time >= 1: # means a second has passed
         PREV_XY = xy
         start_time = time.time() # initiate again a new timer
-    return xywhs, confs, clss, PREV_XY, start_time
+        
+    xy = xy[stationary]
+    return xy, xywhs, confs, clss, PREV_XY, start_time
 
 
 def apply_roi_in_scene(roi, im1):

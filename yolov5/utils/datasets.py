@@ -221,7 +221,7 @@ class LoadImages:
         self.video_flag = [False] * ni + [True] * nv
         self.mode = 'image'
         self.auto = auto
-        self.mask = mask
+        # self.mask = mask
         if any(videos):
             self.new_video(videos[0])  # new video
         else:
@@ -255,9 +255,9 @@ class LoadImages:
 
             img0 = self.video_getter.frame
             img0 = cv2.resize(img0, (1280,720), interpolation=cv2.INTER_NEAREST)
-            im = img0
+            # im = img0
             # masking roi
-            img0 = cv2.copyTo(img0, self.mask)
+            # img0 = cv2.copyTo(img0, self.mask)
             self.frame = self.video_getter.frames
             s = f'video {self.count + 1}/{self.nf} ({self.frame}/{self.frames}): '
 
@@ -275,7 +275,7 @@ class LoadImages:
         img = img.transpose((2, 0, 1))[::-1]  # HWC to CHW, BGR to RGB
         img = np.ascontiguousarray(img)
 
-        return path, img, img0, self.cap, s, self.fps, tim, im, self.frame
+        return path, img, img0, self.cap, s, self.fps, tim, self.frame
 
     def new_video(self, path):
         self.path = path
