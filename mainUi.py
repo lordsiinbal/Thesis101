@@ -60,10 +60,12 @@ class myQLabel(QWidget):
         super(myQLabel, self).__init__(parent)
         #self.verticalLayout = QtWidgets.QVBoxLayout(self)
         #self.image = QLabel(self)
+        self.newWindowSize=self.resize(1080,720)
         self.image = QtGui.QImage("image 1.jpg")
+        
         self.draw=QLabel(self)
         #self.image.setGeometry(QtCore.QRect(0, 0,parent.width(),parent.height()))
-        self.draw.setGeometry(QtCore.QRect(0, 0,parent.width(),parent.height()))
+        self.draw.setGeometry(QtCore.QRect(0, 0,1080,720))
         #self.draw.setGeometry(0,0,parent.width(),parent.height())
         #self.labelDraw=QLabel()
         #self.labelDraw.setPixmap(QPixmap(self.width,self.height)) # width, height
@@ -71,8 +73,9 @@ class myQLabel(QWidget):
         #self.labelDraw.fill(Qt.white)
 
         pixmap = QPixmap(parent.width(),parent.height()) # width, height
-        pixmap.fill(Qt.transparent)
-        self.draw.setPixmap(pixmap)
+        newPixmap=pixmap.scaled(1080,720)
+        newPixmap.fill(Qt.transparent)
+        self.draw.setPixmap(newPixmap)
         #self.verticalLayout.addWidget(self.label)
         canvas =QPixmap("image 1.jpg")
         #canvas.scaled(1080,720)
@@ -88,7 +91,8 @@ class myQLabel(QWidget):
         painter=QtGui.QPainter(pm)
         painter.setPen(QPen(QColor(0,255,0),100 ,Qt.SolidLine,Qt.RoundCap,Qt.RoundJoin))
         transform=QTransform().scale(pm.width()/self.draw.width(),
-                                    pm.height()/self.draw.height())         
+                                    pm.height()/self.draw.height())
+        print(self.draw.height())         
         #loop through roi location
         for i in range(1):
             for j in range(len(roi[0])):
@@ -193,7 +197,7 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
         uic.loadUi('roadSetUp_phase1.ui', self)
         self.setWindowFlag(Qt.FramelessWindowHint)      #removing Title bar
         #self.label.mousePressEvent = self.selectImage   #mouse Event for Qlabel
-        self.btnNew.clicked.connect(self.switch_window.emit)    #Showing Draw road Ui
+        #self.btnNew.clicked.connect(self.switch_window.emit)    #Showing Draw road Ui
         self.btnCancel.clicked.connect(self.close)          #close window
         self.btnConfirm.clicked.connect(self.settingUpRoad.emit)       #Loading Ui
         data=[
@@ -314,7 +318,14 @@ class MainUi(QtWidgets.QMainWindow):
         self.btnCctv.clicked.connect(self.addCctv.emit)
         self.btnPlayback.clicked.connect(self.activePlayback)
         self.btnWatch.clicked.connect(self.activeWatch)
-
+        self.verticalLayout = QtWidgets.QVBoxLayout(self.roadSetUpImage)
+        self.image_main=myQLabel(self.roadSetUpImage)
+        self.verticalLayout.addWidget(self.image_main)
+        self.eraserTool.clicked.connect(self.eraseSelected)
+        self.drawTool.clicked.connect(self.drawSelected)
+        self.addSize.clicked.connect(self.addSizeFunction)
+        self.subSize.clicked.connect(self.subSizeFunction)
+        self.sizeLabel.returnPressed.connect(self.enterSize)
         timer = QTimer(self)
 		# adding action to timer
         timer.timeout.connect(self.showTime)
@@ -352,14 +363,7 @@ class MainUi(QtWidgets.QMainWindow):
         self.btnPlayback.setStyleSheet('background-color:none;border:none')
         self.btnWatch.setStyleSheet('background-color:none;border:none')
         self.btnRoadSetup.setStyleSheet("color:white;font-size:14px;background-color:#1D1F32;border-left:3px solid #678ADD;")
-        self.verticalLayout = QtWidgets.QVBoxLayout(self.roadSetUpImage)
-        self.image_main=myQLabel(self.roadSetUpImage)
-        self.verticalLayout.addWidget(self.image_main)
-        self.eraserTool.clicked.connect(self.eraseSelected)
-        self.drawTool.clicked.connect(self.drawSelected)
-        self.addSize.clicked.connect(self.addSizeFunction)
-        self.subSize.clicked.connect(self.subSizeFunction)
-        self.sizeLabel.returnPressed.connect(self.enterSize)
+        
     def enterSize(self):
         value=self.sizeLabel.text()
         self.image_main._size=int(value)
@@ -459,16 +463,15 @@ class Controller:
         self.newWin.show()
     def showRoadSetup(self):
         self.road=RoadSetUp1()
-        self.road.switch_window.connect(self.show_RoadPaint)
+        #self.road.switch_window.connect(self.show_RoadPaint)
+        self.road.btnNew.clicked.connect(self.show_RoadPaint)
         #self.road.selectImage.connect(self.select)
         self.road.settingUpRoad.connect(self.showSettingUproad)
         self.road.show()
 
     def show_RoadPaint(self):
-        self.roadPaint=RoadSetUpPaint()
-        self.roadPaint.switch_window.connect(self.showFinishingUi)
         self.road.close()
-        self.roadPaint.show()
+        self.window.activeRoadSetUp()
     def show_logout(self):
         self.logout_Ui=LogoutUi()
         self.logout_Ui.show()
