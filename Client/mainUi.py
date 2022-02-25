@@ -528,7 +528,7 @@ class MainUi(QtWidgets.QMainWindow):
 
     def activePlayback(self):
         try:
-            self.w.initDet.det.dets.save_img = False
+            self.w.initDet.det.dets.view_img = False
             # self.w.initDet.det.dets.stop()
             self.saveVid()
             self.vQueue = self.w.initDet.det.dets.vidFrames.copy()
@@ -564,9 +564,9 @@ class MainUi(QtWidgets.QMainWindow):
         
     def pauseOrPlay(self):
         try:
-            self.pause = not self.pause
+            self.pause = False
             print('Pause = ',  self.pause)
-            self.getVid.pauseOrPlay(self.pause)
+            self.getVid.playOrPause(self.pause)
         except AttributeError:
             ctypes.windll.user32.MessageBoxW(0, "Please insert a video first", "Nothing to play", 1)
             
@@ -574,7 +574,6 @@ class MainUi(QtWidgets.QMainWindow):
     
     
     def update_image(self, qim):
-        # print('update')
         self.w.window.image.setPixmap(qim)
         
     def finishedPlayBack(self):
@@ -583,8 +582,11 @@ class MainUi(QtWidgets.QMainWindow):
     def activeWatch(self):
         try:
             self.getVid.stop()
-            self.w.initDet.det.dets.save_img = True
-        except:
+            self.nthread.quit()
+            self.pause = True
+            self.w.initDet.det.dets.view_img = True
+        except Exception as er:
+            print(er)
             pass
         self.stackedWidget.setCurrentWidget(self.watchingPage)
         self.btnPlayback.setStyleSheet('background-color:none;border:none')
@@ -606,9 +608,11 @@ class MainUi(QtWidgets.QMainWindow):
         duration = str(dtime.timedelta(seconds=float(int(duration))))
         self.playbackInfo['duration'].append(duration)
         self.playbackInfo['roadName'].append(self.w.road.label.text())
-        self.playbackInfo['dateAndTime'].append(str(dtime.date.today()))
+        self.playbackInfo['dateAndTime'].append(str(dtime.datetime.fromtimestamp(float(int(time.time()))).strftime("%m/%d, %I:%M:%S %p")))
         # save('playBack', self.playbackInfo) # saved to records/playBackDb.csv
         self.savePlayback(self.playbackInfo)
+        self.playbackKeys = ['playbackID', 'playbackVideo','duration', 'roadName', 'dateAndTime']
+        self.playbackInfo = {k: [] for k in self.playbackKeys}
 
     def savePlayback(self,data):
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
@@ -898,11 +902,10 @@ class Worker(QtCore.QObject):
         f = 1
         # wait for detection to finish one frame
         while self.w.initDet.det.dets.f == 0:
-            print('wait', end="\r")
-            pass
+            print(end='\r')
         # print(threading.active_count())
         while not self.w.initDet.det.dets.stopped:
-            if self.w.initDet.det.dets.save_img:
+            if self.w.initDet.det.dets.view_img:
                 if f == self.w.initDet.det.dets.f:
                     img = numpy.copy(self.w.initDet.det.dets.frame) #make a copy of frame
                     QtImg = cvImgtoQtImg(img)# Convert frame data to PyQt image format
@@ -910,11 +913,11 @@ class Worker(QtCore.QObject):
                     self.imgUpdate.emit(qim)
                     f +=1
                 else:
-                    print(' ', end='\r')
+                    print(end='\r')
             else:
                 f = self.w.initDet.det.dets.f + 1
-                print(' ', end='\r')
-            
+                print(end='\r')
+
         self.finished.emit()
         
         
@@ -945,22 +948,21 @@ class videoGet(QtCore.QObject):
                 timediff = time.time() - now
                 if (timediff<(1.0/(self.w.w.initDet.det.dets.sfps))):
                     time.sleep((1.0/(self.w.w.initDet.det.dets.sfps)) - timediff)
-                else:
-                    print(' ',  end='\r')
-                    
+
                 self.imgUpdate.emit(qim)
                 
             while self.pause:
                 # loop here until pause is lifted
-                print('paused',  end='\r')
                 pass
-        self.stopped = True
-        self.finished.emit()
+            
+        self.stop()
         
     def stop(self):
-        self.stopped = True     
+        print('stopped')
+        self.stopped = True  
+        self.finished.emit()   
     
-    def pauseOrPlay(self, val):
+    def playOrPause(self, val):
         self.pause = val
             
     
@@ -997,7 +999,6 @@ class ProcessData(QtCore.QObject):
             self.finished.emit(response)
         if self.type == 2: # post
             response = requests.post(url = baseURL + self.action, data=self.data,headers=self.headers)
-            print('donee road')
             self.finished.emit(response)
         if self.type == 3: # delete
             response = requests.delete(url = baseURL + self.action, json=self.data,headers=self.headers )
