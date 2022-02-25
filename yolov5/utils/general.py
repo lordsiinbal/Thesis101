@@ -49,28 +49,29 @@ os.environ['NUMEXPR_MAX_THREADS'] = str(NUM_THREADS)  # NumExpr max threads
 
 def compute_thresh(w, h):
     area = w*h
-    thresh = area * 0.0009
-    thresh = thresh.astype(int)
+    thresh = area * 0.0003
+    thresh = thresh.astype(float)
     return thresh
 
 # NOTE: resason for doing this is.... instead of doing the filtering of stationary in outpt loop after the deepsort update
 # it is more efficient to only pass vehicles that aren't moving in deepsort so that the swapping of ID's would be less likely
 # to occur.
 def isStationary(xy, wh, xywhs, confs, clss, PREV_XY, fps, start_time):
-    xy = np.asarray((xy), dtype=int)
+    xy = np.asarray((xy), dtype=float)
     # x = xy[:,0]
     # y = xy[:,1]
-    wh = np.asarray((wh), dtype=int)
-    thresh = np.zeros(len(xy), dtype=int)
+    wh = np.asarray((wh), dtype=float)
+    thresh = np.zeros(len(xy), dtype=float)
     res = np.zeros(len(xy), dtype=int)
     if len(xy) > 0:
         thresh = compute_thresh(wh[:,0], wh[:,1])
         # print('thresh len = ', len(thresh))
         # print('xy len = ', len(xy))
+        print(thresh)
         for i in range(len(xy)):
             for x in range(len(PREV_XY)):
                 # thresh = compute_thresh(xywhs[i][2].item(),xywhs[i][3].item()) # returns 5% of area of bbox allowance of vehicle movement
-                if (np.abs(xy[i][0] - PREV_XY[x][0]) <=thresh[i]) and (np.abs(xy[i][1] - PREV_XY[x][1]) <=thresh[i]) and (thresh[i] >=5):
+                if (np.abs(xy[i][0] - PREV_XY[x][0]) <=thresh[i]) and (np.abs(xy[i][1] - PREV_XY[x][1]) <=thresh[i]) and (thresh[i] > 1):
                     res[i] = 1
                     break
         # res = xy[np.abs(xy[:,0]-PREV_XY[:,0]) <= thresh and np.abs(xy[:,1] - PREV_XY[:,1]) <=thresh and thresh >=4]
