@@ -11,7 +11,7 @@ import cv2
 import time
 from PyQt5.QtWidgets import  QApplication,QFileDialog,QTableWidgetItem,QHeaderView,QLabel,QWidget
 from PyQt5 import QtGui, QtCore
-from PyQt5.QtGui import QMovie,QPixmap, QPainter, QPen,QColor,QBrush,QTransform,QCursor
+from PyQt5.QtGui import QMovie,QPixmap, QPainter, QPen,QColor,QBrush,QTransform,QCursor,QIntValidator
 from cv2 import QT_PUSH_BUTTON
 from matplotlib import image, widgets
 from PyQt5.QtCore import Qt,QDateTime,QDate,QTime,QTimer,QPoint,Qt,QRect
@@ -91,8 +91,7 @@ class myQLabel(QWidget):
         painter=QtGui.QPainter(pm)
         painter.setPen(QPen(QColor(0,255,0),100 ,Qt.SolidLine,Qt.RoundCap,Qt.RoundJoin))
         transform=QTransform().scale(pm.width()/self.draw.width(),
-                                    pm.height()/self.draw.height())
-        print(self.draw.height())         
+                                    pm.height()/self.draw.height())    
         #loop through roi location
         for i in range(1):
             for j in range(len(roi[0])):
@@ -126,9 +125,9 @@ class myQLabel(QWidget):
             painter.setPen(QPen(QColor(255,0,0),self._size ,Qt.SolidLine,Qt.RoundCap,Qt.RoundJoin))
             painter.drawPoint(point.pos())
             # Update the mouse's position for next movement
-            self.last_mouse_pos = point.pos()
+            """self.last_mouse_pos = point.pos()
             self.last_x=point.x()
-            self.last_y=point.y()
+            self.last_y=point.y()"""
         elif self.eraser_selected == True:
             # Use the eras
             eraser = QRect(point.x(), point.y(), self._size, self._size)
@@ -266,7 +265,6 @@ class TableUi(QtWidgets.QMainWindow):
         data=[['01','Violated','San Felipe','0:00:10','01/26/202290/000','01/26/202290/000'],
               ['02','Violated','SM Area','7 minutes','01/26/202290/000','01/26/202290/000'],
               ]
-        print(self.size())
         #self.tableWidget.setRowCount(4) 
         #self.tableWidget.setItem(0,0, QTableWidgetItem("Name"))
         self.tableWidget.setRowCount(len(data))
@@ -297,7 +295,7 @@ class TableUi(QtWidgets.QMainWindow):
         self.btnDone.clicked.connect(self.close)
     
     def buttonSome(self,i):
-        print(i)
+        """print(i)"""
 #main Window
 class MainUi(QtWidgets.QMainWindow):
     switch_window = QtCore.pyqtSignal()
@@ -325,6 +323,8 @@ class MainUi(QtWidgets.QMainWindow):
         self.drawTool.clicked.connect(self.drawSelected)
         self.addSize.clicked.connect(self.addSizeFunction)
         self.subSize.clicked.connect(self.subSizeFunction)
+        validatorInt=QIntValidator()
+        self.sizeLabel.setValidator(validatorInt)
         self.sizeLabel.returnPressed.connect(self.enterSize)
         timer = QTimer(self)
 		# adding action to timer
@@ -388,6 +388,7 @@ class MainUi(QtWidgets.QMainWindow):
         self.cursorForEraser()
         #self.image_main.setOverrideCursor(cursor)
     def cursorForEraser(self):
+        
         pixmap = QtGui.QPixmap(QtCore.QSize(1, 1)*self.image_main._size)
         pixmap.fill(QtCore.Qt.transparent)
         painter = QtGui.QPainter(pixmap)
