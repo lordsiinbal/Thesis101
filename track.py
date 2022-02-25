@@ -94,7 +94,6 @@ def detect(opt):
     # Load model
     device = select_device(device)
     model = DetectMultiBackend(yolo_model, device=device, dnn=opt.dnn)
-    classifier_model =  DetectMultiBackend('yolov5m.pt', device=device, dnn=opt.dnn)
     stride, names, pt, jit, _ = model.stride, model.names, model.pt, model.jit, model.onnx
     imgsz = check_img_size(imgsz, s=stride)  # check image size
 
