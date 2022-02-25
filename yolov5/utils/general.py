@@ -56,7 +56,7 @@ def compute_thresh(w, h):
 # NOTE: resason for doing this is.... instead of doing the filtering of stationary in outpt loop after the deepsort update
 # it is more efficient to only pass vehicles that aren't moving in deepsort so that the swapping of ID's would be less likely
 # to occur.
-def isStationary(xy, wh, xywhs, confs, clss, PREV_XY, frame_idx, fps):
+def isStationary(xy, wh, xywhs, confs, clss, PREV_XY, fps, start_time):
     xy = np.asarray((xy), dtype=int)
     # x = xy[:,0]
     # y = xy[:,1]
@@ -82,12 +82,24 @@ def isStationary(xy, wh, xywhs, confs, clss, PREV_XY, frame_idx, fps):
     xywhs = xywhs[stationary]
     confs = confs[stationary]
     clss = clss[stationary]
-    # if time.time()-strt_time >= 1: # means a second has passed
-        # print(time.time()-strt_time, '= sec')
-        # PREV_XY = xy
-        # strt_time = time.time() # initiate again a new timer
-    return xywhs, confs, clss, xy if frame_idx%fps == 0 else PREV_XY 
-    
+    if time.time()-start_time >= 1: # means a second has passed
+        PREV_XY = xy
+        start_time = time.time() # initiate again a new timer
+    return xywhs, confs, clss, PREV_XY, start_time
+
+
+def apply_roi_in_scene(roi, im1):
+    im = np.copy(im1)
+    alpha = 0.25
+    cimg = np.zeros_like(im1)
+    for c in roi:
+        cv2.drawContours(cimg, [c], -1, (0, 0, 255), thickness=-1)
+        im0 = cv2.addWeighted(im, 1 - alpha, cimg, alpha, 0)
+        
+    # im0 = cv2.addWeighted(im0, 1 - alpha, im1, alpha, 0)
+    return im0
+
+
 def is_kaggle():
     # Is environment a Kaggle Notebook?
     try:

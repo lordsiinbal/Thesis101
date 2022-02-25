@@ -155,7 +155,48 @@ class _RepeatSampler:
         while True:
             yield from iter(self.sampler)
 
+class VideoGet:
+    """
+    Class that continuously gets frames from a VideoCapture object
+    with a dedicated thread.
+    """
 
+    def __init__(self, cap):
+        self.stream = cv2.VideoCapture(cap)
+        (self.grabbed, self.frame) = self.stream.read()
+        # self.fps = self.stream.get(cv2.CAP_PROP_FPS)
+        self.nframes = int(self.stream.get(cv2.CAP_PROP_FRAME_COUNT))
+        self.fps = int(self.stream.get(cv2.CAP_PROP_FPS))
+        self.stopped = True
+        self.t = Thread(target=self.get, args=())
+        self.t.daemon = True # daemon threads run in background 
+        self.frames = 0
+
+    def start(self):    
+        self.stopped = False
+        self.t.start()
+        return self
+        
+    def get(self):
+        
+        while not self.stopped:
+            now = time.time()
+            if not self.grabbed:
+                self.stop()
+            else:
+                self.frames += 1
+                (self.grabbed, self.frame) = self.stream.read()
+                timeDiff = time.time() - now
+                # print('%.3f and %.3f' % (timeDiff, 1.0/(self.fps*1.5)), end='\r')
+                if (timeDiff<1.0/(self.fps)):
+                    time.sleep((1.0/(self.fps)) - timeDiff)
+                else:
+                    print(end='\r') 
+
+    def stop(self):
+        self.stopped = True
+        
+        
 class LoadImages:
     # YOLOv5 image/video dataloader, i.e. `python detect.py --source image.jpg/vid.mp4`
     def __init__(self, path, img_size=640, stride=32, auto=True, mask = None):
@@ -193,6 +234,7 @@ class LoadImages:
         return self
 
     def __next__(self):
+        tim = time.time()
         if self.count == self.nf:
             raise StopIteration
         path = self.files[self.count]
@@ -200,7 +242,7 @@ class LoadImages:
         if self.video_flag[self.count]:
             # Read video
             self.mode = 'video'
-            ret_val, img0 = self.cap.read()
+            ret_val = self.video_getter.grabbed
             while not ret_val:
                 self.count += 1
                 self.cap.release()
@@ -211,11 +253,12 @@ class LoadImages:
                     self.new_video(path)
                     ret_val, img0 = self.cap.read()
 
-            img0 = cv2.resize(img0, (1280, 720), interpolation=cv2.INTER_NEAREST)
+            img0 = self.video_getter.frame
+            img0 = cv2.resize(img0, (1280,720), interpolation=cv2.INTER_NEAREST)
+            im = img0
             # masking roi
             img0 = cv2.copyTo(img0, self.mask)
-            
-            self.frame += 1
+            self.frame = self.video_getter.frames
             s = f'video {self.count + 1}/{self.nf} ({self.frame}/{self.frames}): '
 
         else:
@@ -232,13 +275,15 @@ class LoadImages:
         img = img.transpose((2, 0, 1))[::-1]  # HWC to CHW, BGR to RGB
         img = np.ascontiguousarray(img)
 
-        return path, img, img0, self.cap, s, self.fps
+        return path, img, img0, self.cap, s, self.fps, tim, im, self.frame
 
     def new_video(self, path):
+        self.path = path
         self.frame = 0
         self.cap = cv2.VideoCapture(path)
-        self.frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        self.fps = int(self.cap.get(cv2.CAP_PROP_FPS))
+        self.video_getter = VideoGet(self.path).start()
+        self.frames = self.video_getter.nframes
+        self.fps = self.video_getter.fps
         
 
     def __len__(self):

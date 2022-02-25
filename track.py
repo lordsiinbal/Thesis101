@@ -11,7 +11,7 @@ os.environ["NUMEXPR_NUM_THREADS"] = "1"
 sys.path.insert(0, './yolov5')
 
 
-from yolov5.utils.general import (LOGGER, check_img_size, non_max_suppression, scale_coords,
+from yolov5.utils.general import (LOGGER, apply_roi_in_scene, check_img_size, non_max_suppression, scale_coords,
                                   check_imshow, xyxy2xywh, increment_path, isStationary, apply_classifier)
 from deep_sort.deep_sort import DeepSort
 from deep_sort.utils.parser import get_config
@@ -136,7 +136,7 @@ def detect(opt):
         model(torch.zeros(
             1, 3, *imgsz).to(device).type_as(next(model.model.parameters())))  # warmup
     dt, seen = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 0
-    for frame_idx, (path, img, im0s, vid_cap, s, fps) in enumerate(dataset):
+    for frame_idx, (path, img, im0s, vid_cap, s, fps, tim, im, frm_id) in enumerate(dataset):
         t1 = time_sync()
         img = torch.from_numpy(img).to(device)
         img = img.half() if half else img.float()  # uint8 to fp16/32
@@ -156,7 +156,9 @@ def detect(opt):
         # Apply NMS
         pred = non_max_suppression(
             pred, opt.conf_thres, opt.iou_thres, opt.classes, opt.agnostic_nms, max_det=opt.max_det)
-        dt[2] += time_sync() - t3
+        t00 = time_sync()
+        
+        dt[2] += t00 - t3
 
         # Second-stage classifier (optional)
         # pred = apply_classifier(pred, classifier_model, img, im0s)
@@ -168,7 +170,7 @@ def detect(opt):
                 p, im0, _ = path[i], im0s[i].copy(), dataset.count
                 s += f'{i}: '
             else:
-                p, im0, _ = path, im0s.copy(), getattr(dataset, 'frame', 0)
+                p, im0, _ = path, im.copy(), getattr(dataset, 'frame', 0)
 
             p = Path(p)  # to Path
             save_path = str(save_dir / p.name)  # im.jpg, vid.mp4, ...
@@ -183,10 +185,10 @@ def detect(opt):
                     img.shape[2:], det[:, :4], im0.shape).round()
 
                 # Print results
-                for c in det[:, -1].unique():
-                    n = (det[:, -1] == c).sum()  # detections per class
-                    # add to string
-                    s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "
+                # for c in det[:, -1].unique():
+                #     n = (det[:, -1] == c).sum()  # detections per class
+                #     # add to string
+                #     s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "
 
                 xywhs = xyxy2xywh(det[:, 0:4])
                 confs = det[:, 4]
@@ -197,8 +199,7 @@ def detect(opt):
 
                 if frame_idx > 0:
                     t6 = time_sync()
-                    xywhs, confs, clss, PREV_XY = isStationary(
-                        xy, wh, xywhs, confs, clss, PREV_XY, frame_idx, fps)
+                    xywhs, confs, clss, PREV_XY, start_time= isStationary(xy, wh, xywhs, confs, clss, PREV_XY, fps, start_time)
                     t7 = time_sync()
                     dt[4] += t7 - t6
 
@@ -222,7 +223,7 @@ def detect(opt):
                                 vehicleInfos['finalTime'][index] = float(
                                     int(time_sync()-vehicleInfos['startTime'][index]))
                                 t = vehicleInfos['timer'][index]/fps
-                                t = str(datetime.timedelta(seconds=float(t)))
+                                t = str(datetime.timedelta(seconds=float(t))).split(".")[0]
 
                                 # means 5 mins and not yet saved
                                 if vehicleInfos['timer'][index] >= 300*fps:
@@ -248,7 +249,7 @@ def detect(opt):
                                 else:
                                     col = (0, 165, 255)
                                 # add 1 to timer (this timer iss within respect of frame)
-                                vehicleInfos['timer'][index] = frame_idx - vehicleInfos['frameStart'][index]
+                                vehicleInfos['timer'][index] = frm_id - vehicleInfos['frameStart'][index]
 
                             except Exception as er:
                                 print(er)
@@ -256,14 +257,13 @@ def detect(opt):
                                 t = time_sync()
                                 vehicleInfos['startTime'].append(t)
                                 vehicleInfos['finalTime'].append(t)
-                                vehicleInfos['frameStart'].append(frame_idx)
+                                vehicleInfos['frameStart'].append(frm_id)
                                 vehicleInfos['isSaved'].append(False)
                                 vehicleInfos['timer'].append(0)
                                 vehicleInfos['timeStart'].append(
-                                    str(datetime.timedelta(seconds=frame_idx/fps)))
+                                    str(datetime.timedelta(seconds=frm_id/fps)))
 
-                                t = frame_idx/fps
-                                t = str(datetime.timedelta(seconds=float(0)))
+                                t = str(datetime.timedelta(seconds=float(0))).split(".")[0]
                                 c = int(cls)  # integer class
                                 vehicleInfos['class'].append(
                                     names[c])
@@ -272,9 +272,10 @@ def detect(opt):
                             annotator.box_label(bboxes, label, color=col)           
                     dt[5] += t5-t1
                     LOGGER.info(
-                        f'{s}Done. YOLO:({t3 - t2:.3f}s), DeepSort:({t5 - t4:.3f}s), isStationary:({t7 - t6:.3f}s), Overall:({t5-t1:.3f}s)')
+                        f'{s}Done. Read-Frame: ({t1-tim:.3f}s), YOLO:({t3 - t2:.3f}s), NMS:({t00-t3:.3f}s), DeepSort:({t5 - t4:.3f}s), isStationary:({t7 - t6:.3f}s), Overall:({t5-tim:.3f}s)')
                 else:  # set the prev frame xy to current xy
                     PREV_XY = xy
+                    start_time = time_sync()
                     # START_TIME = time.time()
             else:
                 deepsort.increment_ages()
@@ -282,6 +283,7 @@ def detect(opt):
 
             # Stream results
             im0 = annotator.result()
+            im0 = apply_roi_in_scene(ROI, im0)
             if show_vid:
                 cv2.imshow(str(p), im0)
                 if cv2.waitKey(1) == ord('q'):  # q to quit
