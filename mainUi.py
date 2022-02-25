@@ -59,26 +59,15 @@ class roadSettingUp(QtWidgets.QWidget):#road Setting Up Loading
 class myQLabel(QWidget):
     def __init__(self,parent):
         super(myQLabel, self).__init__(parent)
-        #self.verticalLayout = QtWidgets.QVBoxLayout(self)
-        #self.image = QLabel(self)
         self.newWindowSize=self.resize(1080,720)
         self.image = QtGui.QImage("image 1.jpg")
-        
         self.draw=QLabel(self)
-        #self.image.setGeometry(QtCore.QRect(0, 0,parent.width(),parent.height()))
         self.draw.setGeometry(QtCore.QRect(0, 0,1080,720))
-        #self.draw.setGeometry(0,0,parent.width(),parent.height())
-        #self.labelDraw=QLabel()
-        #self.labelDraw.setPixmap(QPixmap(self.width,self.height)) # width, height
-        #self.labelDraw
-        #self.labelDraw.fill(Qt.white)
-
         pixmap = QPixmap(parent.width(),parent.height()) # width, height
-        newPixmap=pixmap.scaled(1080,720)
+        newPixmap=pixmap.scaled(1080,720)#scaled the Pixmap
         newPixmap.fill(Qt.transparent)
         self.draw.setPixmap(newPixmap)
         #self.verticalLayout.addWidget(self.label)
-        canvas =QPixmap("image 1.jpg")
         #canvas.scaled(1080,720)
         """self.image.setScaledContents(True)"""
         #self.image.setPixmap(canvas)
@@ -166,7 +155,6 @@ class LogoutUi(QtWidgets.QWidget):#Logout Ui
 
 class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
     switch_window = QtCore.pyqtSignal()
-    selectImage=QtCore.pyqtSignal()
     settingUpRoad=QtCore.pyqtSignal()
     def __init__(self):
         super(RoadSetUp1, self).__init__()
@@ -175,7 +163,7 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
         #self.label.mousePressEvent = self.selectImage   #mouse Event for Qlabel
         #self.btnNew.clicked.connect(self.switch_window.emit)    #Showing Draw road Ui
         self.btnCancel.clicked.connect(self.close)          #close window
-        self.btnConfirm.clicked.connect(self.settingUpRoad.emit)       #Loading Ui
+       #Loading Ui
         data=[
             [0,"images/image 1.jpg","FileName1"],[1,"images/image 1.jpg","FileName2"],
             [2,"images/image 1.jpg","FileName3"],[3,"images/image 1.jpg","FileName4"],
@@ -414,8 +402,14 @@ class Controller:
         self.window.addIp.connect(self.showUseIpAdd)
         self.window.logout.connect(self.show_logout)
         self.window.addCctv.connect(self.showUseCctv)
+        self.window.btnDone_paint.clicked.connect(self.settingUpRoad_From_paint)
+        self.window.btnCancel_paint.clicked.connect(self.showRoadSetup)
         self.window.show()
         self.login.close()
+    def settingUpRoad_From_paint(self):
+        self.showFinishingUi()
+        self.window.activeWatch()
+    
 
     def showUseCctv(self):
         self.cctvWidget=CctvWindow()
@@ -447,8 +441,8 @@ class Controller:
         self.road=RoadSetUp1()
         #self.road.switch_window.connect(self.show_RoadPaint)
         self.road.btnNew.clicked.connect(self.show_RoadPaint)
+        self.road.btnConfirm.clicked.connect(self.showSettingUproad)
         #self.road.selectImage.connect(self.select)
-        self.road.settingUpRoad.connect(self.showSettingUproad)
         self.road.show()
 
     def show_RoadPaint(self):
