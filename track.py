@@ -135,6 +135,10 @@ def detect(opt):
         model(torch.zeros(
             1, 3, *imgsz).to(device).type_as(next(model.model.parameters())))  # warmup
     dt, seen = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 0
+    PREV_XY = numpy.zeros([1,2])
+    PREV_XY = numpy.asarray(PREV_XY, dtype=float)
+    start_time = time_sync()
+                
     for frame_idx, (path, img, im0s, vid_cap, s, fps, tim, im, frm_id) in enumerate(dataset):
         t1 = time_sync()
         img = torch.from_numpy(img).to(device)
@@ -195,8 +199,8 @@ def detect(opt):
                 xy = wh = xywhs.cpu().detach().numpy()
                 wh = wh[:, 2:]
                 xy = xy[:, :2]
-
-                if frame_idx > 0:
+                
+                if frame_idx > 0 or PREV_XY.all() != 0:
                     t6 = time_sync()
                     xywhs, confs, clss, PREV_XY, start_time= isStationary(xy, wh, xywhs, confs, clss, PREV_XY, fps, start_time)
                     t7 = time_sync()
@@ -260,7 +264,7 @@ def detect(opt):
                                 vehicleInfos['isSaved'].append(False)
                                 vehicleInfos['timer'].append(0)
                                 vehicleInfos['timeStart'].append(
-                                    str(datetime.timedelta(seconds=frm_id/fps)))
+                                    str(datetime.timedelta(seconds=frm_id/fps)).split(".")[0])
 
                                 t = str(datetime.timedelta(seconds=float(0))).split(".")[0]
                                 c = int(cls)  # integer class
