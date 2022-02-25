@@ -15,6 +15,7 @@ from PyQt5.QtGui import QMovie,QPixmap, QPainter, QPen,QColor,QBrush,QTransform,
 from cv2 import QT_PUSH_BUTTON
 from matplotlib import image, widgets
 from PyQt5.QtCore import Qt,QDateTime,QDate,QTime,QTimer,QPoint,Qt,QRect
+from sklearn.feature_selection import SelectFromModel
 from sympy import false
 from PIL import ImageQt
 import numpy as np
@@ -323,9 +324,13 @@ class MainUi(QtWidgets.QMainWindow):
         self.drawTool.clicked.connect(self.drawSelected)
         self.addSize.clicked.connect(self.addSizeFunction)
         self.subSize.clicked.connect(self.subSizeFunction)
-        validatorInt=QIntValidator()
+        validatorInt=QIntValidator(0,500)
         self.sizeLabel.setValidator(validatorInt)
         self.sizeLabel.returnPressed.connect(self.enterSize)
+        self.shortcut_DecreaseSize=QtWidgets.QShortcut(QtGui.QKeySequence("["),self)
+        self.shortcut_DecreaseSize.activated.connect(self.subSizeFunction)
+        self.shortcut_IncreaseSize=QtWidgets.QShortcut(QtGui.QKeySequence("]"),self)
+        self.shortcut_IncreaseSize.activated.connect(self.addSizeFunction)
         timer = QTimer(self)
 		# adding action to timer
         timer.timeout.connect(self.showTime)
