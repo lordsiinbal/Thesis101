@@ -137,30 +137,6 @@ class myQLabel(QWidget):
     def mouseReleaseEvent(self,e):
         self.last_x=None
         self.last_y=None
-class RoadSetUpPaint(QtWidgets.QMainWindow):
-    switch_window = QtCore.pyqtSignal() 
-    def __init__(self):
-        super().__init__()
-        self.show()
-        uic.loadUi('roadSetUp_paint.ui', self)
-        self.setWindowFlag(Qt.FramelessWindowHint)
-        self.btnCancel.clicked.connect(self.close)#Button Cancel
-        self.btnDone.clicked.connect(self.loading)#mouse Event
-        self.verticalLayout = QtWidgets.QVBoxLayout(self.imageMainContainer)
-        self.image_main=myQLabel(self.imageMainContainer)
-        self.verticalLayout.addWidget(self.image_main)
-        self.btnBrush.clicked.connect(self.enableDraw)
-    def enableDraw(self):
-        self.image_main.drawAction=True
-
-    def loading(self):#funtion for loading 
-        self.switch_window.emit()
-        self.close()
-        self.paintedImage= self.image_main.findChild(QLabel,"image")
-        image = ImageQt.fromqpixmap(self.paintedImage.pixmap())
-        image.save('test.jpg')
-    
-        
 class CctvWindow(QtWidgets.QWidget):
     def __init__(self):
         super(CctvWindow,self).__init__()
@@ -310,7 +286,7 @@ class MainUi(QtWidgets.QMainWindow):
         self.showMaximized()
         self.setWindowFlag(Qt.FramelessWindowHint) 
         self.btnRecord.clicked.connect(self.switch_window.emit)
-        self.btnRoadSetup.clicked.connect(self.activeRoadSetUp)
+        self.btnRoadSetup.clicked.connect(self.setUpVideo)
         self.btnLogout.clicked.connect(self.logout.emit)
         self.btnAddVideo.clicked.connect(self.setUpVideo)
         self.btnIpAdd.clicked.connect(self.addIp.emit)
