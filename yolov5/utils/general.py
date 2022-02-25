@@ -47,16 +47,16 @@ cv2.setNumThreads(0)  # prevent OpenCV from multithreading (incompatible with Py
 os.environ['NUMEXPR_MAX_THREADS'] = str(NUM_THREADS)  # NumExpr max threads
 
 
-def compute_thresh(w, h):
+def compute_thresh(w, h, val):
     area = w*h
-    thresh = area * 0.0009
+    thresh = area * val
     thresh = thresh.astype(int)
     return thresh
 
 # NOTE: resason for doing this is.... instead of doing the filtering of stationary in outpt loop after the deepsort update
 # it is more efficient to only pass vehicles that aren't moving in deepsort so that the swapping of ID's would be less likely
 # to occur.
-def isStationary(xy, wh, xywhs, confs, clss, PREV_XY, frm_id, fps, strt_time):
+def isStationary(xy, wh, xywhs, confs, clss, PREV_XY, frm_id, fps, strt_time, stationaryFlag):
     xy = np.asarray((xy), dtype=int)
     # x = xy[:,0]
     # y = xy[:,1]
@@ -64,29 +64,29 @@ def isStationary(xy, wh, xywhs, confs, clss, PREV_XY, frm_id, fps, strt_time):
     thresh = np.zeros(len(xy), dtype=int)
     res = np.zeros(len(xy), dtype=int)
     if len(xy) > 0:
-        thresh = compute_thresh(wh[:,0], wh[:,1])
+        val = 0.0009 if stationaryFlag else 0.00001
+        thresh = compute_thresh(wh[:,0], wh[:,1], val)
         # print('thresh len = ', len(thresh))
         # print('xy len = ', len(xy))
         for i in range(len(xy)):
             for x in range(len(PREV_XY)):
-                # thresh = compute_thresh(xywhs[i][2].item(),xywhs[i][3].item()) # returns 5% of area of bbox allowance of vehicle movement
                 if (np.abs(xy[i][0] - PREV_XY[x][0]) <=thresh[i]) and (np.abs(xy[i][1] - PREV_XY[x][1]) <=thresh[i]):
                     res[i] = 1
+                    # PREV_XY = np.delete(PREV_XY, [x], 0)
+                    # PREV_XY[i].pop()
                     break
-        # res = xy[np.abs(xy[:,0]-PREV_XY[:,0]) <= thresh and np.abs(xy[:,1] - PREV_XY[:,1]) <=thresh and thresh >=4]
-        # res = xy[(np.abs(xy[:,0]-prev[0]) <= thresh and np.abs(xy[:,1] - prev[1]) <=thresh and thresh >=4 for prev in PREV_XY)]
-        # res = [np.where(np.abs(x-prev[0]) <= thresh and np.abs(y - prev[1]) <=thresh and thresh >=4) for prev in PREV_XY]
         
-    # print('---------------------------',res,'--------------------')
     stationary = np.where(res == 1)[0]
     xywhs = xywhs[stationary]
     confs = confs[stationary]
     clss = clss[stationary]
     if time.time()-strt_time >= 1: # means a second has passed
-        # print(time.time()-strt_time, '= sec')
         PREV_XY = xy
         strt_time = time.time() # initiate again a new timer
-    return xywhs, confs, clss, PREV_XY, strt_time
+        stationaryFlag = False
+    else:
+        stationaryFlag = True
+    return xywhs, confs, clss, PREV_XY, strt_time, stationaryFlag # new vehicles, only stationary vehicles remained
     
 
 def apply_roi_in_scene(roi, im1):

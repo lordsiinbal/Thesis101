@@ -151,6 +151,7 @@ class det:
         print("it has started")
         self.flag = True
         flagID = True
+        stationaryFlag = True
         for frame_idx, (path, img, im0s, vid_cap, s, frm_id, vid_fps, video_getter, im, ret, tim) in enumerate(self.dataset):
             if not self.stopped:
                 self.vid_fps = vid_fps
@@ -212,7 +213,7 @@ class det:
                         
                         if frame_idx > 0:
                             t8 = time_sync()
-                            xywhs, confs, clss, self.PREV_XY, self.start_time = isStationary(xy, wh, xywhs, confs, clss, self.PREV_XY, frm_id, vid_fps, self.start_time)
+                            xywhs, confs, clss, self.PREV_XY, self.start_time, stationaryFlag= isStationary(xy, wh, xywhs, confs, clss, self.PREV_XY, frm_id, vid_fps, self.start_time, stationaryFlag)
                             t9 = time_sync()
                             
                             t4 = time_sync()
@@ -288,7 +289,7 @@ class det:
                                         annotator.box_label(bboxes, label, color=(0,165,255))
                             tss = time_sync()
                             self.dt[4] += t5 - tim
-                            LOGGER.info(f'Done. Read-frame: ({t1-tim:.3f}), YOLO:({t3 - t2:.3f}s), DeepSort:({t5 - t4:.3f}s), Stationary:({t9 - t8:.3f}s), Displaying: ({tss-ts:.3f}s) Overall:({t5-tim:.3f}s)')
+                            # LOGGER.info(f'Done. Read-frame: ({t1-tim:.3f}), YOLO:({t3 - t2:.3f}s), DeepSort:({t5 - t4:.3f}s), Stationary:({t9 - t8:.3f}s), Displaying: ({tss-ts:.3f}s) Overall:({t5-tim:.3f}s)')
                         else: # set the prev frame xy to current xy
                             self.PREV_XY = xy
                             self.start_time = time_sync()
