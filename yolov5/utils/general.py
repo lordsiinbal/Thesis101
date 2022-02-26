@@ -47,25 +47,39 @@ cv2.setNumThreads(0)  # prevent OpenCV from multithreading (incompatible with Py
 os.environ['NUMEXPR_MAX_THREADS'] = str(NUM_THREADS)  # NumExpr max threads
 
 
+def isInsideROI(xy, xywhs, confs, clss, ROI):
+    xy = np.transpose(xy)
+    res = np.zeros(len(np.transpose(xy)), dtype=int)
+    for c in ROI:
+        for i in range(len(np.transpose(xy))):
+            res[i] = cv2.pointPolygonTest(
+                c, (int(xy[0, i]), int(xy[1, i])), False)  # checking each objects center point if it is inside the ROI
+                
+    insideROI = np.where(res == 1)[0]
+    xywhs = xywhs[insideROI]
+    confs = confs[insideROI]
+    clss = clss[insideROI]
+    
+    return xywhs, confs, clss
+
 def compute_thresh(w, h, val):
     area = w*h
     thresh = area * val
-    thresh = thresh.astype(int)
+    thresh = thresh.astype(float)
     return thresh
 
 # NOTE: resason for doing this is.... instead of doing the filtering of stationary in outpt loop after the deepsort update
 # it is more efficient to only pass vehicles that aren't moving in deepsort so that the swapping of ID's would be less likely
 # to occur.
-def isStationary(xy, wh, xywhs, confs, clss, PREV_XY, frm_id, fps, strt_time, stationaryFlag):
-    xy = np.asarray((xy), dtype=int)
+def isStationary(xy, wh, xywhs, confs, clss, PREV_XY, strt_time):
+    xy = np.asarray((xy), dtype=float)
     # x = xy[:,0]
     # y = xy[:,1]
-    wh = np.asarray((wh), dtype=int)
-    thresh = np.zeros(len(xy), dtype=int)
+    wh = np.asarray((wh), dtype=float)
+    thresh = np.zeros(len(xy), dtype=float)
     res = np.zeros(len(xy), dtype=int)
     if len(xy) > 0:
-        val = 0.0009 if stationaryFlag else 0.00001
-        thresh = compute_thresh(wh[:,0], wh[:,1], val)
+        thresh = compute_thresh(wh[:,0], wh[:,1], 0.0003)
         # print('thresh len = ', len(thresh))
         # print('xy len = ', len(xy))
         for i in range(len(xy)):
@@ -83,10 +97,11 @@ def isStationary(xy, wh, xywhs, confs, clss, PREV_XY, frm_id, fps, strt_time, st
     if time.time()-strt_time >= 1: # means a second has passed
         PREV_XY = xy
         strt_time = time.time() # initiate again a new timer
-        stationaryFlag = False
-    else:
-        stationaryFlag = True
-    return xywhs, confs, clss, PREV_XY, strt_time, stationaryFlag # new vehicles, only stationary vehicles remained
+        # stationaryFlag = False
+    # else:
+        # stationaryFlag = True
+    xy = xy[stationary]
+    return xy, xywhs, confs, clss, PREV_XY, strt_time # new vehicles, only stationary vehicles remained
     
 
 def apply_roi_in_scene(roi, im1):
