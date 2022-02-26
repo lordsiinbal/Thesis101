@@ -201,7 +201,7 @@ class VideoGet:
         
 class LoadImages:
     # YOLOv5 image/video dataloader, i.e. `python detect.py --source image.jpg/vid.mp4`
-    def __init__(self, path, img_size=640, stride=32, auto=True, mask = None):
+    def __init__(self, path, img_size=640, stride=32, auto=True):
         p = str(Path(path).resolve())  # os-agnostic absolute path
         if '*' in p:
             files = sorted(glob.glob(p, recursive=True))  # glob
@@ -224,7 +224,6 @@ class LoadImages:
         self.mode = 'image'
         self.auto = auto
         self.counter = 0
-        self.mask = mask
         if any(videos):
             self.new_video(videos[0])  # new video
         else:
@@ -258,9 +257,9 @@ class LoadImages:
 
             img0 = self.video_getter.frame
             img0 = cv2.resize(img0, (1280,720), interpolation=cv2.INTER_NEAREST)
-            im = img0
+            # im = img0
             # masking roi
-            img0 = cv2.copyTo(img0, self.mask)
+            # img0 = cv2.copyTo(img0, self.mask)
             self.frame = self.video_getter.frames
             s = f'video {self.count + 1}/{self.nf} ({self.frame}/{self.frames}) {path}: '
 
@@ -278,7 +277,7 @@ class LoadImages:
         img = img.transpose((2, 0, 1))[::-1]  # HWC to CHW, BGR to RGB
         img = np.ascontiguousarray(img)
 
-        return path, img, img0, self.cap, s, self.frame, self.vid_fps,  self.video_getter, im, ret_val, t
+        return path, img, img0, self.cap, s, self.frame, self.vid_fps,  self.video_getter, ret_val, t
 
     def new_video(self, path):
         self.path = path
