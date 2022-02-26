@@ -47,7 +47,7 @@ ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 from models.common import DetectMultiBackend
 from utils.datasets import IMG_FORMATS, VID_FORMATS, LoadImages, LoadStreams
 from utils.general import (LOGGER, check_file, check_img_size, check_imshow, check_requirements, colorstr,
-                           increment_path, non_max_suppression, print_args, scale_coords, strip_optimizer, xyxy2xywh, isStationary)
+                           increment_path, non_max_suppression, print_args, scale_coords, strip_optimizer, xyxy2xywh, isStationary, isInsideROI)
 from utils.plots import Annotator, colors, save_one_box
 from utils.torch_utils import select_device, time_sync
 
@@ -122,9 +122,9 @@ class det:
             self.dataset = LoadStreams(source, img_size=self.imgsz, stride=stride, auto=pt)
             bs = len(self.dataset)  # batch_size
         else:
-            self.mask = numpy.zeros(window.roadImage.shape, numpy.uint8)
-            cv2.drawContours(self.mask, window.ROI, -1, (255,255,255), thickness= -1)
-            self.dataset = LoadImages(source, img_size=self.imgsz, stride=stride, auto=pt, mask = self.mask)
+            # self.mask = numpy.zeros(window.roadImage.shape, numpy.uint8)
+            # cv2.drawContours(self.mask, window.ROI, -1, (255,255,255), thickness= -1)
+            self.dataset = LoadImages(source, img_size=self.imgsz, stride=stride, auto=pt)
             bs = 1  # batch_size
         self.vid_path, self.vid_writer = [None] * bs, [None] * bs
 
@@ -152,7 +152,7 @@ class det:
         self.flag = True
         flagID = True
         stationaryFlag = True
-        for frame_idx, (path, img, im0s, vid_cap, s, frm_id, vid_fps, video_getter, im, ret, tim) in enumerate(self.dataset):
+        for frame_idx, (path, img, im0s, vid_cap, s, frm_id, vid_fps, video_getter, ret, tim) in enumerate(self.dataset):
             if not self.stopped:
                 self.vid_fps = vid_fps
                 self.frm_id = frm_id
@@ -185,7 +185,7 @@ class det:
                         p, im0, frame = path[i], im0s[i].copy(), self.dataset.count
                         s += f'{i}: '
                     else:
-                        p, im0, frame = path, im.copy(), getattr(self.dataset, 'frame', 0)
+                        p, im0, frame = path, im0s.copy(), getattr(self.dataset, 'frame', 0)
 
                     p = Path(p)  # to Path
                     save_path = str(self.save_dir / p.name)  # im.jpg
@@ -213,11 +213,15 @@ class det:
                         
                         if frame_idx > 0:
                             t8 = time_sync()
-                            xywhs, confs, clss, self.PREV_XY, self.start_time, stationaryFlag= isStationary(xy, wh, xywhs, confs, clss, self.PREV_XY, frm_id, vid_fps, self.start_time, stationaryFlag)
+                            xy, xywhs, confs, clss, self.PREV_XY, self.start_time = isStationary(xy, wh, xywhs, confs, clss, self.PREV_XY, self.start_time)
                             t9 = time_sync()
                             
+                            t11 = time_sync()
+                            xywhs, confs, clss = isInsideROI(xy, xywhs, confs, clss, self.roi)
+                            t12 = time_sync()
+                            
                             t4 = time_sync()
-                            outputs = self.deepsort.update(xywhs.cpu(), confs.cpu(), clss.cpu(), im)
+                            outputs = self.deepsort.update(xywhs.cpu(), confs.cpu(), clss.cpu(), im0)
                             t5 = time_sync()
                             self.dt[3] += t5 - t4
 
@@ -289,7 +293,7 @@ class det:
                                         annotator.box_label(bboxes, label, color=(0,165,255))
                             tss = time_sync()
                             self.dt[4] += t5 - tim
-                            # LOGGER.info(f'Done. Read-frame: ({t1-tim:.3f}), YOLO:({t3 - t2:.3f}s), DeepSort:({t5 - t4:.3f}s), Stationary:({t9 - t8:.3f}s), Displaying: ({tss-ts:.3f}s) Overall:({t5-tim:.3f}s)')
+                            LOGGER.info(f'Done. Read-frame: ({t1-tim:.3f}), YOLO:({t3 - t2:.3f}s), DeepSort:({t5 - t4:.3f}s), Stationary:({t9 - t8:.3f}s), isInsideROI: ({t12-t11:.3f}s) Overall:({t5-tim:.3f}s)')
                         else: # set the prev frame xy to current xy
                             self.PREV_XY = xy
                             self.start_time = time_sync()
@@ -319,6 +323,8 @@ class det:
                                     fps, w, h = 30, im0.shape[1], im0.shape[0]
                                 save_path = str(Path(save_path).with_suffix('.mp4'))  # force *.mp4 suffix on results videos
                                 self.vid_writer[i] = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
+                                self.keys = ['id', 'startTime', 'finalTime', 'class', 'frameStart', 'timeStart', 'isSaved', 'timer']
+                                self.vehicleInfos = {k: [] for k in self.keys}
                             self.vid_writer[i].write(im0)
                             self.vidFrames.append(im0)
                 
@@ -350,6 +356,6 @@ class det:
 
     def changeROI(self, ROI):
         self.roi = ROI
-        self.mask = numpy.zeros(self.shape, numpy.uint8)
-        cv2.drawContours(self.mask, self.roi, -1, (255,255,255), thickness= -1)
-        self.dataset.mask = self.mask
+        # self.mask = numpy.zeros(self.shape, numpy.uint8)
+        # cv2.drawContours(self.mask, self.roi, -1, (255,255,255), thickness= -1)
+        # self.dataset.mask = self.mask

@@ -770,7 +770,7 @@ class Controller:
                     roadID = "R-0000001"
  
 
-                # cv.imwrite(str(PATH)+"/images/{}.jpg".format(roadID), self.roadImage) #writing the image with ROI to Client/images path
+                cv.imwrite(str(PATH)+"/images/{}.jpg".format(roadID), self.roadImage) #writing the image with ROI to Client/images path
                 # roadCapturedJPG = str(PATH)+"\\\images\\\\"+roadID+".jpg"
                 #making the data a json type
 
@@ -800,6 +800,7 @@ class Controller:
         self.sRoad.finished.connect(self.finishedSaveRoad)
         self.saveRoadThread.start()
         self.loadData = ProcessingDataUi()
+        # save road to local
         # r = requests.post(url = baseURL + "/RoadInsert",data=json.dumps(data),headers=headers)
         # print(r)
 
@@ -821,15 +822,15 @@ class Controller:
         self.initDet = Worker(self)
         self.initDet.moveToThread(self.thread)
         self.thread.started.connect(self.initDet.initDet)
-        self.initDet.finished.connect(self.thread.quit)
-        self.thread.finished.connect(self.finishedInitDet) # execute when the task in thread is finised
+        self.initDet.finishedInitDet.connect(self.finishedInitDet) # execute when the task in thread is finised
         self.thread.start()
     # this function will be executed when finished initializing detection and tracking models
-    def finishedInitDet(self):
+    def finishedInitDet(self, response):
         if self.initDet.det.dets.nflag:
+            self.thread.quit()
             self.windowFinishing.closeWindow() # close loading
+            self.getViolationRecord = response.json()
             print("finished initializing detection models")
-           
             try:
                 self.window.label.setText(self.road.selectedRoadName)
             except:
@@ -837,9 +838,6 @@ class Controller:
             self.window.verticalLayout_11.addWidget(self.window.frameWatch)#removing center aligment of frameWatch
             self.window.btnAddVideo.hide()
             self.window.labelScreen.setMinimumSize(QtCore.QSize(0, 400))
-            
-            response = requests.get(url = baseURL + "/ViolationFetchAll")
-            self.getViolationRecord = response.json()
 
             # run detection here on separate thread
             self.thread = QThread()
@@ -880,6 +878,7 @@ class Controller:
 
 # classes for worker threads
 class Worker(QtCore.QObject):
+    finishedInitDet = QtCore.pyqtSignal(requests.models.Response)
     finished = QtCore.pyqtSignal()
     imgUpdate = QtCore.pyqtSignal(QtGui.QPixmap)
     
@@ -894,7 +893,8 @@ class Worker(QtCore.QObject):
         
     def initDet(self):
         self.det = detection(self.vid, self.w)
-        self.finished.emit()
+        response = requests.get(url = baseURL + "/ViolationFetchAll")
+        self.finishedInitDet.emit(response)
 
     def runDet(self):
         # run/start detection
