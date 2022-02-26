@@ -1190,7 +1190,8 @@ font-size:20px;
 }
 #roadNameTextbox{
 border:2px solid #678ADD;
-color:white;
+color:black;
+padding-left:5px;
 }
 #instruction{
 color:white;
@@ -1211,6 +1212,19 @@ color:white;
                     </property>
                     <item>
                      <widget class="QFrame" name="frame_2">
+                      <property name="styleSheet">
+                       <string notr="true">#btnCancel_paint{
+border:2px solid #678ADD;
+border-radius:15px;
+color:white;
+}
+#btnDone_paint{
+background-color: #678ADD;
+border-radius:15px;
+color:white;
+}
+</string>
+                      </property>
                       <property name="frameShape">
                        <enum>QFrame::StyledPanel</enum>
                       </property>
@@ -1256,6 +1270,50 @@ color:white;
                            <width>0</width>
                            <height>0</height>
                           </size>
+                         </property>
+                        </widget>
+                       </item>
+                       <item>
+                        <widget class="QPushButton" name="btnCancel_paint">
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>36</height>
+                          </size>
+                         </property>
+                         <property name="maximumSize">
+                          <size>
+                           <width>97</width>
+                           <height>16777215</height>
+                          </size>
+                         </property>
+                         <property name="cursor">
+                          <cursorShape>PointingHandCursor</cursorShape>
+                         </property>
+                         <property name="text">
+                          <string>Cancel</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item>
+                        <widget class="QPushButton" name="btnDone_paint">
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>36</height>
+                          </size>
+                         </property>
+                         <property name="maximumSize">
+                          <size>
+                           <width>97</width>
+                           <height>16777215</height>
+                          </size>
+                         </property>
+                         <property name="cursor">
+                          <cursorShape>PointingHandCursor</cursorShape>
+                         </property>
+                         <property name="text">
+                          <string>Done</string>
                          </property>
                         </widget>
                        </item>
