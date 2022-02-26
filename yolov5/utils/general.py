@@ -47,46 +47,61 @@ cv2.setNumThreads(0)  # prevent OpenCV from multithreading (incompatible with Py
 os.environ['NUMEXPR_MAX_THREADS'] = str(NUM_THREADS)  # NumExpr max threads
 
 
-def compute_thresh(w, h):
+def isInsideROI(xy, xywhs, confs, clss, ROI):
+    xy = np.transpose(xy)
+    res = np.zeros(len(np.transpose(xy)), dtype=int)
+    for c in ROI:
+        for i in range(len(np.transpose(xy))):
+            res[i] = cv2.pointPolygonTest(
+                c, (int(xy[0, i]), int(xy[1, i])), False)  # checking each objects center point if it is inside the ROI
+                
+    insideROI = np.where(res == 1)[0]
+    xywhs = xywhs[insideROI]
+    confs = confs[insideROI]
+    clss = clss[insideROI]
+    
+    return xywhs, confs, clss
+
+def compute_thresh(w, h, val):
     area = w*h
-    thresh = area * 0.0009
-    thresh = thresh.astype(int)
+    thresh = area * val
+    thresh = thresh.astype(float)
     return thresh
 
 # NOTE: resason for doing this is.... instead of doing the filtering of stationary in outpt loop after the deepsort update
 # it is more efficient to only pass vehicles that aren't moving in deepsort so that the swapping of ID's would be less likely
 # to occur.
-def isStationary(xy, wh, xywhs, confs, clss, PREV_XY, frm_id, fps, strt_time):
-    xy = np.asarray((xy), dtype=int)
+def isStationary(xy, wh, xywhs, confs, clss, PREV_XY, strt_time):
+    xy = np.asarray((xy), dtype=float)
     # x = xy[:,0]
     # y = xy[:,1]
-    wh = np.asarray((wh), dtype=int)
-    thresh = np.zeros(len(xy), dtype=int)
+    wh = np.asarray((wh), dtype=float)
+    thresh = np.zeros(len(xy), dtype=float)
     res = np.zeros(len(xy), dtype=int)
     if len(xy) > 0:
-        thresh = compute_thresh(wh[:,0], wh[:,1])
+        thresh = compute_thresh(wh[:,0], wh[:,1], 0.0003)
         # print('thresh len = ', len(thresh))
         # print('xy len = ', len(xy))
         for i in range(len(xy)):
             for x in range(len(PREV_XY)):
-                # thresh = compute_thresh(xywhs[i][2].item(),xywhs[i][3].item()) # returns 5% of area of bbox allowance of vehicle movement
-                if (np.abs(xy[i][0] - PREV_XY[x][0]) <=thresh[i]) and (np.abs(xy[i][1] - PREV_XY[x][1]) <=thresh[i]) and (thresh[i] >=4):
+                if (np.abs(xy[i][0] - PREV_XY[x][0]) <=thresh[i]) and (np.abs(xy[i][1] - PREV_XY[x][1]) <=thresh[i]):
                     res[i] = 1
+                    # PREV_XY = np.delete(PREV_XY, [x], 0)
+                    # PREV_XY[i].pop()
                     break
-        # res = xy[np.abs(xy[:,0]-PREV_XY[:,0]) <= thresh and np.abs(xy[:,1] - PREV_XY[:,1]) <=thresh and thresh >=4]
-        # res = xy[(np.abs(xy[:,0]-prev[0]) <= thresh and np.abs(xy[:,1] - prev[1]) <=thresh and thresh >=4 for prev in PREV_XY)]
-        # res = [np.where(np.abs(x-prev[0]) <= thresh and np.abs(y - prev[1]) <=thresh and thresh >=4) for prev in PREV_XY]
         
-    # print('---------------------------',res,'--------------------')
     stationary = np.where(res == 1)[0]
     xywhs = xywhs[stationary]
     confs = confs[stationary]
     clss = clss[stationary]
-    if time.time()-strt_time >= 1 or frm_id%fps == 0: # means a second has passed
-        # print(time.time()-strt_time, '= sec')
+    if time.time()-strt_time >= 1: # means a second has passed
         PREV_XY = xy
         strt_time = time.time() # initiate again a new timer
-    return xywhs, confs, clss, PREV_XY, strt_time
+        # stationaryFlag = False
+    # else:
+        # stationaryFlag = True
+    xy = xy[stationary]
+    return xy, xywhs, confs, clss, PREV_XY, strt_time # new vehicles, only stationary vehicles remained
     
 
 def apply_roi_in_scene(roi, im1):
