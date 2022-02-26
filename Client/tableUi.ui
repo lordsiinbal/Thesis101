@@ -29,6 +29,18 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="mainContainer">
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>1000</width>
+     <height>600</height>
+    </size>
+   </property>
    <property name="styleSheet">
     <string notr="true">#mainContainer{
 background-color:#272741;
