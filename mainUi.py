@@ -272,11 +272,11 @@ class MainUi(QtWidgets.QMainWindow):
         super(MainUi, self).__init__()
         uic.loadUi('frontEndUi.ui', self)
         self.showMaximized()
-        self.setWindowFlag(Qt.FramelessWindowHint) 
+        self.setWindowFlag(Qt.FramelessWindowHint)
+        self.topInfo.hide()
+        self.selected="" 
         self.btnRecord.clicked.connect(self.switch_window.emit)
-        self.btnRoadSetup.clicked.connect(self.setUpVideo)
         self.btnLogout.clicked.connect(self.logout.emit)
-        self.btnAddVideo.clicked.connect(self.setUpVideo)
         self.btnIpAdd.clicked.connect(self.addIp.emit)
         self.btnCctv.clicked.connect(self.addCctv.emit)
         self.btnPlayback.clicked.connect(self.activePlayback)
@@ -286,6 +286,7 @@ class MainUi(QtWidgets.QMainWindow):
         self.verticalLayout.addWidget(self.image_main)
         self.eraserTool.clicked.connect(self.eraseSelected)
         self.drawTool.clicked.connect(self.drawSelected)
+        self.drawTool.setStyleSheet("background-color:#1D1F32")
         self.addSize.clicked.connect(self.addSizeFunction)
         self.subSize.clicked.connect(self.subSizeFunction)
         validatorInt=QIntValidator(0,500)
@@ -349,12 +350,16 @@ class MainUi(QtWidgets.QMainWindow):
         if self.image_main.eraser_selected==True:
             self.cursorForEraser()
     def drawSelected(self):
-         self.image_main.eraser_selected=False
-         self.image_main.setCursor(QtGui.QCursor((QtCore.Qt.ArrowCursor)))
+        self.drawTool.setStyleSheet("background-color:#1D1F32")
+        self.eraserTool.setStyleSheet("background-color:none")
+        self.image_main.eraser_selected=False
+        self.image_main.setCursor(QtGui.QCursor((QtCore.Qt.ArrowCursor)))
 
     def eraseSelected(self):
         self.image_main.eraser_selected=True
         self.cursorForEraser()
+        self.eraserTool.setStyleSheet("background-color:#1D1F32")
+        self.drawTool.setStyleSheet("background-color:none")
         #self.image_main.setOverrideCursor(cursor)
     def cursorForEraser(self):
         
@@ -370,8 +375,6 @@ class MainUi(QtWidgets.QMainWindow):
         
 
     #Function display Video    
-    def setUpVideo(self): #Initialize click event
-        self.roadSwitch.emit()
     
        
 
@@ -400,10 +403,16 @@ class Controller:
         self.window.switch_window.connect(self.showTable)
         self.window.roadSwitch.connect(self.showRoadSetup)
         self.window.addIp.connect(self.showUseIpAdd)
+        self.window.btnRoadSetup.clicked.connect(self.showRoadSetup)
+        self.window.btnT_ipAdd.clicked.connect(self.showUseIpAdd)
+        self.window.btnT_insertVideo.clicked.connect(self.addVideo)
+        self.window.btnT_cctv.clicked.connect(self.showUseCctv)
         self.window.logout.connect(self.show_logout)
         self.window.addCctv.connect(self.showUseCctv)
+        self.window.btnAddVideo.clicked.connect(self.addVideo)
         self.window.btnDone_paint.clicked.connect(self.settingUpRoad_From_paint)
         self.window.btnCancel_paint.clicked.connect(self.showRoadSetup)
+
         self.window.show()
         self.login.close()
     def settingUpRoad_From_paint(self):
@@ -413,25 +422,31 @@ class Controller:
 
     def showUseCctv(self):
         self.cctvWidget=CctvWindow()
+        self.window.selected=1
         self.cctvWidget.show()
         self.cctvWidget.btnDone.clicked.connect(self.setCctvSelected)
     def setCctvSelected(self):
-        self.window.Selected.setText("CCTV is Active:")
+        self.showRoadSetup()
         self.cctvWidget.close()
 
     def showUseIpAdd(self):
         self.IpAddWindow=IpAddWindow()
         self.IpAddWindow.btnDone.clicked.connect(self.setIpSetected)         
         self.IpAddWindow.show()
+    def addVideo(self):
+        self.window.selected=3
+        self.showRoadSetup()
+
     def setIpSetected(self):
-        ipAdd=self.IpAddWindow.textBox.text()
-        if ipAdd==None:
+        self.ipAdd=self.IpAddWindow.textBox.text()
+        self.window.selected=2
+        if self.ipAdd=="":
             self.window.File.setText("")    
             return
         else:
-            self.window.Selected.setText("IP Address Selected:")    
-            self.window.File.setText(ipAdd)
+            
             self.IpAddWindow.close()
+            self.showRoadSetup()
           
 
     def showTable(self):
@@ -466,11 +481,38 @@ class Controller:
     #this function whill display image    
     def showScreenImage(self):
         self.window.labelScreen.setPixmap(QtGui.QPixmap("images/image 1.jpg")) #setting image inside QLabel
-        self.window.labelScreen.setMinimumSize(QtCore.QSize(0, 400))#setting minimum heigth
+        #self.window.labelScreen.setMinimumSize(QtCore.QSize(0, 400))#setting minimum heigth
         self.window.label.setText("San Felipe")
         self.window.verticalLayout_11.addWidget(self.window.frameWatch)#removing center aligment of frameWatch
         self.window.frameButtons_2.hide()
-        #Closing Road Setting 
+        self.activeButton()
+        self.window.topInfo.show()
+
+        #Closing Road Setting
+    def activeButton(self):
+        if self.window.selected==1:
+            self.window.btnT_cctv.setStyleSheet("background-color:#678ADD")
+            self.window.btnT_ipAdd.setStyleSheet("background-color:none")
+            self.window.btnT_insertVideo.setStyleSheet("background-color:none")
+            self.window.Selected.setText("Live CAM Selected:")
+            self.window.File.setText("Live")
+            self.window.File.setStyleSheet("color:red")
+        elif self.window.selected==2:
+            self.window.btnT_cctv.setStyleSheet("background-color:none")
+            self.window.btnT_ipAdd.setStyleSheet("background-color:#678ADD")
+            self.window.btnT_insertVideo.setStyleSheet("background-color:none")
+            self.window.Selected.setText("IP Address Selected:")    
+            self.window.File.setText(self.ipAdd)
+            self.window.File.setStyleSheet("color:#678ADD;")
+        else:
+            self.window.btnT_cctv.setStyleSheet("background-color:none")
+            self.window.btnT_ipAdd.setStyleSheet("background-color:none")
+            self.window.btnT_insertVideo.setStyleSheet("background-color:#678ADD")
+            self.window.Selected.setText("Video File Selected:")
+            self.window.File.setText("Path")
+            self.window.File.setStyleSheet("color:#678ADD;")
+            
+
     def select(self):
         print("Select Image")       
 if __name__ == '__main__':
