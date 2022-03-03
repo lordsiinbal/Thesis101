@@ -2,26 +2,37 @@
     <div class="container">
 <div class="headContainer">
       <div class="text-white">
-          <h5>100,000</h5>
+          <h5 >{{violationNumber}}</h5>
           <h5> Violations</h5>
       </div>
       <div>
                 <div class='selection text-white'>
                     <label>Month</label>
-                    <select>
-                        <option class="text-center">January</option>
+                    <select @click="month()" id="monthValue">
+                        <option selected value="01" class="text-center">January</option>
+                        <option value="02" class="text-center">February</option>
+                        <option value="03" class="text-center">March</option>
+                        <option value="04" class="text-center">April</option>
+                        <option value="05" class="text-center">May</option>
+                        <option value="06" class="text-center">June</option>
+                        <option value="07" class="text-center">July</option>
+                        <option value="08" class="text-center">August</option>
+                        <option value="09" class="text-center">September</option>
+                        <option value="10" class="text-center">October</option>
+                        <option value="11" class="text-center">November</option>
+                        <option value="12" class="text-center">December</option>
                     </select>
                 </div>
                 
                 <div class='selection text-white'>
                     <label>Road</label>
-                    <select>
-                        <option class="text-center">All</option>
+                    <select @click="road()" v-model="selectedRoad">
+                        <option class="text-center" v-for="item in roadList" :key="item">{{item}}</option>
                     </select>
                 </div>
                 <div class='selection text-white'>
-                    <input type="seach" placeholder="search"/>
-                    <button><img src="icons/iconSearch.svg"/></button>
+                    <input v-model="searchQuery" type="search" placeholder="Search"/>
+                    <label><img src="icons/iconSearch.svg"/></label>
                 </div>
         </div>
 
@@ -37,14 +48,14 @@
             <th> Start Time</th>
             <th> End Time</th>
       </tr>
-      <tr class="containerValue container text-white" v-for="record in violationRecord" :key="record.violationNumber" >
-            <td> {{record.violationNumber}}</td>
-            <td> {{record.vehicleId}}</td>
+      <tr class="containerValue container text-white" v-for="record in resultQuery()" :key="record.violationID" >
+            <td> {{record.violationID}}</td>
+            <td> {{record.vehicleID}}</td>
             <td> {{record.roadName}}</td>
-            <td> {{record.roadId}}</td>
+            <td> {{record.roadID}}</td>
             <td> {{record.lengthOfViolation}}</td>
-            <td> {{record.startTime}}</td>
-            <td> {{record.endTime}}</td>
+            <td> {{record.startDateAndTime}}</td>
+            <td> {{record.endDateAndTime}}</td>
       </tr>
   </table>
   </div>
@@ -54,30 +65,129 @@
 </template>
 
 <script>
+import api from '../api';
 export default {
+created(){
+    this.getViolation();
+
+},
+// mounted(){
+//     this.getViolation();
+// },
 data(){
     return{
+        violationNumber:"",
+        searchQuery: null,
+        selectedRoad:"All",
+        roadList:["All"],
+        tempMonth:"",
         violationRecord:[
             {   
-                violationNumber:'V-0000001',
-                vehicleId:'VE-0000001',
-                roadName:'Cararayan #1',
-                roadId:'R-0000001',
-                lengthOfViolation:'10 minutes',
-                startTime:'2/17/2022 5:05:00',
-                endTime:'2/17/2022 5:15:00'
+                violationID:'',
+                vehicleID:'',
+                roadName:'',
+                roadID:'',
+                lengthOfViolation:'',
+                startDateAndTime:'',
+                endDateAndTime:''
             },
+        ],
+        violationRecordMonth1:[
             {   
-                violationNumber:'V-0000002',
-                vehicleId:'VE-0000001',
-                roadName:'Cararayan #1',
-                roadId:'R-0000001',
-                lengthOfViolation:'10 minutes',
-                startTime:'2/17/2022 5:05:00',
-                endTime:'2/17/2022 5:15:00'
-            }
+                violationID:'',
+                vehicleID:'',
+                roadName:'',
+                roadID:'',
+                lengthOfViolation:'',
+                startDateAndTime:'',
+                endDateAndTime:''
+            },
+        ],
+        violationRecordMonth:[
+            {   
+                violationID:'',
+                vehicleID:'',
+                roadName:'',
+                roadID:'',
+                lengthOfViolation:'',
+                startDateAndTime:'',
+                endDateAndTime:''
+            },
         ]
+        
     }
+},
+
+methods:{
+    month(){
+        let monthValue=document.getElementById('monthValue').value;
+        console.log("finding Month:", monthValue);
+        this.violationRecordMonth1= []
+        var ctr =0
+        for(ctr=0;ctr<this.violationRecord.length;ctr++){
+            if(this.violationRecord[ctr]['startDateAndTime'].slice(0,2)==monthValue & this.tempMonth != monthValue){
+                this.violationRecordMonth1.push(this.violationRecord[ctr]);
+            }
+        }
+        this.tempMonth= monthValue
+        console.log("value 1",this.violationRecordMonth1);
+        this.road()
+    },
+    getViolation(){
+        api
+            .get("/ViolationFetchAll")
+            .then((res) => {
+            this.violationRecord = res.data;
+
+                console.log(this.violationRecord.length);
+                this.month()
+                this.roadFilter()
+
+            })
+    },
+    roadFilter(){
+        var ctr=0;
+        for(ctr=0;ctr<this.violationRecord.length;ctr++){
+            if(this.roadList.includes(this.violationRecord[ctr]['roadID'])==false){
+                this.roadList.push(this.violationRecord[ctr]['roadID']);
+                console.log("road",this.roadList);
+            }
+
+        }
+        console.log("asd",this.roadList);
+    },
+    road(){
+        console.log("testVal",this.selectedRoad)
+        this.violationRecordMonth= [];  
+        if(this.selectedRoad == "All"){
+                this.violationRecordMonth = this.violationRecordMonth1
+        }
+        else {
+            for(let ctr=0;ctr<this.violationRecordMonth1.length;ctr++){
+                if(this.violationRecordMonth1[ctr]['roadID']==this.selectedRoad){
+                    this.violationRecordMonth.push(this.violationRecordMonth1[ctr])
+                }
+
+            }
+        }
+    },
+    resultQuery() {
+      if (this.searchQuery) {
+        return this.violationRecordMonth.filter(item => {
+          return this.searchQuery
+            .toLowerCase()
+            .split(" ")
+            .every(v => item.roadName.toLowerCase().includes(v));   
+        });
+      } else {
+          this.violationNumber= this.violationRecordMonth.length
+        return this.violationRecordMonth;
+      }
+    }  
+
+
+
+
 }
 
 }
