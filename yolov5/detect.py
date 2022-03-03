@@ -266,8 +266,8 @@ class det:
                                                                 'roadName' : self.window.window.label.text(),
                                                                 'roadID' : self.window.roadIDGlobal,
                                                                 'lengthOfViolation' :  t,
-                                                                'startDateAndTime' :str(datetime.fromtimestamp(self.vehicleInfos['startTime'][index]).strftime("%m/%d, %I:%M:%S %p")),
-                                                                'endDateAndTime' : str(datetime.fromtimestamp(float(int(time_sync()))).strftime("%m/%d, %I:%M:%S %p"))
+                                                                'startDateAndTime' :str(datetime.fromtimestamp(self.vehicleInfos['startTime'][index]).strftime("%m/%d%Y, %I:%M:%S %p")),
+                                                                'endDateAndTime' : str(datetime.fromtimestamp(float(int(time_sync()))).strftime("%m/%d%Y, %I:%M:%S %p"))
                                                 }
                                                 save_one_box(bboxes, imc, file = imgName, BGR=True) # saved cropped
                                                 self.saveViolation(data) #calling the saveViolation Function to save the data to the database
