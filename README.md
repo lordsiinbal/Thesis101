@@ -1,13 +1,11 @@
 ## Inference
 To run:
 ``` bash
-python track.py --source eval/data/ --yolo_model yolov5s6.pt --img 640  --deep_sort_model osnet_ain_x0_25 --classes 2 3 5 7 --agnostic-nms --save-vid --conf-thres 0.3 --save-crop
+python track.py --source data/sanfrancisco --yolo_model yolov5s.pt --img 640  --classes 2 3 5 7 --agnostic-nms --save-vid --conf-thres 0.4 --save-crop --show-vid
 ```
 
 ## Params description
 --yolo_model = 'model.pt path(s)'
-
---deep_sort_model = 'model.pt path(s)'
 
 --source = source  # file/folder, 0 for webcam
 

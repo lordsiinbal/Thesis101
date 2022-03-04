@@ -10,29 +10,27 @@ os.environ["NUMEXPR_NUM_THREADS"] = "1"
 
 sys.path.insert(0, './yolov5')
 
-
+from Stationary import Stationary
+import json
+import datetime
+import csv
+import argparse
+import platform
+import shutil
+import time
+from pathlib import Path
+import cv2
+import torch
+import torch.backends.cudnn as cudnn
+from yolov5.models.experimental import attempt_load
+from yolov5.utils.downloads import attempt_download
+from yolov5.models.common import DetectMultiBackend
+from yolov5.utils.datasets import LoadImages, LoadStreams
+from yolov5.utils.torch_utils import select_device, time_sync
+from yolov5.utils.plots import Annotator, colors, save_one_box
 from yolov5.utils.general import (LOGGER, apply_roi_in_scene, check_img_size, non_max_suppression, scale_coords,
                                   check_imshow, xyxy2xywh, increment_path, isStationary, isInsideROI)
-from deep_sort.deep_sort import DeepSort
-from deep_sort.utils.parser import get_config
-from yolov5.utils.plots import Annotator, colors, save_one_box
-from yolov5.utils.torch_utils import select_device, time_sync
-from yolov5.utils.datasets import LoadImages, LoadStreams
-from yolov5.models.common import DetectMultiBackend
-from yolov5.utils.downloads import attempt_download
-from yolov5.models.experimental import attempt_load
-import torch.backends.cudnn as cudnn
-import torch
-import cv2
-from pathlib import Path
-import time
-import shutil
-import platform
-import argparse
-import csv
-import datetime
-import json
-from Stationary import Stationary
+
 
 FILE = Path(__file__).resolve()
 ROOT = FILE.parents[0]  # yolov5 deepsort root directory
@@ -41,39 +39,25 @@ if str(ROOT) not in sys.path:
 ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 
 
-
 def detect(opt):
     out, source, yolo_model, deep_sort_model, show_vid, save_vid, save_txt, imgsz, evaluate, half, project, name, exist_ok, save_crop = \
         opt.output, opt.source, opt.yolo_model, opt.deep_sort_model, opt.show_vid, opt.save_vid, \
         opt.save_txt, opt.imgsz, opt.evaluate, opt.half, opt.project, opt.name, opt.exist_ok, opt.save_crop
     webcam = source == '0' or source.startswith(
         'rtsp') or source.startswith('http') or source.endswith('.txt')
-    
+
     # setting up ROI
     file = open('roi.txt', mode='r')
     ROI = file.read()
     file.close()
     ROI = numpy.asarray(json.loads(ROI), dtype=numpy.int32)
 
-   
     keys = ['id', 'startTime', 'finalTime', 'class',
             'frameStart', 'timeStart', 'isSaved', 'timer']
     vehicleInfos = {k: [] for k in keys}
 
     device = select_device(opt.device)
-    # initialize deepsort
-    # cfg = get_config()
-    # cfg.merge_from_file(opt.config_deepsort)
-    # deepsort = DeepSort(deep_sort_model,
-    #                     device,
-    #                     max_dist=cfg.DEEPSORT.MAX_DIST,
-    #                     max_iou_distance=cfg.DEEPSORT.MAX_IOU_DISTANCE,
-    #                     max_age=cfg.DEEPSORT.MAX_AGE, n_init=cfg.DEEPSORT.N_INIT, nn_budget=cfg.DEEPSORT.NN_BUDGET,
-    #                     model_path=''
-    #                     )
-
     # Initialize
-
     half &= device.type != 'cpu'  # half precision only supported on CUDA
 
     # The MOT16 evaluation runs multiple inference streams in parallel, each one writing to
@@ -89,10 +73,11 @@ def detect(opt):
                               exist_ok=exist_ok)  # increment run
     save_dir.mkdir(parents=True, exist_ok=True)  # make dir
 
-    writer = open(save_dir/ 'violations.txt', "w")
-    writer.write(str(datetime.datetime.fromtimestamp(float(int(time_sync()))).strftime("%m/%d, %I:%M:%S %p"))+'\n')
-    writer.write('inference: python track.py --source data/sanfrancisco --yolo_model yolov5s.pt --img 640  --classes 2 3 5 7 --agnostic-nms --save-vid --conf-thres 0.25 --save-crop --show-vid'+'\n')
-    
+    writer = open(save_dir / 'violations.txt', "w")
+    writer.write(str(datetime.datetime.fromtimestamp(
+        float(int(time_sync()))).strftime("%m/%d, %I:%M:%S %p"))+'\n')
+    writer.write('inference: python track.py --source data/sanfrancisco --yolo_model yolov5s.pt --img 640  --classes 2 3 5 7 --agnostic-nms --save-vid --conf-thres 0.4 --save-crop --show-vid'+'\n')
+
     # Load model
     device = select_device(device)
     model = DetectMultiBackend(yolo_model, device=device, dnn=opt.dnn)
@@ -137,11 +122,11 @@ def detect(opt):
         model(torch.zeros(
             1, 3, *imgsz).to(device).type_as(next(model.model.parameters())))  # warmup
     dt, seen = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 0
-    PREV_XY = numpy.zeros([1,2])
+    PREV_XY = numpy.zeros([1, 2])
     PREV_XY = numpy.asarray(PREV_XY, dtype=float)
     start_time = time_sync()
-    
-    stationary = Stationary(n_init = 2*dataset.fps, max_age = 200, iou_thresh = 0.7)
+
+    stationary = Stationary(n_init=2*dataset.fps, max_age=200, iou_thresh=0.7)
     for frame_idx, (path, img, im0s, vid_cap, s, fps, tim, frm_id) in enumerate(dataset):
         t1 = time_sync()
         img = torch.from_numpy(img).to(device)
@@ -163,7 +148,7 @@ def detect(opt):
         pred = non_max_suppression(
             pred, opt.conf_thres, opt.iou_thres, opt.classes, opt.agnostic_nms, max_det=opt.max_det)
         t00 = time_sync()
-        
+
         dt[2] += t00 - t3
 
         # Second-stage classifier (optional)
@@ -203,23 +188,25 @@ def detect(opt):
                 xy = wh = xywhs.cpu().detach().numpy()
                 wh = wh[:, 2:]
                 xy = xy[:, :2]
-                
-                if frame_idx > 0 or PREV_XY.all() != 0:
-                    
-                    t6 = time_sync()
-                    # xy, xywhs, confs, clss, PREV_XY, start_time, PREV_BB = isStationary(xy, wh, xywhs, confs, clss, PREV_XY, fps, start_time, bbox, PREV_BB)
-                    t7 = time_sync()
-                    dt[4] += t7 - t6
-                    
-                    t11 = time_sync()
-                    xy, xywhs, confs, clss = isInsideROI(xy, xywhs, confs, clss, ROI)
-                    t12 = time_sync()
-                    
+
+                t6 = time_sync()
+                # xy, xywhs, confs, clss, PREV_XY, start_time, PREV_BB = isStationary(xy, wh, xywhs, confs, clss, PREV_XY, fps, start_time, bbox, PREV_BB)
+                t7 = time_sync()
+                dt[4] += t7 - t6
+
+                t11 = time_sync()
+                xy, xywhs, confs, clss = isInsideROI(
+                    xy, xywhs, confs, clss, ROI)
+                t12 = time_sync()
+
+                if len(xy) > 0:
                     t4 = time_sync()
                     # outputs = deepsort.update(xywhs.cpu(), confs.cpu(), clss.cpu(), imc) # updating list of tracked stationary vehicles
                     imcc = cv2.cvtColor(imc, cv2.COLOR_BGR2GRAY)
-                    outputs = stationary.update(xy, xywhs.cpu(), clss.cpu(), imcc) # updating list of tracked stationary vehicles
-                    
+                    # updating list of tracked stationary vehicles
+                    outputs = stationary.update(
+                        xy, xywhs.cpu(), clss.cpu(), imcc)
+
                     t5 = time_sync()
                     dt[3] += t5 - t4
                     # draw boxes for visualization
@@ -236,8 +223,10 @@ def detect(opt):
                                 vehicleInfos['finalTime'][index] = float(
                                     int(time_sync()-vehicleInfos['startTime'][index]))
                                 t = vehicleInfos['timer'][index]/fps
-                                t = str(datetime.timedelta(seconds=float(t))).split(".")[0]
-                                ts = vehicleInfos['timeStart'][index].split(":")
+                                t = str(datetime.timedelta(
+                                    seconds=float(t))).split(".")[0]
+                                ts = vehicleInfos['timeStart'][index].split(
+                                    ":")
                                 # means 5 mins and not yet saved
                                 if vehicleInfos['timer'][index] >= 300*fps:
                                     col = (0, 0, 255)
@@ -245,7 +234,9 @@ def detect(opt):
                                         vehicleInfos['isSaved'][index] = True
                                         startTime = vehicleInfos['timeStart'][index]
                                         # save to csv / txt file here
-                                        imgName = save_dir / p.name[0:-4]  / 'crops' / names[c] / f'{id}-{str(ts[0])};{str(ts[1])};{str(ts[2])}.jpg'
+                                        imgName = save_dir / \
+                                            p.name[0:-4] / 'crops' / names[c] / \
+                                            f'{id}-{str(ts[0])};{str(ts[1])};{str(ts[2])}.jpg'
                                         # imgName  = f'{id}-{names[c]}.jpg'
                                         data = {
                                             'vehicleID': str(id),
@@ -255,14 +246,17 @@ def detect(opt):
                                             'lengthOfViolation': t,
                                             'imagePath': imgName
                                         }
-                                        
-                                        save_one_box(bboxes, imc, file = imgName, BGR=True) # saved cropped
+
+                                        # saved cropped
+                                        save_one_box(
+                                            bboxes, imc, file=imgName, BGR=True)
                                         writer.write(str(data)+"\n")
                                         print('saved in violations.txt')
                                 else:
                                     col = (0, 140, 255)
                                 # add 1 to timer (this timer iss within respect of frame)
-                                vehicleInfos['timer'][index] = frm_id - vehicleInfos['frameStart'][index]
+                                vehicleInfos['timer'][index] = frm_id - \
+                                    vehicleInfos['frameStart'][index]
 
                             except Exception as er:
                                 vehicleInfos['id'].append(id)
@@ -275,25 +269,22 @@ def detect(opt):
                                 vehicleInfos['timeStart'].append(
                                     str(datetime.timedelta(seconds=frm_id/fps)).split(".")[0])
 
-                                t = str(datetime.timedelta(seconds=float(0))).split(".")[0]
+                                t = str(datetime.timedelta(
+                                    seconds=float(0))).split(".")[0]
                                 m = 0
                                 c = int(cls)  # integer class
                                 vehicleInfos['class'].append(
                                     names[c])
                                 col = (0, 140, 255)
                             label = f'{id} - {names[c]} | {t}'
-                            annotator.box_label(bboxes, label, color=col)           
-                                    
+                            annotator.box_label(bboxes, label, color=col)
+
                     dt[5] += t5-t1
                     LOGGER.info(
                         f'{s}Done. Read-Frame: ({t1-tim:.3f}s), YOLO:({t3 - t2:.3f}s), NMS:({t00-t3:.3f}s), DeepSort:({t5 - t4:.3f}s), isStationary:({t7 - t6:.3f}s), isInsideROI:({t12-t11:.3f}s) Overall:({t5-tim:.3f}s)')
-                else:  # set the prev frame xy to current xy
-                    PREV_XY = xy
-                    PREV_BB = bbox
-                    start_time = time_sync()
-                    # START_TIME = time.time()
+
             else:
-                # deepsort.increment_ages()
+                stationary.increment_ages()
                 LOGGER.info('No detections')
 
             # Stream results
@@ -306,7 +297,7 @@ def detect(opt):
                     res = f'Speed: %.1fms pre-process, %.1fms inference, %.1fms NMS, %.1fms deep sort update, %.1fms isStationary, Overall: %.1fms per image at shape {(1, 3, *imgsz)}' % t
                     LOGGER.info(res)
                     writer.write(res)
-               
+
                     # for i, (ims) in enumerate(imcs):
                     #     cv2.imshow(str(i), ims)
                     # cv2.waitKey()
@@ -326,7 +317,7 @@ def detect(opt):
                     else:  # stream
                         fps, w, h = 30, im0.shape[1], im0.shape[0]
                     keys = ['id', 'startTime', 'finalTime', 'class',
-                    'frameStart', 'timeStart', 'isSaved', 'timer']
+                            'frameStart', 'timeStart', 'isSaved', 'timer']
                     vehicleInfos = {k: [] for k in keys}
                     vid_writer = cv2.VideoWriter(
                         save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))

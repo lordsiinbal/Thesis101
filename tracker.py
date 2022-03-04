@@ -28,7 +28,7 @@ class Tracks:
         x = (x1 + x2)/2
         y = (y1 + y2)/2
 
-        a = wh[0] * wh[1] * 0.001
+        a = wh[0] * wh[1] * 0.002
         xy = numpy.array((x, y))
         u = numpy.array((x+a, y+a))
 

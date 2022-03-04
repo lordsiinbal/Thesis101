@@ -128,3 +128,9 @@ class Stationary:
         iou = bops.box_iou(box1, box2).cuda()
         
         return iou.item()
+    
+    def increment_ages(self):
+        
+        for t in self.tracks:
+            if not t.is_deleted():
+                t.mark_missed()
