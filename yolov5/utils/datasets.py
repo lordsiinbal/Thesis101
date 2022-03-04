@@ -243,6 +243,7 @@ class LoadImages:
             # Read video
             self.mode = 'video'
             ret_val = self.video_getter.grabbed
+            # ret_val, img0 = self.cap.read()
             while not ret_val:
                 self.count += 1
                 self.cap.release()
@@ -259,6 +260,7 @@ class LoadImages:
             # masking roi
             # img0 = cv2.copyTo(img0, self.mask)
             self.frame = self.video_getter.frames
+            # self.frame += 1
             s = f'video {self.count + 1}/{self.nf} ({self.frame}/{self.frames}): '
 
         else:
@@ -282,7 +284,7 @@ class LoadImages:
         self.frame = 0
         self.cap = cv2.VideoCapture(path)
         self.video_getter = VideoGet(self.path).start()
-        self.frames = self.video_getter.nframes
+        self.frames = self.video_getter.frames
         self.fps = self.video_getter.fps
         
 

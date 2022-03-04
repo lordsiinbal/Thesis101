@@ -32,13 +32,14 @@ import argparse
 import csv
 import datetime
 import json
-
+from Stationary import Stationary
 
 FILE = Path(__file__).resolve()
 ROOT = FILE.parents[0]  # yolov5 deepsort root directory
 if str(ROOT) not in sys.path:
     sys.path.append(str(ROOT))  # add ROOT to PATH
 ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
+
 
 
 def detect(opt):
@@ -61,14 +62,15 @@ def detect(opt):
 
     device = select_device(opt.device)
     # initialize deepsort
-    cfg = get_config()
-    cfg.merge_from_file(opt.config_deepsort)
-    deepsort = DeepSort(deep_sort_model,
-                        device,
-                        max_dist=cfg.DEEPSORT.MAX_DIST,
-                        max_iou_distance=cfg.DEEPSORT.MAX_IOU_DISTANCE,
-                        max_age=cfg.DEEPSORT.MAX_AGE, n_init=cfg.DEEPSORT.N_INIT, nn_budget=cfg.DEEPSORT.NN_BUDGET,
-                        )
+    # cfg = get_config()
+    # cfg.merge_from_file(opt.config_deepsort)
+    # deepsort = DeepSort(deep_sort_model,
+    #                     device,
+    #                     max_dist=cfg.DEEPSORT.MAX_DIST,
+    #                     max_iou_distance=cfg.DEEPSORT.MAX_IOU_DISTANCE,
+    #                     max_age=cfg.DEEPSORT.MAX_AGE, n_init=cfg.DEEPSORT.N_INIT, nn_budget=cfg.DEEPSORT.NN_BUDGET,
+    #                     model_path=''
+    #                     )
 
     # Initialize
 
@@ -89,7 +91,7 @@ def detect(opt):
 
     writer = open(save_dir/ 'violations.txt', "w")
     writer.write(str(datetime.datetime.fromtimestamp(float(int(time_sync()))).strftime("%m/%d, %I:%M:%S %p"))+'\n')
-    writer.write('inference: python track.py --source data/ --yolo_model yolov5s6.pt --img 640  --deep_sort_model osnet_ain_x0_25 --classes 2 3 5 7 --agnostic-nms --save-vid --conf-thres 0.3 --save-crop'+'\n')
+    writer.write('inference: python track.py --source data/sanfrancisco --yolo_model yolov5s.pt --img 640  --classes 2 3 5 7 --agnostic-nms --save-vid --conf-thres 0.25 --save-crop --show-vid'+'\n')
     
     # Load model
     device = select_device(device)
@@ -138,7 +140,8 @@ def detect(opt):
     PREV_XY = numpy.zeros([1,2])
     PREV_XY = numpy.asarray(PREV_XY, dtype=float)
     start_time = time_sync()
-                
+    
+    stationary = Stationary(n_init = 2*dataset.fps, max_age = 200, iou_thresh = 0.7)
     for frame_idx, (path, img, im0s, vid_cap, s, fps, tim, frm_id) in enumerate(dataset):
         t1 = time_sync()
         img = torch.from_numpy(img).to(device)
@@ -194,6 +197,7 @@ def detect(opt):
                 #     s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "
 
                 xywhs = xyxy2xywh(det[:, 0:4])
+                bbox = det[:, 0:4].cpu().detach().numpy()
                 confs = det[:, 4]
                 clss = det[:, 5]
                 xy = wh = xywhs.cpu().detach().numpy()
@@ -201,25 +205,26 @@ def detect(opt):
                 xy = xy[:, :2]
                 
                 if frame_idx > 0 or PREV_XY.all() != 0:
+                    
                     t6 = time_sync()
-                    xy, xywhs, confs, clss, PREV_XY, start_time= isStationary(xy, wh, xywhs, confs, clss, PREV_XY, fps, start_time)
+                    # xy, xywhs, confs, clss, PREV_XY, start_time, PREV_BB = isStationary(xy, wh, xywhs, confs, clss, PREV_XY, fps, start_time, bbox, PREV_BB)
                     t7 = time_sync()
                     dt[4] += t7 - t6
                     
                     t11 = time_sync()
-                    xywhs, confs, clss = isInsideROI(xy, xywhs, confs, clss, ROI)
+                    xy, xywhs, confs, clss = isInsideROI(xy, xywhs, confs, clss, ROI)
                     t12 = time_sync()
-                
-
-                    # pass detections to deepsort
+                    
                     t4 = time_sync()
-                    outputs = deepsort.update(
-                        xywhs.cpu(), confs.cpu(), clss.cpu(), im0)
+                    # outputs = deepsort.update(xywhs.cpu(), confs.cpu(), clss.cpu(), imc) # updating list of tracked stationary vehicles
+                    imcc = cv2.cvtColor(imc, cv2.COLOR_BGR2GRAY)
+                    outputs = stationary.update(xy, xywhs.cpu(), clss.cpu(), imcc) # updating list of tracked stationary vehicles
+                    
                     t5 = time_sync()
                     dt[3] += t5 - t4
                     # draw boxes for visualization
                     if len(outputs) > 0:
-                        for j, (output, conf) in enumerate(zip(outputs, confs)):
+                        for j, (output) in enumerate(outputs):
                             bboxes = output[0:4]
                             id = output[4]
                             cls = output[5]
@@ -232,7 +237,7 @@ def detect(opt):
                                     int(time_sync()-vehicleInfos['startTime'][index]))
                                 t = vehicleInfos['timer'][index]/fps
                                 t = str(datetime.timedelta(seconds=float(t))).split(".")[0]
-
+                                ts = vehicleInfos['timeStart'][index].split(":")
                                 # means 5 mins and not yet saved
                                 if vehicleInfos['timer'][index] >= 300*fps:
                                     col = (0, 0, 255)
@@ -240,7 +245,7 @@ def detect(opt):
                                         vehicleInfos['isSaved'][index] = True
                                         startTime = vehicleInfos['timeStart'][index]
                                         # save to csv / txt file here
-                                        imgName = save_dir / p.name[0:-4]  / 'crops' / names[c] / f'{id}.jpg'
+                                        imgName = save_dir / p.name[0:-4]  / 'crops' / names[c] / f'{id}-{str(ts[0])};{str(ts[1])};{str(ts[2])}.jpg'
                                         # imgName  = f'{id}-{names[c]}.jpg'
                                         data = {
                                             'vehicleID': str(id),
@@ -255,12 +260,11 @@ def detect(opt):
                                         writer.write(str(data)+"\n")
                                         print('saved in violations.txt')
                                 else:
-                                    col = (0, 165, 255)
+                                    col = (0, 140, 255)
                                 # add 1 to timer (this timer iss within respect of frame)
                                 vehicleInfos['timer'][index] = frm_id - vehicleInfos['frameStart'][index]
 
                             except Exception as er:
-                                print(er)
                                 vehicleInfos['id'].append(id)
                                 t = time_sync()
                                 vehicleInfos['startTime'].append(t)
@@ -272,21 +276,24 @@ def detect(opt):
                                     str(datetime.timedelta(seconds=frm_id/fps)).split(".")[0])
 
                                 t = str(datetime.timedelta(seconds=float(0))).split(".")[0]
+                                m = 0
                                 c = int(cls)  # integer class
                                 vehicleInfos['class'].append(
                                     names[c])
-                                col = (0, 165, 255)
-                            label = f'{id} {names[c]}: {t}'
+                                col = (0, 140, 255)
+                            label = f'{id} - {names[c]} | {t}'
                             annotator.box_label(bboxes, label, color=col)           
+                                    
                     dt[5] += t5-t1
                     LOGGER.info(
                         f'{s}Done. Read-Frame: ({t1-tim:.3f}s), YOLO:({t3 - t2:.3f}s), NMS:({t00-t3:.3f}s), DeepSort:({t5 - t4:.3f}s), isStationary:({t7 - t6:.3f}s), isInsideROI:({t12-t11:.3f}s) Overall:({t5-tim:.3f}s)')
                 else:  # set the prev frame xy to current xy
                     PREV_XY = xy
+                    PREV_BB = bbox
                     start_time = time_sync()
                     # START_TIME = time.time()
             else:
-                deepsort.increment_ages()
+                # deepsort.increment_ages()
                 LOGGER.info('No detections')
 
             # Stream results
@@ -299,6 +306,10 @@ def detect(opt):
                     res = f'Speed: %.1fms pre-process, %.1fms inference, %.1fms NMS, %.1fms deep sort update, %.1fms isStationary, Overall: %.1fms per image at shape {(1, 3, *imgsz)}' % t
                     LOGGER.info(res)
                     writer.write(res)
+               
+                    # for i, (ims) in enumerate(imcs):
+                    #     cv2.imshow(str(i), ims)
+                    # cv2.waitKey()
                     raise StopIteration
 
             # Save results (image with detections)
@@ -309,7 +320,7 @@ def detect(opt):
                     if isinstance(vid_writer, cv2.VideoWriter):
                         vid_writer.release()  # release previous video writer
                     if vid_cap:  # video
-                        fps = vid_cap.get(cv2.CAP_PROP_FPS)
+                        fps = fps
                         w = int(im0.shape[1])
                         h = int(im0.shape[0])
                     else:  # stream
