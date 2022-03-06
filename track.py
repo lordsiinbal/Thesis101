@@ -76,7 +76,7 @@ def detect(opt):
     writer = open(save_dir / 'violations.txt', "w")
     writer.write(str(datetime.datetime.fromtimestamp(
         float(int(time_sync()))).strftime("%m/%d, %I:%M:%S %p"))+'\n')
-    writer.write('inference: python track.py --source data/sanfrancisco --yolo_model yolov5s.pt --img 640  --classes 2 3 5 7 --agnostic-nms --save-vid --conf-thres 0.4 --save-crop --show-vid'+'\n')
+    writer.write('inference: python track.py --source data/sanfrancisco --yolo_model yolov5s.pt --img 640  --classes 2 3 5 7 --agnostic-nms --save-vid --conf-thres 0.25 --save-crop --show-vid'+'\n')
 
     # Load model
     device = select_device(device)
@@ -126,7 +126,7 @@ def detect(opt):
     PREV_XY = numpy.asarray(PREV_XY, dtype=float)
     start_time = time_sync()
 
-    stationary = Stationary(n_init=2*dataset.fps, max_age=200, iou_thresh=0.7)
+    stationary = Stationary(n_init=2*dataset.fps, max_age=300, iou_thresh=0.6, device = device)
     for frame_idx, (path, img, im0s, vid_cap, s, fps, tim, frm_id) in enumerate(dataset):
         t1 = time_sync()
         img = torch.from_numpy(img).to(device)
@@ -211,7 +211,7 @@ def detect(opt):
                     dt[3] += t5 - t4
                     # draw boxes for visualization
                     if len(outputs) > 0:
-                        for j, (output) in enumerate(outputs):
+                        for j, (output) in enumerate(outputs) :
                             bboxes = output[0:4]
                             id = output[4]
                             cls = output[5]
@@ -277,12 +277,17 @@ def detect(opt):
                                     names[c])
                                 col = (0, 140, 255)
                             label = f'{id} - {names[c]} | {t}'
+                            # label1 = f'{output1[4]} - {names[c]}'
                             annotator.box_label(bboxes, label, color=col)
+                            # annotator.box_label(bboxes, label1, color=(0,255,0))
+                            
 
                     dt[5] += t5-t1
                     LOGGER.info(
                         f'{s}Done. Read-Frame: ({t1-tim:.3f}s), YOLO:({t3 - t2:.3f}s), NMS:({t00-t3:.3f}s), DeepSort:({t5 - t4:.3f}s), isStationary:({t7 - t6:.3f}s), isInsideROI:({t12-t11:.3f}s) Overall:({t5-tim:.3f}s)')
-
+                else:
+                    stationary.increment_ages()
+                    LOGGER.info('No detections')           
             else:
                 stationary.increment_ages()
                 LOGGER.info('No detections')
