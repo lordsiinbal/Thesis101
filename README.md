@@ -1,7 +1,7 @@
 ## Inference
 To run:
 ``` bash
-python track.py --source data/sanfrancisco --yolo_model yolov5s.pt --img 640  --classes 2 3 5 7 --agnostic-nms --save-vid --conf-thres 0.4 --save-crop --show-vid
+python track.py --source data/sanfrancisco --yolo_model yolov5s.pt --img 640  --classes 2 3 5 7 --agnostic-nms --save-vid --conf-thres 0.25 --save-crop --show-vid
 ```
 
 ## Params description
