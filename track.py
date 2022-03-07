@@ -204,6 +204,7 @@ def detect(opt):
                     t4 = time_sync()
                     # outputs = deepsort.update(xywhs.cpu(), confs.cpu(), clss.cpu(), imc) # updating list of tracked stationary vehicles
                     imcc = cv2.cvtColor(imc, cv2.COLOR_BGR2GRAY)
+                    imcc = cv2.equalizeHist(imcc)
                     # updating list of tracked stationary vehicles
                     outputs = stationary.update(
                         xy, xywhs.cpu(), clss.cpu(), imcc)

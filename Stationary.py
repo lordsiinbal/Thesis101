@@ -127,11 +127,10 @@ class Stationary:
         descriptors = []
         for box in bbox_xywh:
             x1, y1, x2, y2 = self._xywh_to_xyxy(box)
-            orig = ori_img[y1:y2, x1:x2]
+            im = ori_img[y1:y2, x1:x2]
             #calculate scaling factor
             # scale_factor = (128*128)/(im.shape[0]*im.shape[1])
             # im = cv2.resize(im, None, fx=scale_factor, fy=scale_factor)
-            im = cv2.equalizeHist(orig)
             # im = self.preprocessImage(im)
             # cv2.imshow('ss', im)
             _, desc = extractor.detectAndCompute(im, None)
