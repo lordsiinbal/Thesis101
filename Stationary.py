@@ -72,8 +72,18 @@ class Stationary:
             match_res = self.feature_matcher(track.descriptor, descriptors[index_min])
             if distances[index_min] < track.thresh:
                 min_dists.append(index_min)
-                if self.get_iou(track.xyxy, self._xywh_to_xyxy(xywhs[index_min])) > self.iou_thresh:
+                if self.get_iou(track.iou_xyxy, self._xywh_to_xyxy(xywhs[index_min])) > self.iou_thresh:
                     if match_res > 0.2:
+                        # print(match_res)
+                        track.update(self._xywh_to_xyxy(xywhs[index_min]), descriptors[index_min], (
+                            xywhs[index_min][2].item(), xywhs[index_min][3].item()), clss[index_min])
+
+                        if track.is_confirmed():
+                            outputs.append(numpy.array([track.xyxy[0], track.xyxy[1], track.xyxy[2],
+                                                        track.xyxy[3], track.track_id, track.class_id], dtype=numpy.int))
+                        continue
+                elif self.get_iou(track.xyxy, self._xywh_to_xyxy(xywhs[index_min])) > self.iou_thresh:
+                    if match_res > 0.75:
                         # print(match_res)
                         track.update(self._xywh_to_xyxy(xywhs[index_min]), descriptors[index_min], (
                             xywhs[index_min][2].item(), xywhs[index_min][3].item()), clss[index_min])

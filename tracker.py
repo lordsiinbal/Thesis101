@@ -21,6 +21,7 @@ class Tracks:
         self.max_age = max_age
         self.missed = False
         self.thresh = self.computeEucDist(xyxy, self.wh)
+        self.iou_xyxy = xyxy
 
     def computeEucDist(self, xyxy, wh):
         x1, y1, x2, y2 = xyxy
@@ -28,7 +29,7 @@ class Tracks:
         x = (x1 + x2)/2
         y = (y1 + y2)/2
 
-        a = wh[0] * wh[1] * 0.002
+        a = wh[0] * wh[1] * 0.001
         xy = numpy.array((x, y))
         u = numpy.array((x+a, y+a))
 
@@ -42,14 +43,17 @@ class Tracks:
             print(f'vehicle id = {self.track_id} has been registered')
             self.descriptor = descriptor
             # calculate thresh
-            self.xyxy = xyxy
+            self.iou_xyxy = xyxy
+            self.thresh = self.computeEucDist(xyxy, wh)
+            
         elif self.calls < self.n_init:
             self.descriptor = descriptor
-            self.xyxy = xyxy
-        if self.track_state == TrackState.Confirmed:
-            self.xyxy = xyxy
-
-        self.thresh = self.computeEucDist(xyxy, wh)
+            self.thresh = self.computeEucDist(xyxy, wh)
+            self.iou_xyxy = xyxy
+             #BUG: PASADIT ANG BOX, PAG BUTWA ULIT SA TRUE SIZE KN BOX DAI NA MABISTO KASI DAHIL SA IOU, TRIED LOWERING THE THRESH BUT DIDNOT WORK, WHAT WORKED SO FAR BUT MANY FALSE POSITIVES IS 0.001 THRESH AND MOVED TRES TO >INIT AND==INIT
+             #LAST EDIT MOVED THRESH AND REMOVED IOU 
+             
+        self.xyxy = xyxy
         self.last_seen = 0
         self.calls += 1
         self.missed = False

@@ -126,7 +126,8 @@ def detect(opt):
     PREV_XY = numpy.asarray(PREV_XY, dtype=float)
     start_time = time_sync()
 
-    stationary = Stationary(n_init=2*dataset.fps, max_age=300, iou_thresh=0.6, device = device)
+    stationary = Stationary(n_init=3*dataset.fps, max_age=500, iou_thresh=0.75, device = device)
+    
     for frame_idx, (path, img, im0s, vid_cap, s, fps, tim, frm_id) in enumerate(dataset):
         t1 = time_sync()
         img = torch.from_numpy(img).to(device)
