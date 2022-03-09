@@ -1,52 +1,32 @@
 
 import math
-import cv2
 import numpy
 from tracker import Tracks
-import torch
-import torchvision.ops.boxes as bops
-import torchvision.transforms as T
 from PIL import Image
-import matplotlib.pyplot as plt
 import imagehash
-# sys.path.append('deep_sort/deep/reid')
-# from torchreid.utils import FeatureExtractor
-
 
 class Stationary:
-    def __init__(self, n_init=4, max_age=300, iou_thresh = 0.7, device = 'cuda'):
+    def __init__(self, n_init=4, max_age=300):
+        """ n_init = number of consecutive frames a track shoud appear for it to be registerd
+            max_age = maximum number of missed misses
+        """
         self.tracks = []
         self.next_id = 1
         self._n_init = n_init
         self.max_age = max_age
-        self.matcher = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
-        self.descriptor_extractor = cv2.ORB_create(
-            nfeatures=500, edgeThreshold=25, patchSize=25)
-        self.iou_thresh = iou_thresh
-        self.device = device
         
-        # Build transform functions
-        pixel_mean=[0.485, 0.456, 0.406]
-        pixel_std=[0.229, 0.224, 0.225]
-        transforms = []
-        image_size = (128,256)
-        transforms += [T.Resize(image_size)]
-        transforms += [T.ToTensor()]
-        transforms += [T.Normalize(mean=pixel_mean, std=pixel_std)] # normalize pixels
-        self.preprocess = T.Compose(transforms)
-        self.to_pil = T.ToPILImage()
-        self.reverse_preprocess = T.Compose([
-            T.ToPILImage(),
-            numpy.array,
-        ])
-
     # gets executed every frame
     def update(self, yolo_centroid, xywhs, clss, imc):
+        """yolo_centroid = centroid of detection/yoloboxes
+            xywhs = centroid and w and height of yolo
+            clss = clases
+            imc = current frame
+            """
         self.height, self.width = imc.shape[:2]
         
         descriptors = self.getDescriptors(
-            xywhs, imc, self.descriptor_extractor)  # descriptors of current crops
-        currentTracks, outputs, min_dists, tenta = [], [], [], []
+            xywhs, imc)  # descriptors of current crops
+        currentTracks, outputs, min_dists = [], [], []
         
         if self.isEmptyTracks():  # means empty tracks, no vehicles are being tracked
             self.initDescriptors(descriptors, xywhs, clss)
@@ -58,7 +38,6 @@ class Stationary:
             else:
                 currentTracks.append(t)
         
-        
         for i, (track) in enumerate(currentTracks):  # loop current confirmed tracks
             # calculating the eucdistance for each tracked xy
             xy = self.xyxy_to_xy(track.xyxy)
@@ -69,12 +48,9 @@ class Stationary:
                 # if it already exists, continue to next loop
                 track.mark_missed()
                 continue
-            # now check if the minimum distance's associated descriptor matches the track descriptors
-            # match_res = self.feature_matcher(track.descriptor, descriptors[index_min])
             if distances[index_min] < track.thresh:
                 min_dists.append(index_min) 
                 match = 1 - (track.descriptor - descriptors[index_min])/64
-                print(f'id >> {track.track_id} match >> {match}')
                 if match > 0.7:
                     track.update(self._xywh_to_xyxy(xywhs[index_min]), descriptors[index_min], (
                                 xywhs[index_min][2].item(), xywhs[index_min][3].item()), clss[index_min], yolo_centroid[index_min])
@@ -82,7 +58,6 @@ class Stationary:
                         outputs.append(numpy.array([track.xyxy[0], track.xyxy[1], track.xyxy[2],
                                                                 track.xyxy[3], track.track_id, track.class_id], dtype=numpy.int))
                     continue
-            print(f'missed >> {track.track_id}')
             track.mark_missed()
                 
         # non-intersecting points from yolo_centroid and min_dists
@@ -106,15 +81,12 @@ class Stationary:
                         xywhs[i]), self.next_id, clss[i], self._n_init, (xywhs[i][2].item(), xywhs[i][3].item()), self.max_age, (xywhs[i][0].item(), xywhs[i][1].item())))
                     self.next_id += 1
                     continue
-                    
-                print('existing')
 
         return outputs
 
     def _xywh_to_xyxy(self, bbox_xywh=[]):
+        """converts xywh to xyxy"""
         x, y, w, h = bbox_xywh
-        # if len(wh) > 0:
-        #     w, h = wh
         x1 = max(int(x - w / 2), 0)
         x2 = min(int(x + w / 2), self.width - 1)
         y1 = max(int(y - h / 2), 0)
@@ -122,6 +94,7 @@ class Stationary:
         return x1, y1, x2, y2
 
     def xyxy_to_xy(self, xyxy):
+        """converts xyxy to xy center"""
         x1, y1, x2, y2 = xyxy
 
         x = ((x1 + x2)/2)
@@ -129,66 +102,35 @@ class Stationary:
 
         return x, y
 
-    def getDescriptors(self, bbox_xywh, ori_img, extractor):
+    def getDescriptors(self, bbox_xywh, ori_img):
+        """crop detected vehicles and get the pHash for it"""
         descriptors = []
         for box in bbox_xywh:
             x1, y1, x2, y2 = self._xywh_to_xyxy(box)
             im = ori_img[y1:y2, x1:x2]
-            #calculate scaling factor
-            # scale_factor = (128*128)/(im.shape[0]*im.shape[1])
-            # im = cv2.resize(im, None, fx=scale_factor, fy=scale_factor)
-            # im = self.preprocessImage(im)
-            # cv2.imshow('ss', im)
-            # _, desc = extractor.detectAndCompute(im, None)
-            # imgs = cv2.drawKeypoints(im, _, 0, (0, 255, 0), flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)    
-            # cv2.imshow('a', imgs)
-                                                                                                                                                                                            
-            # cv2.waitKey()
             im = Image.fromarray(im)
             im = imagehash.phash(im)
             descriptors.append(im)
         return descriptors
 
-    def feature_matcher(self, desc_a, desc_b):
-        matches = []
-        if desc_a is not None and desc_b is not None:
-            matches = self.matcher.match(desc_a, desc_b)
-            # match_percentage = matches.size(0)/total_matches.size(0) * 100
-            mat = [i for i in matches if i.distance < 45]
-            
-        return 0 if len(matches) == 0 else len(mat)/len(matches)
-
     def initDescriptors(self, desc, xywhs, clss):
+        """initialize first detection as track, only happens if track is empty"""
         for i, (desc) in enumerate(desc):
             self.tracks.append(Tracks(desc, self._xywh_to_xyxy(
                 xywhs[i]), self.next_id, clss[i], self._n_init, (xywhs[i][2].item(), xywhs[i][3].item()), self.max_age, (xywhs[i][0].item(), xywhs[i][1].item())))
             self.next_id += 1
 
     def isEmptyTracks(self):
+        """returns true if track is empty"""
         return len(self.tracks) == 0
 
-    def get_iou(self, bb1, bb2):
-        box1 = torch.tensor([[bb1[0], bb1[1], bb1[2], bb1[3]]], dtype=torch.float).cuda()
-        box2 = torch.tensor([[bb2[0], bb2[1], bb2[2], bb2[3]]], dtype=torch.float).cuda()
-        iou = bops.box_iou(box1, box2).cuda()
-        return iou.item()
     
     def increment_ages(self):
+        """increment missed misses of each track"""
         for t in self.tracks:
             if not t.is_deleted():
                 t.mark_missed()
                 
     def distance(self, p1, p2):
+        """euclidean distance formula"""
         return math.sqrt((p2[0] - p1[0])**2 + (p2[1] - p1[1])**2)
-    
-    def preprocessImage(self, input):
-        
-        image = self.to_pil(input)
-        image = self.preprocess(image)
-        images = self.reverse_preprocess(image)
-        # images = image.unsqueeze(0).to(self.device)
-        # images = numpy.n
-        # plt.imshow()
-        # cv2.imshow('ss', images)
-        # cv2.waitKey()
-        return images

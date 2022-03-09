@@ -13,6 +13,7 @@ class TrackState:
 
 class Tracks:
     def __init__(self, descriptor, xyxy, id, class_id, n_init, wh, max_age, xy):
+        """Tracks for each vehicle"""
         self.track_id = id
         self.xyxy = xyxy
         self.class_id = class_id
@@ -25,11 +26,12 @@ class Tracks:
         self.max_age = max_age
         self.missed = False
         self.thresh = self.computeEucDist(xyxy, self.wh)
-        self.iou_xyxy = xyxy
         self.base_thresh = self.thresh
         self.base_xy = xy
+        self.is_base_changed = False
 
     def computeEucDist(self, xyxy, wh):
+        """compute for treshold using euclidean distance"""
         x1, y1, x2, y2 = xyxy
 
         x = (x1 + x2)/2
@@ -44,25 +46,23 @@ class Tracks:
         return dist
     
     def distance(self, p1, p2):
+        """Compute for euclidean distance"""
         return math.sqrt((p2[0] - p1[0])**2 + (p2[1] - p1[1])**2)
     
     def update(self, xyxy, descriptor, wh, class_id, xy):
-        
+        """Keeps each track updated"""
         self.thresh = self.computeEucDist(xyxy, wh)
-        
         if self.calls == self.n_init:
             self.track_state = TrackState.Confirmed
             print(f'vehicle id = {self.track_id} has been registered')
             self.descriptor = descriptor
             # calculate thresh
-            self.iou_xyxy = xyxy
             self.base_xy = xy
             self.base_thresh = self.thresh
             
             
         elif self.calls < self.n_init:
             self.descriptor = descriptor
-            self.iou_xyxy = xyxy
             self.base_xy = xy
             self.base_thresh = self.thresh
 
@@ -71,10 +71,9 @@ class Tracks:
             if self.distance(xy, self.base_xy) > self.base_thresh:
                 self.base_thresh = self.thresh
                 self.descriptor = descriptor
+                self.is_base_changed =True
                 print(f'id >> {self.track_id} is on the move')
             
-
-        
         self.xyxy = xyxy
         self.last_seen = 0
         self.calls += 1
@@ -90,6 +89,9 @@ class Tracks:
             self.track_state = TrackState.Deleted
         if self.last_seen > self.max_age:
             print(f'track id in max age = {self.track_id} is deleted')
+            self.track_state = TrackState.Deleted
+        if self.is_base_changed and self.last_seen > self.n_init:
+            print(f'deleted {self.track_id}')
             self.track_state = TrackState.Deleted
         self.last_seen += 1
         self.missed = True

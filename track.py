@@ -126,7 +126,7 @@ def detect(opt):
     PREV_XY = numpy.asarray(PREV_XY, dtype=float)
     start_time = time_sync()
 
-    stationary = Stationary(n_init=1*dataset.fps, max_age=900, iou_thresh=0.85, device = device)
+    stationary = Stationary(n_init=dataset.fps, max_age=900)
     
     for frame_idx, (path, img, im0s, vid_cap, s, fps, tim, frm_id) in enumerate(dataset):
         t1 = time_sync()
