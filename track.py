@@ -126,7 +126,7 @@ def detect(opt):
     PREV_XY = numpy.asarray(PREV_XY, dtype=float)
     start_time = time_sync()
 
-    stationary = Stationary(n_init=3*dataset.fps, max_age=500, iou_thresh=0.75, device = device)
+    stationary = Stationary(n_init=1*dataset.fps, max_age=900, iou_thresh=0.85, device = device)
     
     for frame_idx, (path, img, im0s, vid_cap, s, fps, tim, frm_id) in enumerate(dataset):
         t1 = time_sync()
@@ -190,106 +190,111 @@ def detect(opt):
                 wh = wh[:, 2:]
                 xy = xy[:, :2]
 
-                t6 = time_sync()
-                # xy, xywhs, confs, clss, PREV_XY, start_time, PREV_BB = isStationary(xy, wh, xywhs, confs, clss, PREV_XY, fps, start_time, bbox, PREV_BB)
-                t7 = time_sync()
-                dt[4] += t7 - t6
+                if frame_idx > 0:
+                    t6 = time_sync()
+                    xy, xywhs, confs, clss, PREV_XY, start_time, PREV_BB = isStationary(xy, wh, xywhs, confs, clss, PREV_XY, fps, start_time, bbox, PREV_BB)
+                    t7 = time_sync()
+                    dt[4] += t7 - t6
 
-                t11 = time_sync()
-                xy, xywhs, confs, clss = isInsideROI(
-                    xy, xywhs, confs, clss, ROI)
-                t12 = time_sync()
+                    t11 = time_sync()
+                    xy, xywhs, confs, clss = isInsideROI(
+                        xy, xywhs, confs, clss, ROI)
+                    t12 = time_sync()
 
-                if len(xy) > 0:
-                    t4 = time_sync()
-                    # outputs = deepsort.update(xywhs.cpu(), confs.cpu(), clss.cpu(), imc) # updating list of tracked stationary vehicles
-                    imcc = cv2.cvtColor(imc, cv2.COLOR_BGR2GRAY)
-                    imcc = cv2.equalizeHist(imcc)
-                    # updating list of tracked stationary vehicles
-                    outputs = stationary.update(
-                        xy, xywhs.cpu(), clss.cpu(), imcc)
+                    if len(xy) > 0:
+                        t4 = time_sync()
+                        # outputs = deepsort.update(xywhs.cpu(), confs.cpu(), clss.cpu(), imc) # updating list of tracked stationary vehicles
+                        # imcc = cv2.cvtColor(imc, cv2.COLOR_BGR2GRAY)
+                        # imcc = cv2.equalizeHist(imcc)
+                        # updating list of tracked stationary vehicles
+                        outputs = stationary.update(
+                            xy, xywhs.cpu(), clss.cpu(), imc)
 
-                    t5 = time_sync()
-                    dt[3] += t5 - t4
-                    # draw boxes for visualization
-                    if len(outputs) > 0:
-                        for j, (output) in enumerate(outputs) :
-                            bboxes = output[0:4]
-                            id = output[4]
-                            cls = output[5]
-                            try:
-                                index = vehicleInfos['id'].index(
-                                    id)  # find id in list
-                                c = int(cls)  # integer class
-                                vehicleInfos['class'][index] = names[c]
-                                vehicleInfos['finalTime'][index] = float(
-                                    int(time_sync()-vehicleInfos['startTime'][index]))
-                                t = vehicleInfos['timer'][index]/fps
-                                t = str(datetime.timedelta(
-                                    seconds=float(t))).split(".")[0]
-                                ts = vehicleInfos['timeStart'][index].split(
-                                    ":")
-                                # means 5 mins and not yet saved
-                                if vehicleInfos['timer'][index] >= 300*fps:
-                                    col = (0, 0, 255)
-                                    if not vehicleInfos['isSaved'][index]:  # save to txt
-                                        vehicleInfos['isSaved'][index] = True
-                                        startTime = vehicleInfos['timeStart'][index]
-                                        # save to csv / txt file here
-                                        imgName = save_dir / \
-                                            p.name[0:-4] / 'crops' / names[c] / \
-                                            f'{id}-{str(ts[0])};{str(ts[1])};{str(ts[2])}.jpg'
-                                        # imgName  = f'{id}-{names[c]}.jpg'
-                                        data = {
-                                            'vehicleID': str(id),
-                                            'class': vehicleInfos['class'][index],
-                                            'frameStart': vehicleInfos['frameStart'][index],
-                                            'timeStart': startTime,
-                                            'lengthOfViolation': t,
-                                            'imagePath': imgName
-                                        }
+                        t5 = time_sync()
+                        dt[3] += t5 - t4
+                        # draw boxes for visualization
+                        if len(outputs) > 0:
+                            for j, (output) in enumerate(outputs) :
+                                bboxes = output[0:4]
+                                id = output[4]
+                                cls = output[5]
+                                try:
+                                    index = vehicleInfos['id'].index(
+                                        id)  # find id in list
+                                    c = int(cls)  # integer class
+                                    vehicleInfos['class'][index] = names[c]
+                                    vehicleInfos['finalTime'][index] = float(
+                                        int(time_sync()-vehicleInfos['startTime'][index]))
+                                    t = vehicleInfos['timer'][index]/fps
+                                    t = str(datetime.timedelta(
+                                        seconds=float(t))).split(".")[0]
+                                    ts = vehicleInfos['timeStart'][index].split(
+                                        ":")
+                                    # means 5 mins and not yet saved
+                                    if vehicleInfos['timer'][index] >= 300*fps:
+                                        col = (0, 0, 255)
+                                        if not vehicleInfos['isSaved'][index]:  # save to txt
+                                            vehicleInfos['isSaved'][index] = True
+                                            startTime = vehicleInfos['timeStart'][index]
+                                            # save to csv / txt file here
+                                            imgName = save_dir / \
+                                                p.name[0:-4] / 'crops' / names[c] / \
+                                                f'{id}-{str(ts[0])};{str(ts[1])};{str(ts[2])}.jpg'
+                                            # imgName  = f'{id}-{names[c]}.jpg'
+                                            data = {
+                                                'vehicleID': str(id),
+                                                'class': vehicleInfos['class'][index],
+                                                'frameStart': vehicleInfos['frameStart'][index],
+                                                'timeStart': startTime,
+                                                'lengthOfViolation': t,
+                                                'imagePath': imgName
+                                            }
 
-                                        # saved cropped
-                                        save_one_box(
-                                            bboxes, imc, file=imgName, BGR=True)
-                                        writer.write(str(data)+"\n")
-                                        print('saved in violations.txt')
-                                else:
+                                            # saved cropped
+                                            save_one_box(
+                                                bboxes, imc, file=imgName, BGR=True)
+                                            writer.write(str(data)+"\n")
+                                            print('saved in violations.txt')
+                                    else:
+                                        col = (0, 140, 255)
+                                    # add 1 to timer (this timer iss within respect of frame)
+                                    vehicleInfos['timer'][index] = frm_id - \
+                                        vehicleInfos['frameStart'][index]
+
+                                except Exception as er:
+                                    vehicleInfos['id'].append(id)
+                                    t = time_sync()
+                                    vehicleInfos['startTime'].append(t)
+                                    vehicleInfos['finalTime'].append(t)
+                                    vehicleInfos['frameStart'].append(frm_id)
+                                    vehicleInfos['isSaved'].append(False)
+                                    vehicleInfos['timer'].append(0)
+                                    vehicleInfos['timeStart'].append(
+                                        str(datetime.timedelta(seconds=frm_id/fps)).split(".")[0])
+
+                                    t = str(datetime.timedelta(
+                                        seconds=float(0))).split(".")[0]
+                                    m = 0
+                                    c = int(cls)  # integer class
+                                    vehicleInfos['class'].append(
+                                        names[c])
                                     col = (0, 140, 255)
-                                # add 1 to timer (this timer iss within respect of frame)
-                                vehicleInfos['timer'][index] = frm_id - \
-                                    vehicleInfos['frameStart'][index]
+                                label = f'{id} - {names[c]} | {t}'
+                                # label1 = f'{output1[4]} - {names[c]}'
+                                annotator.box_label(bboxes, label, color=col)
+                                # annotator.box_label(bboxes, label1, color=(0,255,0))
+                                
 
-                            except Exception as er:
-                                vehicleInfos['id'].append(id)
-                                t = time_sync()
-                                vehicleInfos['startTime'].append(t)
-                                vehicleInfos['finalTime'].append(t)
-                                vehicleInfos['frameStart'].append(frm_id)
-                                vehicleInfos['isSaved'].append(False)
-                                vehicleInfos['timer'].append(0)
-                                vehicleInfos['timeStart'].append(
-                                    str(datetime.timedelta(seconds=frm_id/fps)).split(".")[0])
-
-                                t = str(datetime.timedelta(
-                                    seconds=float(0))).split(".")[0]
-                                m = 0
-                                c = int(cls)  # integer class
-                                vehicleInfos['class'].append(
-                                    names[c])
-                                col = (0, 140, 255)
-                            label = f'{id} - {names[c]} | {t}'
-                            # label1 = f'{output1[4]} - {names[c]}'
-                            annotator.box_label(bboxes, label, color=col)
-                            # annotator.box_label(bboxes, label1, color=(0,255,0))
-                            
-
-                    dt[5] += t5-t1
-                    LOGGER.info(
-                        f'{s}Done. Read-Frame: ({t1-tim:.3f}s), YOLO:({t3 - t2:.3f}s), NMS:({t00-t3:.3f}s), DeepSort:({t5 - t4:.3f}s), isStationary:({t7 - t6:.3f}s), isInsideROI:({t12-t11:.3f}s) Overall:({t5-tim:.3f}s)')
+                        dt[5] += t5-t1
+                        LOGGER.info(
+                            f'{s}Done. Read-Frame: ({t1-tim:.3f}s), YOLO:({t3 - t2:.3f}s), NMS:({t00-t3:.3f}s), DeepSort:({t5 - t4:.3f}s), isStationary:({t7 - t6:.3f}s), isInsideROI:({t12-t11:.3f}s) Overall:({t5-tim:.3f}s)')
+                    else:
+                        stationary.increment_ages()
+                        LOGGER.info('No detections')       
                 else:
-                    stationary.increment_ages()
-                    LOGGER.info('No detections')           
+                    PREV_BB = bbox
+                    PREV_XY = xy 
+                    start_time = time.time()
             else:
                 stationary.increment_ages()
                 LOGGER.info('No detections')

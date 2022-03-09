@@ -65,7 +65,7 @@ def isInsideROI(centroids, xywhs, confs, clss, ROI):
 
 def compute_thresh(w, h):
     area = w*h
-    thresh = area * 0.0003
+    thresh = area * 0.0005
     thresh = thresh.astype(float)
     return thresh, area
 

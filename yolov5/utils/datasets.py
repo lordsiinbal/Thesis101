@@ -284,7 +284,7 @@ class LoadImages:
         self.frame = 0
         self.cap = cv2.VideoCapture(path)
         self.video_getter = VideoGet(self.path).start()
-        self.frames = self.video_getter.frames
+        self.frames = self.video_getter.nframes
         self.fps = self.video_getter.fps
         
 
