@@ -37,7 +37,7 @@ class Tracks:
         x = (x1 + x2)/2
         y = (y1 + y2)/2
 
-        a = wh[0] * wh[1] * 0.0035
+        a = wh[0]/2 if wh[0]<wh[1] else wh[1]/2
         xy = numpy.array((x, y))
         u = numpy.array((x+a, y+a))
 
@@ -49,7 +49,7 @@ class Tracks:
         """Compute for euclidean distance"""
         return math.sqrt((p2[0] - p1[0])**2 + (p2[1] - p1[1])**2)
     
-    def update(self, xyxy, descriptor, wh, class_id, xy):
+    def update(self, xyxy, descriptor, wh, class_id, xy, reset_base_thresh):
         """Keeps each track updated"""
         self.thresh = self.computeEucDist(xyxy, wh)
         if self.calls == self.n_init:
@@ -68,9 +68,10 @@ class Tracks:
 
         
         if self.track_state == TrackState.Confirmed: 
-            if self.distance(xy, self.base_xy) > self.base_thresh:
+            if reset_base_thresh:
                 self.base_thresh = self.thresh
                 self.descriptor = descriptor
+                self.base_xy = xy
                 self.is_base_changed =True
                 print(f'id >> {self.track_id} is on the move')
             
@@ -90,7 +91,7 @@ class Tracks:
         if self.last_seen > self.max_age:
             print(f'track id in max age = {self.track_id} is deleted')
             self.track_state = TrackState.Deleted
-        if self.is_base_changed and self.last_seen > self.n_init:
+        if self.is_base_changed and self.last_seen > self.max_age/2:
             print(f'deleted {self.track_id}')
             self.track_state = TrackState.Deleted
         self.last_seen += 1

@@ -282,6 +282,8 @@ def detect(opt):
                                 label = f'{id} - {names[c]} | {t}'
                                 # label1 = f'{output1[4]} - {names[c]}'
                                 annotator.box_label(bboxes, label, color=col)
+                                annotator.draw_thresh((output[6],output[7]),(output[10],output[11]), output[8], output[9])
+                                
                                 # annotator.box_label(bboxes, label1, color=(0,255,0))
                                 
 
@@ -331,6 +333,7 @@ def detect(opt):
                     keys = ['id', 'startTime', 'finalTime', 'class',
                             'frameStart', 'timeStart', 'isSaved', 'timer']
                     vehicleInfos = {k: [] for k in keys}
+                    stationary = Stationary(n_init=dataset.fps, max_age=900)# reinitialize stationary tracker
                     vid_writer = cv2.VideoWriter(
                         save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
                 vid_writer.write(im0)

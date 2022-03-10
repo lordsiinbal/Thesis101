@@ -1,5 +1,6 @@
 
 import math
+import cv2
 import numpy
 from tracker import Tracks
 from PIL import Image
@@ -48,15 +49,24 @@ class Stationary:
                 # if it already exists, continue to next loop
                 track.mark_missed()
                 continue
-            if distances[index_min] < track.thresh:
+            if distances[index_min] < track.thresh: # if true, consider candidate vehicle
                 min_dists.append(index_min) 
                 match = 1 - (track.descriptor - descriptors[index_min])/64
-                if match > 0.7:
+                if match > 0.7 and self.distance(yolo_centroid[index_min], track.base_xy) > track.base_thresh:
+                    # print(f'{track.track_id} >> update in base thresh')
                     track.update(self._xywh_to_xyxy(xywhs[index_min]), descriptors[index_min], (
-                                xywhs[index_min][2].item(), xywhs[index_min][3].item()), clss[index_min], yolo_centroid[index_min])
+                                xywhs[index_min][2].item(), xywhs[index_min][3].item()), clss[index_min], yolo_centroid[index_min], True)
                     if track.is_confirmed():
                         outputs.append(numpy.array([track.xyxy[0], track.xyxy[1], track.xyxy[2],
-                                                                track.xyxy[3], track.track_id, track.class_id], dtype=numpy.int))
+                                                               track.xyxy[3], track.track_id, track.class_id, yolo_centroid[index_min][0], yolo_centroid[index_min][1], track.base_thresh, track.thresh,track.base_xy[0],track.base_xy[1] ], dtype=numpy.int))
+                    continue
+                elif match > 0.8:
+                    # print(f'{track.track_id} >> update not in base thresh {yolo_centroid[index_min][0],yolo_centroid[index_min][1]} {track.base_xy[0],track.base_xy[1]}')
+                    track.update(self._xywh_to_xyxy(xywhs[index_min]), descriptors[index_min], (
+                                xywhs[index_min][2].item(), xywhs[index_min][3].item()), clss[index_min], yolo_centroid[index_min], False)
+                    if track.is_confirmed():
+                        outputs.append(numpy.array([track.xyxy[0], track.xyxy[1], track.xyxy[2],
+                                                               track.xyxy[3], track.track_id, track.class_id, yolo_centroid[index_min][0], yolo_centroid[index_min][1], track.base_thresh, track.thresh,track.base_xy[0],track.base_xy[1] ], dtype=numpy.int))
                     continue
             track.mark_missed()
                 
