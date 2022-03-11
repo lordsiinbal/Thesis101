@@ -3,6 +3,3 @@
 	url = https://github.com/lordsiinbal/Thesis101
 	branch = master
 
-[submodule "deep_sort/deep_sort/deep/reid"]
-	path = deep_sort/deep_sort/deep/reid
-	url = https://github.com/KaiyangZhou/deep-person-reid
