@@ -9,7 +9,7 @@ import torch
 import torchvision.ops.boxes as bops
 
 class Stationary:
-    def __init__(self, n_init=4, max_age=300):
+    def __init__(self, n_init=4, max_age=300, match_thresh = 0.7, iou_thresh = 0.8):
         """ n_init = number of consecutive frames a track shoud appear for it to be registerd
             max_age = maximum number of missed misses
         """
@@ -17,6 +17,8 @@ class Stationary:
         self.next_id = 1
         self._n_init = n_init
         self.max_age = max_age
+        self.match_thresh = match_thresh
+        self.iou_thresh = iou_thresh
         
     # gets executed every frame
     def update(self, yolo_centroid, xywhs, clss, imc):
@@ -55,9 +57,9 @@ class Stationary:
                 min_dists.append(index_min) 
                 match = 1 - (track.descriptor - descriptors[index_min])/64
                 # print(f'id >> {track.track_id} match >>{match}')
-                if match > 0.7:
-                    # print(f'{track.track_id} >> update in base thresh')
-                    if self.get_iou(track.xyxy, self._xywh_to_xyxy(xywhs[index_min])) > 0.8: 
+                if match > self.match_thresh:
+                    # print(f'{track.track_id} >> match result {match} >> iou {self.get_iou(track.xyxy, self._xywh_to_xyxy(xywhs[index_min]))}')
+                    if self.get_iou(track.xyxy, self._xywh_to_xyxy(xywhs[index_min])) > self.iou_thresh: 
                         track.update(self._xywh_to_xyxy(xywhs[index_min]), descriptors[index_min], (
                                     xywhs[index_min][2].item(), xywhs[index_min][3].item()), clss[index_min], yolo_centroid[index_min], match)
                         if track.is_confirmed():
