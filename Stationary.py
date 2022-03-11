@@ -52,22 +52,16 @@ class Stationary:
             if distances[index_min] < track.thresh: # if true, consider candidate vehicle
                 min_dists.append(index_min) 
                 match = 1 - (track.descriptor - descriptors[index_min])/64
-                if match > 0.7 and self.distance(yolo_centroid[index_min], track.base_xy) > track.base_thresh:
+                print(f'id >> {track.track_id} match >>{match}')
+                if match > 0.7:
                     # print(f'{track.track_id} >> update in base thresh')
                     track.update(self._xywh_to_xyxy(xywhs[index_min]), descriptors[index_min], (
-                                xywhs[index_min][2].item(), xywhs[index_min][3].item()), clss[index_min], yolo_centroid[index_min], True)
+                                xywhs[index_min][2].item(), xywhs[index_min][3].item()), clss[index_min], yolo_centroid[index_min], match)
                     if track.is_confirmed():
                         outputs.append(numpy.array([track.xyxy[0], track.xyxy[1], track.xyxy[2],
                                                                track.xyxy[3], track.track_id, track.class_id, yolo_centroid[index_min][0], yolo_centroid[index_min][1], track.base_thresh, track.thresh,track.base_xy[0],track.base_xy[1] ], dtype=numpy.int))
                     continue
-                elif match > 0.8:
-                    # print(f'{track.track_id} >> update not in base thresh {yolo_centroid[index_min][0],yolo_centroid[index_min][1]} {track.base_xy[0],track.base_xy[1]}')
-                    track.update(self._xywh_to_xyxy(xywhs[index_min]), descriptors[index_min], (
-                                xywhs[index_min][2].item(), xywhs[index_min][3].item()), clss[index_min], yolo_centroid[index_min], False)
-                    if track.is_confirmed():
-                        outputs.append(numpy.array([track.xyxy[0], track.xyxy[1], track.xyxy[2],
-                                                               track.xyxy[3], track.track_id, track.class_id, yolo_centroid[index_min][0], yolo_centroid[index_min][1], track.base_thresh, track.thresh,track.base_xy[0],track.base_xy[1] ], dtype=numpy.int))
-                    continue
+          
             track.mark_missed()
                 
         # non-intersecting points from yolo_centroid and min_dists
@@ -80,13 +74,14 @@ class Stationary:
                 distances = [self.distance(xy, self.xyxy_to_xy(ct.xyxy)) for ct in currentTracks] # distances with current tracks
             
                 index_min = numpy.argmin(distances)
-                if distances[index_min] > currentTracks[index_min].thresh: # means outside the thresh of nearest track, meaning new vehicle
+                if distances[index_min] > currentTracks[index_min].base_thresh: # means outside the thresh of nearest track, meaning new vehicle
                     # new vehicle
                     self.tracks.append(Tracks(descriptors[i], self._xywh_to_xyxy(
                         xywhs[i]), self.next_id, clss[i], self._n_init, (xywhs[i][2].item(), xywhs[i][3].item()), self.max_age, (xywhs[i][0].item(), xywhs[i][1].item())))
                     self.next_id += 1
                     continue
-                if (xywhs[i][2].item() * xywhs[i][3].item()) > (currentTracks[index_min].wh[0] * currentTracks[index_min].wh[1]):
+                elif (xywhs[i][2].item() * xywhs[i][3].item()) > (currentTracks[index_min].wh[0] * currentTracks[index_min].wh[1]):
+                    print(f'added in 2nd{self.next_id}' )
                     self.tracks.append(Tracks(descriptors[i], self._xywh_to_xyxy(
                         xywhs[i]), self.next_id, clss[i], self._n_init, (xywhs[i][2].item(), xywhs[i][3].item()), self.max_age, (xywhs[i][0].item(), xywhs[i][1].item())))
                     self.next_id += 1

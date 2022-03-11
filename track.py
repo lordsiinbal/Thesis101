@@ -204,11 +204,12 @@ def detect(opt):
                     if len(xy) > 0:
                         t4 = time_sync()
                         # outputs = deepsort.update(xywhs.cpu(), confs.cpu(), clss.cpu(), imc) # updating list of tracked stationary vehicles
-                        # imcc = cv2.cvtColor(imc, cv2.COLOR_BGR2GRAY)
-                        # imcc = cv2.equalizeHist(imcc)
+                        imcc = cv2.cvtColor(imc, cv2.COLOR_BGR2GRAY)
+                        # imcc = cv2.GaussianBlur(imcc, (3,3),0)
                         # updating list of tracked stationary vehicles
+                      
                         outputs = stationary.update(
-                            xy, xywhs.cpu(), clss.cpu(), imc)
+                            xy, xywhs.cpu(), clss.cpu(), imcc)
 
                         t5 = time_sync()
                         dt[3] += t5 - t4

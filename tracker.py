@@ -25,19 +25,22 @@ class Tracks:
         self.last_seen = 0
         self.max_age = max_age
         self.missed = False
-        self.thresh = self.computeEucDist(xyxy, self.wh)
+        self.thresh = self.computeEucDist(xyxy, self.wh, False)
         self.base_thresh = self.thresh
         self.base_xy = xy
         self.is_base_changed = False
 
-    def computeEucDist(self, xyxy, wh):
+    def computeEucDist(self, xyxy, wh, for_base):
         """compute for treshold using euclidean distance"""
         x1, y1, x2, y2 = xyxy
 
         x = (x1 + x2)/2
         y = (y1 + y2)/2
 
-        a = wh[0]/2 if wh[0]<wh[1] else wh[1]/2
+        if for_base:
+            a = wh[0]/3 if wh[0]<wh[1] else wh[1]/3
+        else:
+            a = wh[0]/2 if wh[0]<wh[1] else wh[1]/2
         xy = numpy.array((x, y))
         u = numpy.array((x+a, y+a))
 
@@ -49,27 +52,30 @@ class Tracks:
         """Compute for euclidean distance"""
         return math.sqrt((p2[0] - p1[0])**2 + (p2[1] - p1[1])**2)
     
-    def update(self, xyxy, descriptor, wh, class_id, xy, reset_base_thresh):
+    def update(self, xyxy, descriptor, wh, class_id, xy, match):
         """Keeps each track updated"""
-        self.thresh = self.computeEucDist(xyxy, wh)
+        if match > 0.95:
+            self.descriptor = descriptor
+            
+        self.thresh = self.computeEucDist(xyxy, wh, False)
         if self.calls == self.n_init:
             self.track_state = TrackState.Confirmed
             print(f'vehicle id = {self.track_id} has been registered')
             self.descriptor = descriptor
-            # calculate thresh
             self.base_xy = xy
-            self.base_thresh = self.thresh
+            self.base_thresh = self.computeEucDist(xyxy, self.wh, True)
             
             
         elif self.calls < self.n_init:
             self.descriptor = descriptor
             self.base_xy = xy
-            self.base_thresh = self.thresh
+            self.base_thresh =  self.computeEucDist(xyxy, self.wh, True)
 
         
+            
         if self.track_state == TrackState.Confirmed: 
-            if reset_base_thresh:
-                self.base_thresh = self.thresh
+            if self.distance(xy, self.base_xy) > self.base_thresh:
+                self.base_thresh = self.computeEucDist(xyxy, self.wh, True)
                 self.descriptor = descriptor
                 self.base_xy = xy
                 self.is_base_changed =True
