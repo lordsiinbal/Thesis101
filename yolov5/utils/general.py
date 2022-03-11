@@ -47,8 +47,8 @@ cv2.setNumThreads(0)  # prevent OpenCV from multithreading (incompatible with Py
 os.environ['NUMEXPR_MAX_THREADS'] = str(NUM_THREADS)  # NumExpr max threads
 
 
-def isInsideROI(xy, xywhs, confs, clss, ROI):
-    xy = np.transpose(xy)
+def isInsideROI(centroids, xywhs, confs, clss, ROI):
+    xy = np.transpose(centroids)
     res = np.zeros(len(np.transpose(xy)), dtype=int)
     for c in ROI:
         for i in range(len(np.transpose(xy))):
@@ -59,50 +59,65 @@ def isInsideROI(xy, xywhs, confs, clss, ROI):
     xywhs = xywhs[insideROI]
     confs = confs[insideROI]
     clss = clss[insideROI]
+    centroids = centroids[insideROI]
     
-    return xywhs, confs, clss
+    return centroids, xywhs, confs, clss
 
-def compute_thresh(w, h, val):
+def compute_thresh(w, h):
     area = w*h
-    thresh = area * val
+    thresh = area * 0.0005
     thresh = thresh.astype(float)
-    return thresh
+    return thresh, area
 
 # NOTE: resason for doing this is.... instead of doing the filtering of stationary in outpt loop after the deepsort update
 # it is more efficient to only pass vehicles that aren't moving in deepsort so that the swapping of ID's would be less likely
 # to occur.
-def isStationary(xy, wh, xywhs, confs, clss, PREV_XY, strt_time):
+def isStationary(xy, wh, xywhs, confs, clss, PREV_XY, fps, start_time, Bbox, prevBbox):
     xy = np.asarray((xy), dtype=float)
+    # pointCorner = [(box_points[i][0], box_points[i][1]), # (x1,y1)
+    #                 (box_points[i][0], box_points[i][3]), #(x1, y2)
+    #                 (box_points[i][2], box_points[i][1]), #(x2, y1)
+    #                 (box_points[i][2], box_points[i][3])] # (x2,y2)
     # x = xy[:,0]
     # y = xy[:,1]
     wh = np.asarray((wh), dtype=float)
     thresh = np.zeros(len(xy), dtype=float)
     res = np.zeros(len(xy), dtype=int)
+    thresh, area = compute_thresh(wh[:,0], wh[:,1])
+    
     if len(xy) > 0:
-        thresh = compute_thresh(wh[:,0], wh[:,1], 0.0003)
-        # print('thresh len = ', len(thresh))
-        # print('xy len = ', len(xy))
         for i in range(len(xy)):
             for x in range(len(PREV_XY)):
-                if (np.abs(xy[i][0] - PREV_XY[x][0]) <=thresh[i]) and (np.abs(xy[i][1] - PREV_XY[x][1]) <=thresh[i]):
-                    res[i] = 1
-                    # PREV_XY = np.delete(PREV_XY, [x], 0)
-                    # PREV_XY[i].pop()
-                    break
-        
+                # thresh = compute_thresh(xywhs[i][2].item(),xywhs[i][3].item()) # returns 5% of area of bbox allowance of vehicle movement
+                
+                if area[i] > 1000: #on ly if area of bbox is greater than 1000, to minimize false dets
+                    # if any of bbox points didn't trigger the threshold, means it's stationary
+                    if (np.abs(Bbox[i][0] - prevBbox[x][0]) <=thresh[i]) and (np.abs(Bbox[i][1] - prevBbox[x][1]) <=thresh[i]): # for (x1,y1)
+                        res[i] = 1
+                        break
+                    elif (np.abs(Bbox[i][0] - prevBbox[x][0]) <=thresh[i]) and (np.abs(Bbox[i][3] - prevBbox[x][3]) <=thresh[i]): # for (x1,y2)
+                        res[i] = 1
+                        break
+                    elif (np.abs(Bbox[i][2] - prevBbox[x][2]) <=thresh[i]) and (np.abs(Bbox[i][1] - prevBbox[x][1]) <=thresh[i]): # for (x2,y1)
+                        res[i] = 1
+                        break
+                    elif (np.abs(Bbox[i][2] - prevBbox[x][2]) <=thresh[i]) and (np.abs(Bbox[i][3] - prevBbox[x][3]) <=thresh[i]): # for (x2,y2)
+                        res[i] = 1
+                        break
+     
     stationary = np.where(res == 1)[0]
     xywhs = xywhs[stationary]
     confs = confs[stationary]
     clss = clss[stationary]
-    if time.time()-strt_time >= 1: # means a second has passed
-        PREV_XY = xy
-        strt_time = time.time() # initiate again a new timer
-        # stationaryFlag = False
-    # else:
-        # stationaryFlag = True
-    xy = xy[stationary]
-    return xy, xywhs, confs, clss, PREV_XY, strt_time # new vehicles, only stationary vehicles remained
     
+    if time.time()-start_time >= 1: # means a second has passed
+        PREV_XY = xy
+        prevBbox = Bbox
+        start_time = time.time() # initiate again a new timer
+        
+    xy = xy[stationary]
+    return xy, xywhs, confs, clss, PREV_XY, start_time, prevBbox
+
 
 def apply_roi_in_scene(roi, im1):
     im = np.copy(im1)
