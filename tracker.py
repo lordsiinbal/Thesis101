@@ -38,7 +38,7 @@ class Tracks:
         y = (y1 + y2)/2
 
         if for_base:
-            a = wh[0]/3 if wh[0]<wh[1] else wh[1]/3
+            a = wh[0]/3.5 if wh[0]<wh[1] else wh[1]/3.5
         else:
             a = wh[0]/2 if wh[0]<wh[1] else wh[1]/2
         xy = numpy.array((x, y))
@@ -56,7 +56,7 @@ class Tracks:
         """Keeps each track updated"""
         if match > 0.95:
             self.descriptor = descriptor
-            
+
         self.thresh = self.computeEucDist(xyxy, wh, False)
         if self.calls == self.n_init:
             self.track_state = TrackState.Confirmed
