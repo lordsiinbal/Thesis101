@@ -26,7 +26,7 @@ class Tracks:
         self.max_age = max_age
         self.missed = False
         self.thresh = self.computeEucDist(xyxy, self.wh, False)
-        self.base_thresh = self.thresh
+        self.base_thresh = self.computeEucDist(xyxy, self.wh, True)
         self.base_xy = xy
         self.is_base_changed = False
 
