@@ -334,7 +334,7 @@ def detect(opt):
                     keys = ['id', 'startTime', 'finalTime', 'class',
                             'frameStart', 'timeStart', 'isSaved', 'timer']
                     vehicleInfos = {k: [] for k in keys}
-                    stationary = Stationary(n_init=dataset.fps, max_age=900)# reinitialize stationary tracker
+                    stationary = Stationary(n_init=dataset.fps, max_age=900, match_thresh = 0.7, iou_thresh = 0.5)# reinitialize stationary tracker
                     vid_writer = cv2.VideoWriter(
                         save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
                 vid_writer.write(im0)

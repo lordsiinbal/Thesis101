@@ -54,11 +54,11 @@ class Stationary:
                 track.mark_missed()
                 continue
             if distances[index_min] < track.thresh: # if true, consider candidate vehicle
-                min_dists.append(index_min) 
                 match = 1 - (track.descriptor - descriptors[index_min])/64
                 # print(f'id >> {track.track_id} match >>{match}')
+                print(f'{track.track_id} >> match result {match} >> iou {self.get_iou(track.xyxy, self._xywh_to_xyxy(xywhs[index_min]))} > {self.iou_thresh} = {self.get_iou(track.xyxy, self._xywh_to_xyxy(xywhs[index_min])) > self.iou_thresh}')   
                 if match > self.match_thresh:
-                    # print(f'{track.track_id} >> match result {match} >> iou {self.get_iou(track.xyxy, self._xywh_to_xyxy(xywhs[index_min]))}')
+                    min_dists.append(index_min) 
                     if self.get_iou(track.xyxy, self._xywh_to_xyxy(xywhs[index_min])) > self.iou_thresh: 
                         track.update(self._xywh_to_xyxy(xywhs[index_min]), descriptors[index_min], (
                                     xywhs[index_min][2].item(), xywhs[index_min][3].item()), clss[index_min], yolo_centroid[index_min], match)
@@ -79,18 +79,21 @@ class Stationary:
                 distances = [self.distance(xy, self.xyxy_to_xy(ct.xyxy)) for ct in currentTracks] # distances with current tracks
             
                 index_min = numpy.argmin(distances)
+                print(f'before add, close to {currentTracks[index_min].track_id} ')
                 if distances[index_min] > currentTracks[index_min].base_thresh: # means outside the thresh of nearest track, meaning new vehicle
                     # new vehicle
+                    print(f'not existing True {self.next_id}')
                     self.tracks.append(Tracks(descriptors[i], self._xywh_to_xyxy(
                         xywhs[i]), self.next_id, clss[i], self._n_init, (xywhs[i][2].item(), xywhs[i][3].item()), self.max_age, (xywhs[i][0].item(), xywhs[i][1].item())))
                     self.next_id += 1
                     continue
-                elif (xywhs[i][2].item() * xywhs[i][3].item()) > (currentTracks[index_min].wh[0] * currentTracks[index_min].wh[1]):
-                    print(f'added in 2nd{self.next_id}' )
-                    self.tracks.append(Tracks(descriptors[i], self._xywh_to_xyxy(
-                        xywhs[i]), self.next_id, clss[i], self._n_init, (xywhs[i][2].item(), xywhs[i][3].item()), self.max_age, (xywhs[i][0].item(), xywhs[i][1].item())))
-                    self.next_id += 1
-                    continue
+                # elif (xywhs[i][2].item() * xywhs[i][3].item()) > (currentTracks[index_min].wh[0] * currentTracks[index_min].wh[1]):
+                #     print('existing True')
+                #     self.tracks.append(Tracks(descriptors[i], self._xywh_to_xyxy(
+                #         xywhs[i]), self.next_id, clss[i], self._n_init, (xywhs[i][2].item(), xywhs[i][3].item()), self.max_age, (xywhs[i][0].item(), xywhs[i][1].item())))
+                #     self.next_id += 1
+                #     continue
+                # print('existing False')
 
         return outputs
 
