@@ -47,13 +47,12 @@ ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 from models.common import DetectMultiBackend
 from utils.datasets import IMG_FORMATS, VID_FORMATS, LoadImages, LoadStreams
 from utils.general import (LOGGER, check_file, check_img_size, check_imshow, check_requirements, colorstr,
-                           increment_path, non_max_suppression, print_args, scale_coords, strip_optimizer, xyxy2xywh, isStationary, isInsideROI)
+                           increment_path, non_max_suppression, print_args, scale_coords, strip_optimizer, xyxy2xywh, isStationary, isInsideROI, apply_roi_in_scene)
 from utils.plots import Annotator, colors, save_one_box
 from utils.torch_utils import select_device, time_sync
 
-sys.path.append('./deep_sort/')
-from deep_sort.deep_sort.utils.parser import get_config
-from deep_sort.deep_sort import DeepSort
+sys.path.append('./Tracker/')
+from Tracker.tracker import Tracker
 
 
 from Client.api import baseURL
@@ -90,14 +89,6 @@ class det:
 
         
         device = select_device(self.opt.device)
-        # initialize deepsort
-        self.cfg = get_config()
-        self.cfg.merge_from_file(opt.config_deepsort)
-        self.deepsort = DeepSort(self.opt.deep_sort_model,
-                                device= device,
-                                max_dist=self.cfg.DEEPSORT.MAX_DIST,
-                                max_iou_distance=self.cfg.DEEPSORT.MAX_IOU_DISTANCE,
-                                max_age=self.cfg.DEEPSORT.MAX_AGE, n_init=self.cfg.DEEPSORT.N_INIT, nn_budget=self.cfg.DEEPSORT.NN_BUDGET)
         
         # Directories
         self.save_dir = increment_path(Path(opt.project) / self.opt.name, exist_ok=self.opt.exist_ok)  # increment run
@@ -150,8 +141,7 @@ class det:
     def detect(self):
         print("it has started")
         self.flag = True
-        flagID = True
-        stationaryFlag = True
+        tracker = Tracker(n_init=self.dataset.vid_fps, max_age=900, match_thresh=0.7, iou_thresh=0.5)
         for frame_idx, (path, img, im0s, vid_cap, s, frm_id, vid_fps, video_getter, ret, tim) in enumerate(self.dataset):
             if not self.stopped:
                 self.vid_fps = vid_fps
@@ -205,6 +195,7 @@ class det:
                         #     s += f"{n} {self.names[int(c)]}{'s' * (n > 1)}, "  # add to string
 
                         xywhs = xyxy2xywh(det[:, 0:4])
+                        bbox = det[:, 0:4].cpu().detach().numpy()
                         confs = det[:, 4]
                         clss = det[:, 5]
                         xy = wh = xywhs.cpu().detach().numpy()
@@ -213,99 +204,99 @@ class det:
                         
                         if frame_idx > 0:
                             t8 = time_sync()
-                            xy, xywhs, confs, clss, self.PREV_XY, self.start_time = isStationary(xy, wh, xywhs, confs, clss, self.PREV_XY, self.start_time)
+                            xy, xywhs, confs, clss, self.PREV_XY, self.start_time, self.PREV_BB = isStationary(xy, wh, xywhs, confs, clss, self.PREV_XY, fps, self.start_time, bbox, self.PREV_BB)
                             t9 = time_sync()
                             
                             t11 = time_sync()
-                            xywhs, confs, clss = isInsideROI(xy, xywhs, confs, clss, self.roi)
+                            xy, xywhs, confs, clss = isInsideROI(xy, xywhs, confs, clss, self.roi)
                             t12 = time_sync()
                             
-                            t4 = time_sync()
-                            outputs = self.deepsort.update(xywhs.cpu(), confs.cpu(), clss.cpu(), im0)
-                            t5 = time_sync()
-                            self.dt[3] += t5 - t4
-
-
-                            
-                            # Write results
-                            ts = time_sync()
-                            if len(outputs) > 0:
-                                for _, (output, __) in enumerate(zip(outputs, confs)):
-                                    bboxes = output[0:4]
-                                    id = output[4]
-                                    cls = output[5]
-                                    
-                                    # try this block, if it throws an error, means new id
-                                    try : 
-                                        index = self.vehicleInfos['id'].index(id) # find id in list
-                                        c = int(cls)  # integer class
-                                        self.vehicleInfos['class'][index] = self.names[c]
-                                        self.vehicleInfos['finalTime'][index] = float(int(time_sync()-self.vehicleInfos['startTime'][index]))
+                            if len(xy) > 0:
+                                t4 = time_sync()
+                                outputs = tracker.update(xy, xywhs.cpu(), clss.cpu(), imc)
+                                t5 = time_sync()
+                                self.dt[3] += t5 - t4
+                                
+                                # Write results
+                                ts = time_sync()
+                                if len(outputs) > 0:
+                                    for _, (output) in enumerate(outputs):
+                                        bboxes = output[0:4]
+                                        id = output[4]
+                                        cls = output[5]
                                         
-                                        t = self.vehicleInfos['timer'][index]/fps
-                                        t = str(timedelta(seconds=float(t))).split(".")[0]
-                                        
-                                        
-                                        col = (0,165,255)
-                                        if self.vehicleInfos['timer'][index] >= 300*fps: # means 5 mins
-                                            col = (0,0,255)
-                                            if not self.vehicleInfos['isSaved'][index]: # if not yet saved
-                                                if self.window.getViolationRecord: #determining if the dataRoadViolation is empty
-                                                    violationIDLatest=str(self.window.getViolationRecord[len(self.window.getViolationRecord)-1]['violationID']).split("-")
-                                                    intViolationID=int(violationIDLatest[1]) + 1
-                                                    violationID="V-" + str(intViolationID).zfill(7)
-                                                else:
-                                                    violationID = "V-0000001"
-                                                
-                                                imgName = self.save_dir / p.name[0:-4]  / 'crops' / self.names[c] / f'{id}.jpg'   
-                                                # save violation here
-                                                #making the data a json type
-                                                data = {
-                                                                'violationID' :  violationID,
-                                                                'vehicleID' : str(id),
-                                                                'roadName' : self.window.window.label.text(),
-                                                                'roadID' : self.window.roadIDGlobal,
-                                                                'lengthOfViolation' :  t,
-                                                                'startDateAndTime' :str(datetime.fromtimestamp(self.vehicleInfos['startTime'][index]).strftime("%m/%d%Y, %I:%M:%S %p")),
-                                                                'endDateAndTime' : str(datetime.fromtimestamp(float(int(time_sync()))).strftime("%m/%d%Y, %I:%M:%S %p"))
-                                                }
-                                                save_one_box(bboxes, imc, file = imgName, BGR=True) # saved cropped
-                                                self.saveViolation(data) #calling the saveViolation Function to save the data to the database
-                                                self.vehicleInfos['isSaved'][index] = True
-                                                
-                                        label = f'{id} {self.names[c]}: {t}'
-                                        annotator.box_label(bboxes, label, color=col)
-                                        self.vehicleInfos['timer'][index] = frm_id - self.vehicleInfos['frameStart'][index]
-                                        
-                                    except ValueError:
-                                        self.vehicleInfos['id'].append(id)
-                                        t = time_sync()
-                                        self.vehicleInfos['startTime'].append(t)
-                                        self.vehicleInfos['finalTime'].append(t)
-                                        self.vehicleInfos['frameStart'].append(frm_id)
-                                        self.vehicleInfos['isSaved'].append(False)
-                                        self.vehicleInfos['timer'].append(0)
-                                        self.vehicleInfos['timeStart'].append(str(timedelta(seconds=frm_id/fps)))
-                                        t = str(timedelta(seconds=float(int(0)))).split(".")[0]
-                                        c = int(cls)  # integer class
-                                        self.vehicleInfos['class'].append(self.names[c])
-                                        label = f'{id} {self.names[c]}: {t}'
-                                        annotator.box_label(bboxes, label, color=(0,165,255))
-                            tss = time_sync()
-                            self.dt[4] += t5 - tim
-                            LOGGER.info(f'Done. Read-frame: ({t1-tim:.3f}), YOLO:({t3 - t2:.3f}s), DeepSort:({t5 - t4:.3f}s), Stationary:({t9 - t8:.3f}s), isInsideROI: ({t12-t11:.3f}s) Overall:({t5-tim:.3f}s)')
-                        else: # set the prev frame xy to current xy
-                            self.PREV_XY = xy
-                            self.start_time = time_sync()
+                                        # try this block, if it throws an error, means new id
+                                        try : 
+                                            index = self.vehicleInfos['id'].index(id) # find id in list
+                                            c = int(cls)  # integer class
+                                            self.vehicleInfos['class'][index] = self.names[c]
+                                            self.vehicleInfos['finalTime'][index] = float(int(time_sync()-self.vehicleInfos['startTime'][index]))
+                                            
+                                            t = self.vehicleInfos['timer'][index]/fps
+                                            t = str(timedelta(seconds=float(t))).split(".")[0]
+                                            
+                                            
+                                            col = (0,165,255)
+                                            if self.vehicleInfos['timer'][index] >= 300*fps: # means 5 mins
+                                                col = (0,0,255)
+                                                if not self.vehicleInfos['isSaved'][index]: # if not yet saved
+                                                    if self.window.getViolationRecord: #determining if the dataRoadViolation is empty
+                                                        violationIDLatest=str(self.window.getViolationRecord[len(self.window.getViolationRecord)-1]['violationID']).split("-")
+                                                        intViolationID=int(violationIDLatest[1]) + 1
+                                                        violationID="V-" + str(intViolationID).zfill(7)
+                                                    else:
+                                                        violationID = "V-0000001"
+                                                    
+                                                    imgName = self.save_dir / p.name[0:-4]  / 'crops' / self.names[c] / f'{id}.jpg'   
+                                                    # save violation here
+                                                    #making the data a json type
+                                                    data = {
+                                                                    'violationID' :  violationID,
+                                                                    'vehicleID' : str(id),
+                                                                    'roadName' : self.window.window.label.text(),
+                                                                    'roadID' : self.window.roadIDGlobal,
+                                                                    'lengthOfViolation' :  t,
+                                                                    'startDateAndTime' :str(datetime.fromtimestamp(self.vehicleInfos['startTime'][index]).strftime("%m/%d%Y, %I:%M:%S %p")),
+                                                                    'endDateAndTime' : str(datetime.fromtimestamp(float(int(time_sync()))).strftime("%m/%d%Y, %I:%M:%S %p"))
+                                                    }
+                                                    save_one_box(bboxes, imc, file = imgName, BGR=True) # saved cropped
+                                                    self.saveViolation(data) #calling the saveViolation Function to save the data to the database
+                                                    self.vehicleInfos['isSaved'][index] = True
+                                                    
+                                            label = f'{id} {self.names[c]}: {t}'
+                                            annotator.box_label(bboxes, label, color=col)
+                                            self.vehicleInfos['timer'][index] = frm_id - self.vehicleInfos['frameStart'][index]
+                                            
+                                        except ValueError:
+                                            self.vehicleInfos['id'].append(id)
+                                            t = time_sync()
+                                            self.vehicleInfos['startTime'].append(t)
+                                            self.vehicleInfos['finalTime'].append(t)
+                                            self.vehicleInfos['frameStart'].append(frm_id)
+                                            self.vehicleInfos['isSaved'].append(False)
+                                            self.vehicleInfos['timer'].append(0)
+                                            self.vehicleInfos['timeStart'].append(str(timedelta(seconds=frm_id/fps)))
+                                            t = str(timedelta(seconds=float(int(0)))).split(".")[0]
+                                            c = int(cls)  # integer class
+                                            self.vehicleInfos['class'].append(self.names[c])
+                                            label = f'{id} {self.names[c]}: {t}'
+                                            annotator.box_label(bboxes, label, color=(0,165,255))
+                                tss = time_sync()
+                                self.dt[4] += t5 - tim
+                                LOGGER.info(f'Done. Read-frame: ({t1-tim:.3f}), YOLO:({t3 - t2:.3f}s), Tracker:({t5 - t4:.3f}s), Stationary:({t9 - t8:.3f}s), isInsideROI: ({t12-t11:.3f}s) Overall:({t5-tim:.3f}s)')
+                        else:
+                            self.PREV_BB = bbox
+                            self.PREV_XY = xy 
+                            self.start_time = time()
+                    else:
+                        tracker.increment_ages()
+                        LOGGER.info('No detections')
                     # Stream results
                     im0 = annotator.result()
+                    im0 = apply_roi_in_scene(self.roi, im0)
                     if self.view_img:
                         self.frame, self.ret = im0, ret
-                        # cv2.imshow(str(p), im0)
-                        # cv2.waitKey(1)  # 1 millisecond
-                    
                     self.f = frame_idx
-                    
                     # Save results (image with detections)
                     if self.save_img:
                         if self.dataset.mode == 'image':
@@ -325,6 +316,7 @@ class det:
                                 self.vid_writer[i] = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
                                 self.keys = ['id', 'startTime', 'finalTime', 'class', 'frameStart', 'timeStart', 'isSaved', 'timer']
                                 self.vehicleInfos = {k: [] for k in self.keys}
+                                tracker = Tracker(n_init=self.dataset.vid_fps, max_age=900, match_thresh=0.7, iou_thresh=0.5)
                             self.vid_writer[i].write(im0)
                             self.vidFrames.append(im0)
                 

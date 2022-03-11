@@ -38,7 +38,7 @@ config_deepsort=PATH / "deep_sort/deep_sort/configs/deep_sort.yaml"
 # dnn = False  # use OpenCV DNN for ONNX inference
 
 
-weights = PATH / 'yolov5/yolov5s6.pt'  # model.pt path(s)
+weights = PATH / 'yolov5/yolov5s.pt'  # model.pt path(s)
 # source = ROOT / 'data/images',  # file/dir/URL/glob, 0 for webcam
 data = PATH / 'yolov5/data/coco128.yaml'  # dataset.yaml path
 imgsz = (360, 640)  # inference size (height, width)

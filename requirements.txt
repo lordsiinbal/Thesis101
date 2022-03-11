@@ -18,23 +18,9 @@ tqdm>=4.41.0
 pandas>=1.1.4
 seaborn>=0.11.0
 
-# deep_sort -----------------------------------
+# tracking 
+imageHash
 
-easydict
-
-# torchreid
-
-Cython
-h5py
-six
-tb-nightly
-future
-yacs
-gdown
-flake8
-yapf
-isort==4.3.21
-imageio
 
 # GUI dependencies
 
@@ -43,3 +29,4 @@ QT-PyQt-PySide-Custom-Widgets
 # Server dependencies
 
 flask-mongoengine
+flask_cors
