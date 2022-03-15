@@ -72,7 +72,7 @@ def compute_thresh(w, h):
 # NOTE: resason for doing this is.... instead of doing the filtering of stationary in outpt loop after the deepsort update
 # it is more efficient to only pass vehicles that aren't moving in deepsort so that the swapping of ID's would be less likely
 # to occur.
-def isStationary(xy, wh, xywhs, confs, clss, PREV_XY, fps, start_time, Bbox, prevBbox):
+def isStationary(xy, wh, xywhs, confs, clss, PREV_XY, fps, frame_id, start_time, Bbox, prevBbox):
     xy = np.asarray((xy), dtype=float)
     # pointCorner = [(box_points[i][0], box_points[i][1]), # (x1,y1)
     #                 (box_points[i][0], box_points[i][3]), #(x1, y2)
@@ -110,7 +110,7 @@ def isStationary(xy, wh, xywhs, confs, clss, PREV_XY, fps, start_time, Bbox, pre
     confs = confs[stationary]
     clss = clss[stationary]
     
-    if time.time()-start_time >= 1: # means a second has passed
+    if frame_id%fps == 0: # means a second has passed
         PREV_XY = xy
         prevBbox = Bbox
         start_time = time.time() # initiate again a new timer

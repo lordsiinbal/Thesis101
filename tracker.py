@@ -38,7 +38,7 @@ class Tracks:
         y = (y1 + y2)/2
 
         if for_base:
-            a = wh[0]/4 if wh[0]<wh[1] else wh[1]/4
+            a = wh[0]/6 if wh[0]<wh[1] else wh[1]/6
         else:
             a = wh[0]/2 if wh[0]<wh[1] else wh[1]/2
         xy = numpy.array((x, y))
@@ -80,7 +80,7 @@ class Tracks:
                 self.base_xy = xy
                 self.is_base_changed =True
                 print(f'id >> {self.track_id} is on the move')
-            
+                
         self.xyxy = xyxy
         self.last_seen = 0
         self.calls += 1

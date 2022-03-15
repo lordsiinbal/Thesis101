@@ -286,8 +286,8 @@ class LoadImages:
         # self.video_getter = VideoGet(self.path).start()
         # self.frames = self.video_getter.nframes
         # self.fps = self.video_getter.fps
-        self.frames = self.cap.get(cv2.CAP_PROP_FRAME_COUNT)
-        self.fps = self.cap.get(cv2.CAP_PROP_FPS)
+        self.frames =int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        self.fps = int(self.cap.get(cv2.CAP_PROP_FPS))
 
         
 

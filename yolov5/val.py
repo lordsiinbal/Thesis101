@@ -153,6 +153,11 @@ def run(data,
         # Data
         data = check_dataset(data)  # check
 
+
+    # Pruning
+    from utils.torch_utils import prune
+    prune(model, 0.3)
+    
     # Configure
     model.eval()
     is_coco = isinstance(data.get('val'), str) and data['val'].endswith('coco/val2017.txt')  # COCO dataset

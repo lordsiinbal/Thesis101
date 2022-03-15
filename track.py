@@ -192,7 +192,7 @@ def detect(opt):
 
                 if frame_idx > 0:
                     t6 = time_sync()
-                    xy, xywhs, confs, clss, PREV_XY, start_time, PREV_BB = isStationary(xy, wh, xywhs, confs, clss, PREV_XY, fps, start_time, bbox, PREV_BB)
+                    xy, xywhs, confs, clss, PREV_XY, start_time, PREV_BB = isStationary(xy, wh, xywhs, confs, clss, PREV_XY, fps, frm_id, start_time, bbox, PREV_BB)
                     t7 = time_sync()
                     dt[4] += t7 - t6
 
