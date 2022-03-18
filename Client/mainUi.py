@@ -10,6 +10,7 @@ import json
 import ctypes
 import datetime as dtime
 from itertools import count
+from pathlib import Path
 from queue import PriorityQueue
 from select import select
 from threading import local
@@ -277,7 +278,7 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
         self.newThread.quit()
         # print('done retrieve')
         toAppend = self.data
-        if len(response.json()) >= 1 : # uif response has something to append
+        if len(response.json()) >= 1 : # if response has something to append
             for r in response.json():
                 toAppend.append(r)
                 
@@ -414,10 +415,7 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
         self.delRoad.finished.connect(self.finishedDelRoad)
         self.delThread.start()
         self.loadData = ProcessingDataUi()
-        
-        # r = requests.delete(url = baseURL + "/RoadDelete",json=data,headers=headers )
-        # print(r)
-        # print (r.json())
+        os.remove('images/' + a+'.jpg')
     
     def finishedDelRoad(self, response):
         self.delThread.quit()
@@ -429,19 +427,13 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
         self.btnCancel.clicked.connect(self.close)          #close window
         self.btnConfirm.clicked.connect(self.loading)       #Loading Ui
         self.btnDelete.clicked.connect(self.dropRoad)
-        # self.setParent(None)# remove contents
-        # e = "{}"
-        # j = json.loads(e)
-        # self.getAllRoad(j, f=True) # remove first contents 
-        # self.update()
-        # self.repaint()
-        response = response.json()
-        self.getAllRoad(response) # add new roads
+
+        self.check_if_road_exists(response) # add new roads
         self.update()
-        # self.repaint()
+        self.repaint()
         
         self.loadData.closeWindow()
-        # super(RoadSetUp1, self).__init__()
+        
         
 
 
