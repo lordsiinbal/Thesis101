@@ -23,10 +23,8 @@ def detect_road(img_orig):
     imt_test = np.array(img_orig)
     imt_test = cv2.cvtColor(imt_test,cv2.COLOR_BGR2HSV)
     average_value = np.mean(imt_test[:,1,2])
-    print('img ave val', average_value)
    
     img = cv2.equalizeHist(img) #performing histogram equalization to equalize the distribution of pixels
-    # cv2.imshow('hist', img)
     # We assumed that if the image is dark (average V is lower than or equal 40) the pixels of the image (especially the road) will be lowered to
     # therefore we must, lower also the minimum value to 0, otherwise if the image is light (average V is greater than 40) the pixels
     # of the image will have a high values so we will adjust the min value to -50
@@ -34,7 +32,6 @@ def detect_road(img_orig):
         min_value = 0
     elif average_value >=190:
         # if the image is too bright, adjust the brightness
-        # cv2.imshow('b4 bright', img_orig)   
         brightness = -50
         contrast = -50
         img = np.int16(img_orig)
@@ -42,8 +39,7 @@ def detect_road(img_orig):
         img = np.clip(img, 0, 255)
         img = np.uint8(img)
         img_orig = np.copy(img)
-        min_value = -40
-        # cv2.imshow('after bright', img)   
+        min_value = -40 
         img = cv2.cvtColor(img_orig, cv2.COLOR_BGR2GRAY)
         img = cv2.equalizeHist(img) #performing histogram equalization to equalize the distribution of pixels
     else:
@@ -55,7 +51,7 @@ def detect_road(img_orig):
 
     img = cv2.morphologyEx(img, cv2.MORPH_ERODE, kernel, iterations = 1)
 
-    #performing canny edge detection
+    # dynamic upper and lower thresh for canny edge
     sigma = 0.33
     lower = int(max(0, (1.0 - sigma) * v))
     upper = lower * 3
@@ -72,7 +68,7 @@ def detect_road(img_orig):
     kernel1 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3))
     final = cv2.morphologyEx(erosion, cv2.MORPH_ERODE, kernel1, iterations = 2)
     #Finding contours/shapes/descriptor from the final processed image
-    contours, hierarchy = cv2.findContours(final, 
+    contours, _ = cv2.findContours(final, 
         cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
     contours = sorted(contours, key = len, reverse=True) #sorting the contours with respect to their their size
 
@@ -140,7 +136,7 @@ def detect_road(img_orig):
     masked = cv2.cvtColor(final_mask,cv2.COLOR_BGR2GRAY)
 
     # using the MORPH_CLOSE to merge the nearby contours using getStructuringElement kernel ellipse morph and size of 20,20
-    merged_contours = cv2.morphologyEx(masked, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (18,17)))
+    merged_contours = cv2.morphologyEx(masked, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (20,20)))
 
     # We assume that nearby contours are parts of the road that are separated of lines/edges
     # Find contours in merged_contours after closing the gaps 
@@ -168,20 +164,9 @@ def detect_road(img_orig):
     alpha = 0.25
     road_surface = cv2.addWeighted(img_orig, 1-alpha, bg, alpha, 0)
     
-    print(kernel_size)
+    # print(kernel_size)
     
     final_mask = cv2.cvtColor(final_mask,cv2.COLOR_BGR2GRAY)
-    kernel  = np.ones((kernel_size,kernel_size), np.uint8)
-    dilated = cv2.dilate(final_mask, kernel, iterations=1)
-    
-    # pass 1
-    smooth_mask_blurred   = cv2.GaussianBlur(dilated, (21,21), 0)
-    _, smooth_mask_threshed1  = cv2.threshold(smooth_mask_blurred, 128, 255, cv2.THRESH_BINARY)
-    
+    cnts, _ = cv2.findContours(final_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
-    # pass 2
-    smooth_mask_blurred   = cv2.GaussianBlur(smooth_mask_threshed1, (21,21), 0)
-    _, smooth_mask_threshed2 =  cv2.threshold(smooth_mask_blurred, 128, 255, cv2.THRESH_BINARY)
-    cnts, _ = cv2.findContours(smooth_mask_threshed2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-
-    return cnts, road_surface
+    return cnts, img_orig, kernel_size

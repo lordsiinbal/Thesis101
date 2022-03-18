@@ -10,7 +10,7 @@ class TrackState:
 
 
 class Tracks:
-    def __init__(self, descriptor, xyxy, id, class_id, n_init, wh, max_age, xy):
+    def __init__(self, hash, xyxy, id, class_id, n_init, wh, max_age, xy):
         """Tracks for each vehicle"""
         self.track_id = id
         self.xyxy = xyxy
@@ -19,7 +19,7 @@ class Tracks:
         self.track_state = TrackState.Tentative
         self.calls = 0
         self.wh = wh
-        self.descriptor = descriptor
+        self.hash = hash
         self.last_seen = 0
         self.max_age = max_age
         self.missed = False
@@ -50,22 +50,22 @@ class Tracks:
         """Compute for euclidean distance"""
         return math.sqrt((p2[0] - p1[0])**2 + (p2[1] - p1[1])**2)
     
-    def update(self, xyxy, descriptor, wh, class_id, xy, match):
+    def update(self, xyxy, hash, wh, class_id, xy, match):
         """Keeps each track updated"""
         if match > 0.95:
-            self.descriptor = descriptor
+            self.hash = hash
             
         self.thresh = self.computeEucDist(xyxy, wh, False)
         if self.calls == self.n_init:
             self.track_state = TrackState.Confirmed
             print(f'vehicle id = {self.track_id} has been registered')
-            self.descriptor = descriptor
+            self.hash = hash
             self.base_xy = xy
             self.base_thresh = self.computeEucDist(xyxy, self.wh, True)
             
             
         elif self.calls < self.n_init:
-            self.descriptor = descriptor
+            self.hash = hash
             self.base_xy = xy
             self.base_thresh =  self.computeEucDist(xyxy, self.wh, True)
 
@@ -74,7 +74,7 @@ class Tracks:
         if self.track_state == TrackState.Confirmed: 
             if self.distance(xy, self.base_xy) > self.base_thresh:
                 self.base_thresh = self.computeEucDist(xyxy, self.wh, True)
-                self.descriptor = descriptor
+                self.hash = hash
                 self.base_xy = xy
                 self.is_base_changed =True
                 print(f'id >> {self.track_id} is on the move')

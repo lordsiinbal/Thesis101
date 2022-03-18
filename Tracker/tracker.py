@@ -28,12 +28,12 @@ class Tracker:
             """
         self.height, self.width = imc.shape[:2]
         
-        descriptors = self.getDescriptors(
-            xywhs, imc)  # descriptors of current crops
+        hashes = self.getHashes(
+            xywhs, imc)  # perceptual hashes of current crops
         currentTracks, outputs, min_dists = [], [], []
         
         if self.isEmptyTracks():  # means empty tracks, no vehicles are being tracked
-            self.initDescriptors(descriptors, xywhs, clss)
+            self.initHashes(hashes, xywhs, clss)
             return outputs
         
         for i, (t) in enumerate(self.tracks):
@@ -53,15 +53,17 @@ class Tracker:
                 track.mark_missed()
                 continue
             if distances[index_min] < track.thresh: # if true, consider candidate vehicle
-                match = 1 - (track.descriptor - descriptors[index_min])/64
+                match = 1 - (track.hash - hashes[index_min])/64
                 if match > self.match_thresh:
                     min_dists.append(index_min) 
                     if self.get_iou(track.xyxy, self._xywh_to_xyxy(xywhs[index_min])) > self.iou_thresh: 
-                        track.update(self._xywh_to_xyxy(xywhs[index_min]), descriptors[index_min], (
+                        track.update(self._xywh_to_xyxy(xywhs[index_min]), hashes[index_min], (
                                     xywhs[index_min][2].item(), xywhs[index_min][3].item()), clss[index_min], yolo_centroid[index_min], match)
                         if track.is_confirmed():
                             outputs.append(numpy.array([track.xyxy[0], track.xyxy[1], track.xyxy[2],
-                                                                track.xyxy[3], track.track_id, track.class_id, yolo_centroid[index_min][0], yolo_centroid[index_min][1], track.base_thresh, track.thresh,track.base_xy[0],track.base_xy[1] ], dtype=numpy.int))
+                                                                track.xyxy[3], track.track_id, track.class_id, yolo_centroid[index_min][0], 
+                                                                yolo_centroid[index_min][1], track.base_thresh, track.thresh,track.base_xy[0],
+                                                                track.base_xy[1] ], dtype=numpy.int))
                         continue
           
             track.mark_missed()
@@ -69,7 +71,7 @@ class Tracker:
         # non-intersecting points from yolo_centroid and min_dists
         if len(min_dists) > 0:
             miss_indeces = numpy.setxor1d(
-                [i for i in range(len(descriptors))], min_dists)
+                [i for i in range(len(hashes))], min_dists)
             for i in miss_indeces:
                 #check if there is an exsisting track within the threshold
                 xy = self.xyxy_to_xy(self._xywh_to_xyxy(xywhs[i]))
@@ -77,8 +79,10 @@ class Tracker:
                 index_min = numpy.argmin(distances)
                 if distances[index_min] > currentTracks[index_min].base_thresh: # means outside the thresh of nearest track, meaning new vehicle
                     # new vehicle
-                    self.tracks.append(Tracks(descriptors[i], self._xywh_to_xyxy(
-                        xywhs[i]), self.next_id, clss[i], self._n_init, (xywhs[i][2].item(), xywhs[i][3].item()), self.max_age, (xywhs[i][0].item(), xywhs[i][1].item())))
+                    self.tracks.append(Tracks(hashes[i], self._xywh_to_xyxy(xywhs[i]), 
+                                              self.next_id, clss[i], self._n_init, 
+                                              (xywhs[i][2].item(), xywhs[i][3].item()), 
+                                              self.max_age, (xywhs[i][0].item(), xywhs[i][1].item())))
                     self.next_id += 1
                     continue
 
@@ -103,18 +107,18 @@ class Tracker:
 
         return x, y
 
-    def getDescriptors(self, bbox_xywh, ori_img):
+    def getHashes(self, bbox_xywh, ori_img):
         """crop detected vehicles and get the pHash for it"""
-        descriptors = []
+        hashes = []
         for box in bbox_xywh:
             x1, y1, x2, y2 = self._xywh_to_xyxy(box)
             im = ori_img[y1:y2, x1:x2]
             im = Image.fromarray(im)
             im = imagehash.phash(im)
-            descriptors.append(im)
-        return descriptors
+            hashes.append(im)
+        return hashes
 
-    def initDescriptors(self, desc, xywhs, clss):
+    def initHashes(self, desc, xywhs, clss):
         """initialize first detection as track, only happens if track is empty"""
         for i, (desc) in enumerate(desc):
             self.tracks.append(Tracks(desc, self._xywh_to_xyxy(
@@ -140,5 +144,5 @@ class Tracker:
         box1 = torch.tensor([box1], dtype=torch.float)
         box2 = torch.tensor([box2], dtype=torch.float)
         iou = bops.box_iou(box1, box2)
-        # print(iou.item())
+        
         return iou.item()

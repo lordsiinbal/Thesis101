@@ -8,7 +8,7 @@ class bg:
     def __init__(self, vid):
         cap = cv.VideoCapture(vid)
         frames = []
-        FOI = cap.get(cv.CAP_PROP_FRAME_COUNT) * np.random.uniform(size=20) # 20-50 lang dapat kasi may paint naman
+        FOI = cap.get(cv.CAP_PROP_FRAME_COUNT) * np.random.uniform(size=20) 
         self.backgroundFrame = None
         t = Thread(target=self.sub, args=(cap, FOI, frames))
         t.start()
