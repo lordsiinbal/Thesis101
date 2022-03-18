@@ -157,7 +157,7 @@ class det:
 
                 # Inference
                 self.opt.visualize = increment_path(self.save_dir / Path(path).stem, mkdir=True) if self.opt.visualize else False
-                pred =self.model(img, augment=self.opt.augment, visualize=self.opt.visualize)
+                pred = self.model(img, augment=self.opt.augment, visualize=self.opt.visualize)
                 t3 = time_sync()
                 self.dt[1] += t3 - t2
 
@@ -277,10 +277,10 @@ class det:
                                             self.vehicleInfos['timer'].append(0)
                                             self.vehicleInfos['timeStart'].append(str(timedelta(seconds=frm_id/fps)))
                                             t = str(timedelta(seconds=float(int(0)))).split(".")[0]
-                                            c = int(cls)  # integer class
-                                            self.vehicleInfos['class'].append(self.names[c])
-                                            label = f'{id} {self.names[c]}: {t}'
-                                            annotator.box_label(bboxes, label, color=(0,165,255))
+                                        c = int(cls)  # integer class
+                                        self.vehicleInfos['class'].append(self.names[c])
+                                        label = f'{id} {self.names[c]}'
+                                        annotator.box_label(bboxes, label, color=(0,165,255))
                                 tss = time_sync()
                                 self.dt[4] += t5 - tim
                                 LOGGER.info(f'Done. Read-frame: ({t1-tim:.3f}), YOLO:({t3 - t2:.3f}s), Tracker:({t5 - t4:.3f}s), Stationary:({t9 - t8:.3f}s), isInsideROI: ({t12-t11:.3f}s) Overall:({t5-tim:.3f}s)')

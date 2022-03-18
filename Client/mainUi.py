@@ -1,5 +1,6 @@
 from asyncio.windows_events import NULL
 from base64 import encode
+from copy import deepcopy
 from email import header
 from encodings import utf_8
 import encodings
@@ -10,6 +11,7 @@ import ctypes
 import datetime as dtime
 from itertools import count
 from queue import PriorityQueue
+from select import select
 from threading import local
 import threading
 from tkinter import Image
@@ -22,13 +24,12 @@ from msilib.schema import Control, File
 import sys
 import cv2
 import time
-from PyQt5.QtWidgets import  QApplication,QFileDialog,QTableWidgetItem,QHeaderView
+from PyQt5.QtWidgets import  QApplication,QFileDialog,QTableWidgetItem,QHeaderView,QLabel,QWidget
 from PyQt5 import QtGui, QtCore
-from PyQt5.QtGui import QMovie
+from PyQt5.QtGui import QMovie,QPixmap, QPainter, QPen,QColor,QBrush,QTransform,QCursor,QIntValidator
 from cv2 import QT_PUSH_BUTTON
 from flask import Response, jsonify
-from matplotlib import widgets
-from PyQt5.QtCore import Qt,QDateTime,QDate,QTime,QTimer,QThread, pyqtSignal, pyqtSlot, QThreadPool, QProcess
+from PyQt5.QtCore import Qt,QDateTime,QDate,QTime,QTimer,QThread, pyqtSignal, pyqtSlot, QThreadPool, QProcess, QPoint,Qt,QRect
 import numpy
 from sklearn.feature_selection import SelectFpr
 from sympy import false
@@ -40,6 +41,10 @@ import cv2 as cv
 import dateutil.parser
 import os.path
 from os import path
+from matplotlib import image, widgets
+from sklearn.feature_selection import SelectFromModel
+from PIL import ImageQt
+import numpy as np
 
 #NOTE: Si pag save kang road saka playback yaon igdi sa file, control F 'save road' saka 'save playback' ka nalang
 # si pag save kang violation nasa track.py sa detection_module control-F 'save violation' ka nalang ulit
@@ -111,22 +116,99 @@ class roadSettingUp(QtWidgets.QWidget):#road Setting Up Loading
     def closeWindow(self):
         self.screenLabel.emit()
         self.close()#cloase Window
-class RoadSetUpPaint(QtWidgets.QMainWindow):
-    switch_window = QtCore.pyqtSignal() 
-    def __init__(self):
-        super(RoadSetUpPaint, self).__init__()
-        uic.loadUi(PATH+'/roadSetUp_paint.ui', self)
-        self.setWindowFlag(Qt.FramelessWindowHint)
-        self.btnCancel.clicked.connect(self.close)#Button Cancel
-        self.btnDone.clicked.connect(self.loading)#mouse Event
 
+
+class myQLabel(QWidget):
+    def __init__(self,parent):
+        super(myQLabel, self).__init__(parent)
+        self.newWindowSize=self.resize(1280,720)
+        self.image = QtGui.QImage("image 1.jpg")
+        self.draw=QLabel(self)
+        self.draw.setGeometry(QtCore.QRect(0, 0,1280,720))
+        pixmap = QPixmap(parent.width(),parent.height()) # width, height
+        newPixmap=pixmap.scaled(1280,720)#scaled the Pixmap
+        newPixmap.fill(Qt.transparent)
+        self.draw.setPixmap(newPixmap)
+        #self.verticalLayout.addWidget(self.label)
+        #canvas.scaled(1080,720)
+        """self.image.setScaledContents(True)"""
+        #self.image.setPixmap(canvas)
+        self.drawAction=True
+        self.last_x, self.last_y = None, None
+        self.eraser_selected=False
+        self._size=50
         
-    def loading(self):#funtion for loading 
-        self.roadNameValue=self.roadTextBox.text()
-        self.switch_window.emit()
+    def drawROI(self, roi, im):
+        "For Auto Segmentaion"
+        for r in roi:
+            bg = np.zeros_like(im)  
+            cv2.drawContours(bg, [r], -1, (0,0,255), thickness= -1)
+            pts = np.where(bg == 255)
 
-        # print(self.roadNameValue)
-        self.close()
+            pm=QtGui.QPixmap(self.draw.pixmap()) 
+            painter=QtGui.QPainter(pm)
+            painter.setPen(QPen(QColor(255,0,0),20 ,Qt.SolidLine,Qt.RoundCap,Qt.RoundJoin))
+            transform=QTransform().scale(pm.width()/self.draw.width(),
+                                        pm.height()/self.draw.height())    
+            #loop through roi location
+            pts = [pts[0],pts[1]]
+            pts = np.transpose(pts)
+            print(pts)
+            for pt in pts:
+                painter.drawPoint(pt[1],pt[0])
+            painter.end()
+            self.draw.setPixmap(pm)
+        """End of Auto Segmentation"""
+    def paintEvent(self, event):
+        """Create QPainter object.This is to prevent
+            the chance of the painting being
+            lostif the user changes windows."""
+        pm=QtGui.QPixmap(self.draw.pixmap()) 
+        painter=QtGui.QPainter(pm)
+        painter.end()
+        self.draw.setPixmap(pm)
+        canvasPainter = QtGui.QPainter(self)
+        canvasPainter.drawImage(self.rect(), self.image, self.image.rect())
+
+    def mousePressEvent(self, event):
+        """Handle when mouse is pressed."""
+        if event.button() == Qt.LeftButton:
+            self.last_mouse_pos = event.pos()
+            
+    def mouseMoveEvent(self,point):
+        painter = QPainter(self.draw.pixmap())
+        if self.eraser_selected == False:
+            self.last_x=point.x()
+            self.last_y=point.y()
+            painter.setPen(QPen(QColor(255,0,0),self._size ,Qt.SolidLine,Qt.RoundCap,Qt.RoundJoin))
+            painter.drawPoint(point.pos())
+            # Update the mouse's position for next movement
+            """self.last_mouse_pos = point.pos()
+            self.last_x=point.x()
+            self.last_y=point.y()"""
+        elif self.eraser_selected == True:
+            # Use the eras
+            eraser = QRect(point.x(), point.y(), self._size, self._size)
+            painter.setCompositionMode(QPainter.CompositionMode_Clear)
+            painter.eraseRect(eraser)
+    def mouseReleaseEvent(self,e):
+        self.last_x=None
+        self.last_y=None
+class CctvWindow(QtWidgets.QWidget):
+    def __init__(self):
+        super(CctvWindow,self).__init__()
+        uic.loadUi('cctvWindow.ui', self)
+        self.setWindowFlag(Qt.FramelessWindowHint)
+
+
+class IpAddWindow(QtWidgets.QWidget):
+    def __init__(self):
+        super(IpAddWindow, self).__init__()
+        uic.loadUi('addIP_add.ui', self)
+        self.setWindowFlag(Qt.FramelessWindowHint)#removing title bar
+        self.btnCancel.clicked.connect(self.close)
+        
+
 
 class LogoutUi(QtWidgets.QWidget):#Logout Ui
     confirmLogout=QtCore.pyqtSignal()
@@ -141,7 +223,6 @@ class LogoutUi(QtWidgets.QWidget):#Logout Ui
 
 class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
     switch_window = QtCore.pyqtSignal()
-    selectImage=QtCore.pyqtSignal()
     settingUpRoad=QtCore.pyqtSignal()
     def __init__(self, w):
         super(RoadSetUp1, self).__init__()
@@ -482,27 +563,47 @@ class TableUi(QtWidgets.QMainWindow):
         
 
     def buttonSome(self,i):
-        print(i)
+        """print(i)"""
 #main Window
 class MainUi(QtWidgets.QMainWindow):
     switch_window = QtCore.pyqtSignal()
     roadSwitch=QtCore.pyqtSignal()
     logout=QtCore.pyqtSignal()
+    addIp=QtCore.pyqtSignal()
+    addCctv=QtCore.pyqtSignal()
     def __init__(self, window):
         super(MainUi, self).__init__()
         uic.loadUi(PATH+'/frontEndUi.ui', self)
         self.showMaximized()
-        self.setWindowFlag(Qt.FramelessWindowHint) 
+        self.setWindowFlag(Qt.FramelessWindowHint)
+        self.topInfo.hide()
+        self.selected="" 
         self.btnRecord.clicked.connect(self.switch_window.emit)
-        self.btnRoadSetup.clicked.connect(self.roadSwitch.emit)
         self.btnLogout.clicked.connect(self.logout.emit)
-        self.btnAddVideo.clicked.connect(self.setUpVideo)
+        self.btnIpAdd.clicked.connect(self.addIp.emit)
+        self.btnCctv.clicked.connect(self.addCctv.emit)
         self.btnPlayback.clicked.connect(self.activePlayback)
         self.btnWatch.clicked.connect(self.activeWatch)
         self.vidFile = None
         self.w = window
         #self.date=QDateTime.currentDateTime()
         #self.dateDay.setDate(self.date.date()
+        self.roadSetUpImage.setMaximumSize(1280,720)
+        self.verticalLayout = QtWidgets.QVBoxLayout(self.roadSetUpImage)
+        self.image_main=myQLabel(self.roadSetUpImage)
+        self.verticalLayout.addWidget(self.image_main)
+        self.eraserTool.clicked.connect(self.eraseSelected)
+        self.drawTool.clicked.connect(self.drawSelected)
+        self.drawTool.setStyleSheet("background-color:#1D1F32")
+        self.addSize.clicked.connect(self.addSizeFunction)
+        self.subSize.clicked.connect(self.subSizeFunction)
+        validatorInt=QIntValidator(0,500)
+        self.sizeLabel.setValidator(validatorInt)
+        self.sizeLabel.returnPressed.connect(self.enterSize)
+        self.shortcut_DecreaseSize=QtWidgets.QShortcut(QtGui.QKeySequence("["),self)
+        self.shortcut_DecreaseSize.activated.connect(self.subSizeFunction)
+        self.shortcut_IncreaseSize=QtWidgets.QShortcut(QtGui.QKeySequence("]"),self)
+        self.shortcut_IncreaseSize.activated.connect(self.addSizeFunction)
         timer = QTimer(self)
 		# adding action to timer
         timer.timeout.connect(self.showTime)
@@ -526,6 +627,8 @@ class MainUi(QtWidgets.QMainWindow):
         self.dateDay.setDate(current_date)
         self.dateMonthYear.setDate(current_date)
 
+    
+    
     def activePlayback(self):
         try:
             self.w.initDet.det.dets.view_img = False
@@ -559,6 +662,7 @@ class MainUi(QtWidgets.QMainWindow):
         self.image.setMaximumSize(QtCore.QSize(1280, 720))
         self.stackedWidget.setCurrentWidget(self.playbackPage)
         self.btnWatch.setStyleSheet('background-color:none;border:none')
+        self.btnRoadSetup.setStyleSheet('background-color:none;border:none')
         self.btnPlayback.setStyleSheet("color:white;font-size:14px;background-color:#1D1F32;border-left:3px solid #678ADD;")
         self.btnPlay.clicked.connect(self.pauseOrPlay)
         
@@ -590,6 +694,7 @@ class MainUi(QtWidgets.QMainWindow):
             pass
         self.stackedWidget.setCurrentWidget(self.watchingPage)
         self.btnPlayback.setStyleSheet('background-color:none;border:none')
+        self.btnRoadSetup.setStyleSheet('background-color:none;border:none')
         self.btnWatch.setStyleSheet("color:white;font-size:14px;background-color:#1D1F32;border-left:3px solid #678ADD;")
         
     #Function display Video    
@@ -613,6 +718,58 @@ class MainUi(QtWidgets.QMainWindow):
         self.savePlayback(self.playbackInfo)
         self.playbackKeys = ['playbackID', 'playbackVideo','duration', 'roadName', 'dateAndTime']
         self.playbackInfo = {k: [] for k in self.playbackKeys}
+    def activeRoadSetUp(self):
+        self.stackedWidget.setCurrentWidget(self.roadSetupPage)
+        self.btnPlayback.setStyleSheet('background-color:none;border:none')
+        self.btnWatch.setStyleSheet('background-color:none;border:none')
+        self.btnRoadSetup.setStyleSheet("color:white;font-size:14px;background-color:#1D1F32;border-left:3px solid #678ADD;")
+        self.image_main.image = QtGui.QImage("images/road.jpg") 
+        self.image_main.drawROI(self.w.ROI, self.w.roadImage)
+        
+        
+    def enterSize(self):
+        value=self.sizeLabel.text()
+        self.image_main._size=int(value)
+        if self.image_main.eraser_selected==True:
+            self.cursorForEraser()
+    def subSizeFunction(self):
+        self.image_main._size=self.image_main._size-1
+        self.sizeLabel.setText(str(self.image_main._size))
+        if self.image_main.eraser_selected==True:
+            self.cursorForEraser()
+    def addSizeFunction(self):
+        self.image_main._size=self.image_main._size+1
+        self.sizeLabel.setText(str(self.image_main._size))
+        if self.image_main.eraser_selected==True:
+            self.cursorForEraser()
+    def drawSelected(self):
+        self.drawTool.setStyleSheet("background-color:#1D1F32")
+        self.eraserTool.setStyleSheet("background-color:none")
+        self.image_main.eraser_selected=False
+        self.image_main.setCursor(QtGui.QCursor((QtCore.Qt.ArrowCursor)))
+
+    def eraseSelected(self):
+        self.image_main.eraser_selected=True
+        self.cursorForEraser()
+        self.eraserTool.setStyleSheet("background-color:#1D1F32")
+        self.drawTool.setStyleSheet("background-color:none")
+        #self.image_main.setOverrideCursor(cursor)
+    def cursorForEraser(self):
+        
+        pixmap = QtGui.QPixmap(QtCore.QSize(1, 1)*self.image_main._size)
+        pixmap.fill(QtCore.Qt.transparent)
+        painter = QtGui.QPainter(pixmap)
+        painter.setPen(QtGui.QPen(QtCore.Qt.black, 2))
+        painter.drawRect(pixmap.rect())
+        painter.end()
+        cursor = QtGui.QCursor(pixmap)
+        self.image_main.setCursor(cursor)
+
+        
+
+    #Function display Video    
+    
+       
 
     def savePlayback(self,data):
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
@@ -663,10 +820,77 @@ class Controller:
         self.window = MainUi(self)
         self.window.switch_window.connect(self.showTable)
         self.window.roadSwitch.connect(self.showRoadSetup)
+        self.window.addIp.connect(self.showUseIpAdd)
+        self.window.btnRoadSetup.clicked.connect(self.showRoadSetup)
+        self.window.btnT_ipAdd.clicked.connect(self.showUseIpAdd)
+        self.window.btnT_insertVideo.clicked.connect(self.addVideo)
+        self.window.btnT_cctv.clicked.connect(self.showUseCctv)
         self.window.logout.connect(self.show_logout)
+        self.window.addCctv.connect(self.showUseCctv)
+        self.window.btnAddVideo.clicked.connect(self.addVideo)
+        self.window.btnDone_paint.clicked.connect(self.settingUpRoad_From_paint)
+        self.window.btnCancel_paint.clicked.connect(self.showRoadSetup)
+
         self.window.show()
         self.login.close()
-       
+        
+    def settingUpRoad_From_paint(self):
+        #change roi here [..]
+        img_orig = self.QImageToCvMat(self.window.image_main.draw.pixmap().toImage())
+        img = cv2.cvtColor(img_orig, cv2.COLOR_BGR2GRAY)
+        cnts, _ = cv2.findContours(img,cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        self.ROI = cnts
+        
+        #change road image here
+        alpha = 0.25
+        self.roadImage = cv2.addWeighted(self.roadImage,1-alpha, img_orig, alpha, 0)
+        self.showFinishingUi()
+    
+    def QImageToCvMat(self,incomingImage):
+
+        incomingImage = incomingImage.convertToFormat(QtGui.QImage.Format.Format_RGB32)
+
+        width = incomingImage.width()
+        height = incomingImage.height()
+
+        assert incomingImage.depth() == 32, "unexpected image depth: {}".format(incomingImage.depth())
+        
+        ptr = incomingImage.bits().asstring(width * height * incomingImage.depth()//8)
+        arr = np.frombuffer(ptr, dtype=np.uint8).reshape((height, width, incomingImage.depth()//8)) 
+        
+        arr = cv2.cvtColor(arr, cv2.COLOR_BGRA2BGR)
+        return arr
+
+    def showUseCctv(self):
+        self.cctvWidget=CctvWindow()
+        self.window.selected=1
+        self.cctvWidget.show()
+        self.cctvWidget.btnDone.clicked.connect(self.setCctvSelected)
+    def setCctvSelected(self):
+        self.showRoadSetup()
+        self.cctvWidget.close()
+
+    def showUseIpAdd(self):
+        self.IpAddWindow=IpAddWindow()
+        self.IpAddWindow.btnDone.clicked.connect(self.setIpSetected)         
+        self.IpAddWindow.show()
+    def addVideo(self):
+        self.window.selected=3
+        # self.showRoadSetup()
+        self.window.setUpVideo()
+
+    def setIpSetected(self):
+        self.ipAdd=self.IpAddWindow.textBox.text()
+        self.window.selected=2
+        if self.ipAdd=="":
+            self.window.File.setText("")    
+            return
+        else:
+            
+            self.IpAddWindow.close()
+            self.showRoadSetup()
+          
+
     def showTable(self):
         self.newWin=TableUi()
         # self.newWin.show()
@@ -699,12 +923,13 @@ class Controller:
     # function to call when the process of bg modelling and road extraction is done using thread
     def finishedInBGModelAndRoad(self):
         
-        self.roadImage, self.ROI =  self.bgAndRoad.bgImage,  self.bgAndRoad.ROI
+        self.roadImage, self.ROI, self.k_size =  self.bgAndRoad.bgImage,  self.bgAndRoad.ROI, self.bgAndRoad.k_size
         if self.roadImage is not NULL:
+            self.window.activeRoadSetUp()
             self.roadLoad.closeWindow()
-            self.roadPaint=RoadSetUpPaint()
-            self.roadPaint.switch_window.connect(self.showFinishingUi) # for btn done
-            self.roadPaint.show()
+            # self.roadPaint=RoadSetUpPaint()
+            # self.roadPaint.switch_window.connect(self.showFinishingUi) # for btn done
+            # self.roadPaint.show()
         else:
             print("ERROR: An error occure while extracting the road and background model")
             exit()
@@ -748,12 +973,12 @@ class Controller:
                     self.roadImage = cv.imread(self.road.selectedRoadImage)
                     # print('selected road image shape', self.roadImage.shape)
                     self.roadIDGlobal = self.road.selectedRoadID
-            except AttributeError:
+            except:
                 # for btn new
                 try:
                     # if detection is currently running
                     self.initDet.det.dets.changeROI(self.ROI)
-                    self.window.label.setText(self.roadPaint.roadNameValue)
+                    self.window.label.setText(self.window.roadNameTextbox.text())
                     print('ROI has been changed in running new')
                 except:
                     # if it is not running, pass then execute code below
@@ -777,15 +1002,14 @@ class Controller:
                 
                 data = {
                     'roadID' : roadID,
-                    'roadName' : self.roadPaint.roadNameValue,
+                    'roadName' : self.window.roadNameTextbox.text(),
                     'roadCaptured' :  self.roadImage.tolist(),
                     'roadBoundaryCoordinates' : pd.Series(self.ROI).to_json(orient='values')
                     # 
                 }
-               
+                
                 # print(data['roadCaptured'])
                 self.roadIDGlobal = roadID
-                self.roadPaint.close()
                 self.saveRoad(data)
         else:
             ctypes.windll.user32.MessageBoxW(0, "Please insert a video first", "Empty Video file", 1)
@@ -829,15 +1053,18 @@ class Controller:
         if self.initDet.det.dets.nflag:
             self.thread.quit()
             self.windowFinishing.closeWindow() # close loading
+            self.window.activeWatch()
             self.getViolationRecord = response.json()
             print("finished initializing detection models")
             try:
                 self.window.label.setText(self.road.selectedRoadName)
             except:
-                self.window.label.setText(self.roadPaint.roadNameValue)
+                self.window.label.setText(self.window.roadNameTextbox.text())
             self.window.verticalLayout_11.addWidget(self.window.frameWatch)#removing center aligment of frameWatch
             self.window.btnAddVideo.hide()
             self.window.labelScreen.setMinimumSize(QtCore.QSize(0, 400))
+            self.window.frameButtons_2.hide()
+            
 
             # run detection here on separate thread
             self.thread = QThread()
@@ -872,6 +1099,43 @@ class Controller:
     #     self.window.verticalLayout_11.addWidget(self.window.frameWatch)#removing center aligment of frameWatch
     #     self.window.btnAddVideo.hide()#hiding button Insert Video
         #Closing Road Setting 
+        # self.windowFinishing.screenLabel.connect(self.showScreenImage)
+        #self.windowRoadSettingUp.show()
+    #this function whill display image    
+    def showScreenImage(self):
+        self.window.labelScreen.setPixmap(QtGui.QPixmap("images/image 1.jpg")) #setting image inside QLabel
+        #self.window.labelScreen.setMinimumSize(QtCore.QSize(0, 400))#setting minimum heigth
+        self.window.label.setText("San Felipe")
+        self.window.verticalLayout_11.addWidget(self.window.frameWatch)#removing center aligment of frameWatch
+        self.window.frameButtons_2.hide()
+        self.activeButton()
+        self.window.topInfo.show()
+
+        #Closing Road Setting
+    def activeButton(self):
+        if self.window.selected==1:
+            self.window.btnT_cctv.setStyleSheet("background-color:#678ADD")
+            self.window.btnT_ipAdd.setStyleSheet("background-color:none")
+            self.window.btnT_insertVideo.setStyleSheet("background-color:none")
+            self.window.Selected.setText("Live CAM Selected:")
+            self.window.File.setText("Live")
+            self.window.File.setStyleSheet("color:red")
+        elif self.window.selected==2:
+            self.window.btnT_cctv.setStyleSheet("background-color:none")
+            self.window.btnT_ipAdd.setStyleSheet("background-color:#678ADD")
+            self.window.btnT_insertVideo.setStyleSheet("background-color:none")
+            self.window.Selected.setText("IP Address Selected:")    
+            self.window.File.setText(self.ipAdd)
+            self.window.File.setStyleSheet("color:#678ADD;")
+        else:
+            self.window.btnT_cctv.setStyleSheet("background-color:none")
+            self.window.btnT_ipAdd.setStyleSheet("background-color:none")
+            self.window.btnT_insertVideo.setStyleSheet("background-color:#678ADD")
+            self.window.Selected.setText("Video File Selected:")
+            self.window.File.setText("Path")
+            self.window.File.setStyleSheet("color:#678ADD;")
+            
+
     def select(self):
         print("Select Image")
 
@@ -888,7 +1152,7 @@ class Worker(QtCore.QObject):
         self.vid = self.w.window.vidFile     
 
     def runBG(self):
-        self.bgImage, self.ROI = processRoad(self.vid, PATH)
+        self.bgImage, self.ROI, self.k_size = processRoad(self.vid, PATH)
         self.finished.emit()
         
     def initDet(self):

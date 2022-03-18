@@ -69,17 +69,8 @@ def compute_thresh(w, h):
     thresh = thresh.astype(float)
     return thresh, area
 
-# NOTE: resason for doing this is.... instead of doing the filtering of stationary in outpt loop after the deepsort update
-# it is more efficient to only pass vehicles that aren't moving in deepsort so that the swapping of ID's would be less likely
-# to occur.
 def isStationary(xy, wh, xywhs, confs, clss, PREV_XY, fps, start_time, Bbox, prevBbox):
     xy = np.asarray((xy), dtype=float)
-    # pointCorner = [(box_points[i][0], box_points[i][1]), # (x1,y1)
-    #                 (box_points[i][0], box_points[i][3]), #(x1, y2)
-    #                 (box_points[i][2], box_points[i][1]), #(x2, y1)
-    #                 (box_points[i][2], box_points[i][3])] # (x2,y2)
-    # x = xy[:,0]
-    # y = xy[:,1]
     wh = np.asarray((wh), dtype=float)
     thresh = np.zeros(len(xy), dtype=float)
     res = np.zeros(len(xy), dtype=int)
