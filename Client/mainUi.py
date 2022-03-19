@@ -841,7 +841,7 @@ class Controller:
                 self.window.violationIndex = -1
                 print(f" path {self.newWin.data[self.window.violationIndex]['violationRecord']}")
                 print(f" violation id {self.newWin.data[self.window.violationIndex]['violationID']}, frameStart {self.newWin.data[self.window.violationIndex]['frameStart']}")
-            else:
+            else: 
                 # playback from currently playing video
                 
                 self.frameStart = int(self.newWin.data[self.window.violationIndex]['frameStart']) if vioFile else 0
