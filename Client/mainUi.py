@@ -930,7 +930,7 @@ class Controller:
             self.window.File.setText("")    
             return
         else:
-            
+            self.window.vidFile = self.ipAdd
             self.IpAddWindow.close()
             self.showRoadSetup()
           

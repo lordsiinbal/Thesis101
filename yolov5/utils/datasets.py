@@ -279,19 +279,17 @@ class LoadImages:
         img = img.transpose((2, 0, 1))[::-1]  # HWC to CHW, BGR to RGB
         img = np.ascontiguousarray(img)
 
-        return path, img, img0, self.cap, s, self.frame, self.vid_fps,  self.video_getter, ret_val, t
+        return path, img, img0, self.cap, s, self.frame, self.vid_fps, ret_val, t
 
     def new_video(self, path):
         self.path = path
         self.frame = 0
         self.cap = cv2.VideoCapture(path)
         self.frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
-
-    def begin(self):
-        self.video_getter = VideoGet(self.path).start()
-        self.frames = self.video_getter.nframes
-        self.vid_fps = self.video_getter.fps
+        self.vid_fps = int(self.cap.get(cv2.CAP_PROP_FPS))
         
+
+       
     def __len__(self):
         return self.nf  # number of files
 
@@ -405,12 +403,14 @@ class LoadStreams:
         return self
 
     def __next__(self):
+        t = time.time()
         self.count += 1
         if not all(x.is_alive() for x in self.threads) or cv2.waitKey(1) == ord('q'):  # q to quit
             cv2.destroyAllWindows()
             raise StopIteration
 
         # Letterbox
+        self.imgs = cv2.resize(self.imgs, (1280,720), interpolation=cv2.INTER_NEAREST)
         img0 = self.imgs.copy()
         img = [letterbox(x, self.img_size, stride=self.stride, auto=self.rect and self.auto)[0] for x in img0]
 
@@ -421,7 +421,8 @@ class LoadStreams:
         img = img[..., ::-1].transpose((0, 3, 1, 2))  # BGR to RGB, BHWC to BCHW
         img = np.ascontiguousarray(img)
 
-        return self.sources, img, img0, None, ''
+        return self.sources, img, img0, None, '',self.frames,self.fps,True,t
+        # return path, img, img0, self.cap, s, self.frame, self.vid_fps,  self.video_getter, ret_val, t
 
     def __len__(self):
         return len(self.sources)  # 1E12 frames = 32 streams at 30 FPS for 30 years
