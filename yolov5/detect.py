@@ -142,6 +142,11 @@ class det:
         print("it has started")
         self.flag = True
         tracker = Tracker(n_init=self.dataset.vid_fps, max_age=900, match_thresh=0.7, iou_thresh=0.5)
+        if self.window.getViolationRecord:
+            violationIDLatest=str(self.window.getViolationRecord[len(self.window.getViolationRecord)-1]['violationID']).split("-")
+            violationIDLatest = int(violationIDLatest[1])
+        else:
+            violationIDLatest = 0
         for frame_idx, (path, img, im0s, vid_cap, s, frm_id, vid_fps, video_getter, ret, tim) in enumerate(self.dataset):
             if not self.stopped:
                 self.vid_fps = vid_fps
@@ -239,12 +244,9 @@ class det:
                                             if self.vehicleInfos['timer'][index] >= 30*fps: # means 5 mins
                                                 col = (0,0,255)
                                                 if not self.vehicleInfos['isSaved'][index]: # if not yet saved
-                                                    if self.window.getViolationRecord: #determining if the dataRoadViolation is empty
-                                                        violationIDLatest=str(self.window.getViolationRecord[len(self.window.getViolationRecord)-1]['violationID']).split("-")
-                                                        intViolationID=int(violationIDLatest[1]) + 1
-                                                        violationID="V-" + str(intViolationID).zfill(7)
-                                                    else:
-                                                        violationID = "V-0000001"
+                                                    #determining if the dataRoadViolation is empty
+                                                    violationIDLatest +=1
+                                                    violationID="V-" + str(violationIDLatest).zfill(7)
                                                     
                                                     imgName = self.save_dir / p.name[0:-4]  / 'crops' / self.names[c] / f'{id}.jpg'   
                                                     # save violation here

@@ -565,7 +565,7 @@ class TableUi(QtWidgets.QMainWindow):
         
 
     def buttonSome(self,i):
-        """print(i)"""
+        print(i)
 #main Window
 class MainUi(QtWidgets.QMainWindow):
     switch_window = QtCore.pyqtSignal()
@@ -800,9 +800,7 @@ class Controller:
             self.getVid.playOrPause(False)
             self.window.btnPlay.disconnect()
             self.initDet.det.dets.view_img = True
-            print('no err')
         except Exception as er:
-            print('has err',er)
             pass
         
     def playBack(self):
