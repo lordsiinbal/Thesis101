@@ -241,7 +241,7 @@ class det:
                                             t = str(timedelta(seconds=float(t))).split(".")[0]
                                             col = (0,165,255)
                                             
-                                            if self.vehicleInfos['timer'][index] >= 5*fps: # means 5 mins
+                                            if self.vehicleInfos['timer'][index] >= 60*fps: # means 5 mins
                                                 col = (0,0,255)
                                                 if not self.vehicleInfos['isSaved'][index]: # if not yet saved
                                                     #determining if the dataRoadViolation is empty
