@@ -806,6 +806,15 @@ class Controller:
         
     def playBack(self):
         try:
+            try:
+                self.getVid.playOrPause(False)
+                self.getVid.stop()
+                self.nthread.wait()
+                self.pause = True
+                self.window.btnPlay.disconnect()
+            except Exception as er:
+                print('error ini', er)
+                pass
             if self.window.isViolation:
                 # playback from violation record
                 try:
@@ -813,14 +822,14 @@ class Controller:
                 except:
                     pass
                 self.pause = True
-                self.violationVideoThread = QThread()
+                self.nthread = QThread()
                 self.getVid = videoGet(self)
-                self.getVid.moveToThread(self.violationVideoThread)
-                self.violationVideoThread.started.connect(self.getVid.runFromViolation)
-                self.getVid.finished.connect(self.violationVideoThread.quit)
-                self.violationVideoThread.finished.connect(self.finishedPlayBack) # execute when the task in thread is finised
+                self.getVid.moveToThread(self.nthread)
+                self.nthread.started.connect(self.getVid.runFromViolation)
+                self.getVid.finished.connect(self.nthread.quit)
+                self.nthread.finished.connect(self.finishedPlayBack) # execute when the task in thread is finised
                 self.getVid.imgUpdate.connect(self.update_pb_image)
-                self.violationVideoThread.start()
+                self.nthread.start()
                 self.window.isViolation = False
                 print(f" path {self.newWin.data[self.window.violationIndex]['violationRecord']}")
                 print(f" violation id {self.newWin.data[self.window.violationIndex]['violationID']}, frameStart {self.newWin.data[self.window.violationIndex]['frameStart']}")
@@ -848,7 +857,7 @@ class Controller:
         try:
             self.pause = not self.pause
             # print('Pause = ',  self.pause)
-            self.getVid.playOrPause(self.pause, self.isViolation)
+            self.getVid.playOrPause(self.pause)
         except AttributeError:
             ctypes.windll.user32.MessageBoxW(0, "Please insert a video first", "Nothing to play", 1)
             
@@ -1280,7 +1289,6 @@ class videoGet(QtCore.QObject):
             while self.pause:
                 # loop here until pause is lifted
                 print('paused',end='\r')
-                pass
             
         self.stop()
     def runFromViolation(self):
@@ -1293,28 +1301,34 @@ class videoGet(QtCore.QObject):
             print("Cannot open camera")
             exit()
         while True:
-            # Capture frame-by-frame
-            ret, frame = cap.read()
-            # if frame is read correctly ret is True
-            if not ret:
-                print("Can't receive frame (stream end?). Exiting ...")
+            if not self.stopped:
+                # Capture frame-by-frame
+                ret, frame = cap.read()
+                # if frame is read correctly ret is True
+                if not ret:
+                    print("Can't receive frame (stream end?). Exiting ...")
+                    break
+                
+                # Display the resulting frame
+                QtImg = cvImgtoQtImg(frame)# Convert frame data to PyQt image format
+                qim = QtGui.QPixmap.fromImage(QtImg)
+                time.sleep(1/fps)
+                self.imgUpdate.emit(qim)            
+            else:
                 break
             
-            # Display the resulting frame
-            cv.imshow('frame', frame)
-            if cv.waitKey(int(1000/fps)) == ord('q'):
-                break
-        # When everything done, release the capture
-        cap.release()
-        cv.destroyAllWindows()
+            while self.pause:
+                # loop here until pause is lifted
+                print('paused',end='\r')
+            print(end='')
         self.stop()
-        
+           
     def stop(self):
         print('stopped')
         self.stopped = True  
         self.finished.emit()   
     
-    def playOrPause(self, val, isViolation = False):
+    def playOrPause(self, val):
         self.pause = val
             
     
