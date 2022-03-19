@@ -241,7 +241,7 @@ class det:
                                             t = str(timedelta(seconds=float(t))).split(".")[0]
                                             col = (0,165,255)
                                             
-                                            if self.vehicleInfos['timer'][index] >= 60*fps: # means 5 mins
+                                            if self.vehicleInfos['timer'][index] >= 5*fps: # means 5 mins
                                                 col = (0,0,255)
                                                 if not self.vehicleInfos['isSaved'][index]: # if not yet saved
                                                     #determining if the dataRoadViolation is empty
@@ -308,8 +308,8 @@ class det:
                         else:  # 'video' or 'stream'
                             if self.vid_path[i] != save_path:  # new video
                                 self.vid_path[i] = save_path
-                                if isinstance(self.vid_writer[i], cv2.VideoWriter):
-                                    self.vid_writer[i].release()  # release previous video writer
+                                if isinstance(self.vid_writer, cv2.VideoWriter):
+                                    self.vid_writer.release()  # release previous video writer
                                 if vid_cap:  # video
                                     fps = vid_cap.get(cv2.CAP_PROP_FPS)
                                     w = int(im0.shape[1])
@@ -317,15 +317,16 @@ class det:
                                 else:  # stream
                                     fps, w, h = 30, im0.shape[1], im0.shape[0]
                                 save_path = str(Path(save_path).with_suffix('.mp4'))  # force *.mp4 suffix on results videos
-                                self.vid_writer[i] = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
+                                self.vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
                                 self.keys = ['id', 'startTime', 'finalTime', 'class', 'frameStart', 'timeStart', 'isSaved', 'timer']
                                 self.vehicleInfos = {k: [] for k in self.keys}
                                 tracker = Tracker(n_init=self.dataset.vid_fps, max_age=900, match_thresh=0.7, iou_thresh=0.5)
-                            self.vid_writer[i].write(im0)
+                            self.vid_writer.write(im0)
                             self.vidFrames.append(im0)
                 
             else:
                 video_getter.stop() 
+                self.vid_writer.release() #stop from writing video
                 t = tuple(x / self.seen * 1E3 for x in self.dt)  # speeds per image
                 LOGGER.info(f'Speed: %.1fms pre-process, %.1fms inference, %.1fms NMS, %.1fms deep sort update per image at shape {(1, 3, *self.imgsz)}. \nAverage speed of %.1fms per detection' % t)
                 raise StopIteration 
