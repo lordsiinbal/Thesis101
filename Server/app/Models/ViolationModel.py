@@ -13,6 +13,8 @@ class dc_violation(Document):
     startDateAndTime = StringField()
     endDateAndTime = StringField()
     frameStart = StringField()
+    vehicleClass = StringField()
+    
     
 
     def to_json(self):
@@ -25,6 +27,8 @@ class dc_violation(Document):
             "lengthOfViolation": self.lengthOfViolation,
             "startDateAndTime": self.startDateAndTime,
             "endDateAndTime": self.endDateAndTime,
-            "frameStart": self.frameStart
+            "frameStart": self.frameStart,
+            "vehicleClass": self.vehicleClass
+            
             
         }
