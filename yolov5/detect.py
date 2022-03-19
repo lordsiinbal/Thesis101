@@ -260,8 +260,8 @@ class det:
                                                                     'startDateAndTime' :str(datetime.fromtimestamp(self.vehicleInfos['startTime'][index]).strftime("%m/%d%Y, %I:%M:%S %p")),
                                                                     'endDateAndTime' : str(datetime.fromtimestamp(float(int(time_sync()))).strftime("%m/%d%Y, %I:%M:%S %p")),
                                                                     'frameStart' : str(self.vehicleInfos['frameStart'][index]),
-                                                                    'violationRecord' : str(self.save_dir / p.name) # filepath of video
-                                                                    
+                                                                    'violationRecord' : str(self.save_dir / p.name), # filepath of video
+                                                                    'vehicleClass' : str(self.names[c]) 
                                                                     
                                                     }
                                                     save_one_box(bboxes, imc, file = imgName, BGR=True) # saved cropped
@@ -346,9 +346,9 @@ class det:
     
     def saveViolation(self,data):
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-        print(data)
+        # print(data)
         r = requests.post(url = baseURL + "/ViolationInsert",data=json.dumps(data),headers=headers)
-        print(r)
+        # print(r)
 
 
     def changeROI(self, ROI):

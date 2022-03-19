@@ -482,7 +482,7 @@ class TableUi(QtWidgets.QMainWindow):
         else:
             self.data = response.json()
             self.dataViolationGlobal = response.json()
-        self.tableWidget.setRowCount(4) 
+        self.tableWidget.setRowCount(5) 
         self.tableWidget.setItem(0,0, QTableWidgetItem("Name"))
         self.tableWidget.setRowCount(len(self.data))
         for i in range(len(self.data)):
@@ -585,7 +585,7 @@ class MainUi(QtWidgets.QMainWindow):
         self.isViolation = False
         self.vidFile = None
         self.w = window
-        self.violationIndex = -1
+        self.violationIndex = -12345678
         self.btnRecord.clicked.connect(self.switch_window.emit)
         self.btnLogout.clicked.connect(self.logout.emit)
         self.btnIpAdd.clicked.connect(self.addIp.emit)
@@ -837,14 +837,12 @@ class Controller:
                 self.nthread.finished.connect(self.finishedPlayBack) # execute when the task in thread is finised
                 self.getVid.imgUpdate.connect(self.update_pb_image)
                 self.nthread.start()
-                self.window.isViolation = False
-                self.window.violationIndex = -1
                 print(f" path {self.newWin.data[self.window.violationIndex]['violationRecord']}")
                 print(f" violation id {self.newWin.data[self.window.violationIndex]['violationID']}, frameStart {self.newWin.data[self.window.violationIndex]['frameStart']}")
             else: 
                 # playback from currently playing video
-                
-                self.frameStart = int(self.newWin.data[self.window.violationIndex]['frameStart']) if vioFile else 0
+                print(f'{vioFile} from {self.window.violationIndex}')
+                self.frameStart = int(self.newWin.data[self.window.violationIndex]['frameStart']) if vioFile is not None else 0
                 print(f'frame start of video {self.frameStart}')
                 self.initDet.det.dets.view_img = False
                 self.vQueue = self.initDet.det.dets.vidFrames.copy()
@@ -873,6 +871,8 @@ class Controller:
             ctypes.windll.user32.MessageBoxW(0, "Please insert a video first", "Nothing to play", 1)
             
     def finishedPlayBack(self):
+        self.window.isViolation = False
+        self.window.violationIndex = -12345678
         print('finished playing video')
 
     def update_pb_image(self, qim):
@@ -985,7 +985,7 @@ class Controller:
         # stop detection
         try:
             self.initDet.det.dets.stop()
-            time.sleep(0.2)
+            self.thread.wait()
         except:
             pass
         self.restart()
