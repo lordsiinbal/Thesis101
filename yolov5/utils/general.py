@@ -101,7 +101,7 @@ def isStationary(xy, wh, xywhs, confs, clss, PREV_XY, fps, frm_id, Bbox, prevBbo
     confs = confs[stationary]
     clss = clss[stationary]
     
-    if fps%frm_id == 0: # means a second has passed
+    if frm_id%fps == 0: # means a second has passed
         PREV_XY = xy
         prevBbox = Bbox
         
