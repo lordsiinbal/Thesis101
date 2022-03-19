@@ -815,7 +815,14 @@ class Controller:
             except Exception as er:
                 print('error ini', er)
                 pass
-            if self.window.isViolation:
+            
+            currFile = str(self.window.vidFile).split('/')[-1]
+            try:
+                vioFile = str(self.newWin.data[self.window.violationIndex]['violationRecord']).split('\\')[-1]
+            except:
+                vioFile = None
+        
+            if self.window.isViolation and currFile != vioFile:
                 # playback from violation record
                 try:
                     self.initDet.det.dets.view_img = False
@@ -835,6 +842,9 @@ class Controller:
                 print(f" violation id {self.newWin.data[self.window.violationIndex]['violationID']}, frameStart {self.newWin.data[self.window.violationIndex]['frameStart']}")
             else:
                 # playback from currently playing video
+                
+                self.frameStart = int(self.newWin.data[self.window.violationIndex]['frameStart']) if vioFile else 0
+                print(f'frame start of video {self.frameStart}')
                 self.initDet.det.dets.view_img = False
                 self.vQueue = self.initDet.det.dets.vidFrames.copy()
                 self.pause = True
@@ -842,10 +852,11 @@ class Controller:
                 self.getVid = videoGet(self)
                 self.getVid.moveToThread(self.nthread)
                 self.nthread.started.connect(self.getVid.run)
-                self.getVid.finished.connect(self.nthread.terminate)
+                self.getVid.finished.connect(self.nthread.quit)
                 self.nthread.finished.connect(self.finishedPlayBack) # execute when the task in thread is finised
                 self.getVid.imgUpdate.connect(self.update_pb_image)
                 self.nthread.start()
+                self.frameStart = 0
         except Exception as er:
             print('error this',er)
             pass
@@ -1274,7 +1285,8 @@ class videoGet(QtCore.QObject):
      
         
     def run(self):
-        for frame in self.w.vQueue:
+        replayVideo = self.w.vQueue[self.w.frameStart:]
+        for frame in replayVideo:
             now = time.time()
             if not self.stopped:
                 QtImg = cvImgtoQtImg(frame)# Convert frame data to PyQt image format
