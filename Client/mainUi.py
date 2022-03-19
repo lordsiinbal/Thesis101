@@ -824,6 +824,13 @@ class Controller:
         
             if self.window.isViolation and currFile != vioFile:
                 # playback from violation record
+                
+                #check if file exists
+                if not path.exists(PATH+"../yolov5/runs/"+vioFile+".mp4"):
+                    self.window.isViolation = False
+                    self.window.violationIndex = -12345678
+                    ctypes.windll.user32.MessageBoxW(0, "File not Found", "Nothing to play", 1)
+                    return
                 try:
                     self.initDet.det.dets.view_img = False
                 except:
@@ -868,6 +875,7 @@ class Controller:
             # print('Pause = ',  self.pause)
             self.getVid.playOrPause(self.pause)
         except AttributeError:
+            self.window.btnPlay.disconnect()
             ctypes.windll.user32.MessageBoxW(0, "Please insert a video first", "Nothing to play", 1)
             
     def finishedPlayBack(self):

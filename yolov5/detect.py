@@ -148,8 +148,9 @@ class det:
             violationIDLatest = 0
         for frame_idx, (path, img, im0s, vid_cap, s, frm_id, vid_fps, ret, tim) in enumerate(self.dataset):
             if not self.stopped:
-                self.vid_fps = vid_fps
-                self.frm_id = frm_id
+                if not self.webcam:
+                    self.vid_fps = vid_fps
+                    self.frm_id = frm_id
                 t1 = time_sync()
                 img = torch.from_numpy(img).to(self.device)
                 img = img.half() if self.opt.half else img.float()  # uint8 to fp16/32
@@ -178,6 +179,8 @@ class det:
                     if self.webcam:  # batch_size >= 1
                         p, im0, frame = path[i], im0s[i].copy(), self.dataset.count
                         s += f'{i}: '
+                        self.frm_id = frm_id = frm_id[i]
+                        self.vid_fps = vid_fps = vid_fps[i]
                     else:
                         p, im0, frame = path, im0s.copy(), getattr(self.dataset, 'frame', 0)
 
