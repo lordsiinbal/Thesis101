@@ -286,7 +286,7 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
     
     # execute when all roads were fetched 
     def getAllRoad(self, response):
-        if isinstance(self.newThread, QThread): self.newThread.quit()
+        self.newThread.quit()
         # print('done retrieve')
         toAppend = self.data
         if len(response.json()) >= 1 : # if response has something to append
@@ -452,7 +452,7 @@ class TableUi(QtWidgets.QMainWindow):
     switch_window = QtCore.pyqtSignal()
 
 
-    def __init__(self):
+    def __init__(self, window):
         super(TableUi, self).__init__()
         uic.loadUi(PATH+'/tableUi.ui', self)
         self.setWindowFlag(Qt.FramelessWindowHint)
@@ -460,7 +460,7 @@ class TableUi(QtWidgets.QMainWindow):
         self.tableWidget.horizontalHeader().setSectionResizeMode(
             QHeaderView.Stretch)
         _translate = QtCore.QCoreApplication.translate
-        
+        self.w = window
         self.vioThread = QThread()
         self.getVio = ProcessData(action= '/ViolationFetchAll', type=1)
         self.getVio.moveToThread(self.vioThread)
@@ -521,7 +521,7 @@ class TableUi(QtWidgets.QMainWindow):
             self.tableWidget.setCellWidget(i,6,self.newBtnPlay)
             self.tableWidget.setCellWidget(i,7,self.newBtnDelete)
             self.newBtnDelete.clicked.connect(lambda ch, i=i: self.dropViolation(self.data[i]['violationID']))
-            self.newBtnPlay.clicked.connect(lambda ch, i=i: self.buttonSome(i))
+            self.newBtnPlay.clicked.connect(lambda ch, i=i: self.replayViolation(i))
         self.btnDone.clicked.connect(self.close)
         self.show()
     
@@ -551,21 +551,20 @@ class TableUi(QtWidgets.QMainWindow):
         self.tableWidget.horizontalHeader().setSectionResizeMode(
             QHeaderView.Stretch)
         _translate = QtCore.QCoreApplication.translate
-        # e = "{}"
-        # j = json.loads(e)
-        # self.finishedGetVio(j, f =True) # remove first contents
-        # self.update()
-        # self.repaint()
-        # response = response.json()
-        self.finishedGetVio(response) # add new roads
-        self.update()
-        # self.repaint()
-        self.loadData.closeWindow()
-        # self.finishedGetVio(response)
-        
 
-    def buttonSome(self,i):
-        print(i)
+        self.finishedGetVio(response)
+        self.update()
+        self.loadData.closeWindow()
+
+    def replayViolation(self,i):
+        print(self.data[i]['violationID'])
+        print(self.data[i]['frameStart'])
+        # self.close()
+        self.w.window.isViolation = True
+        self.w.window.violationIndex = i
+        self.w.window.activePlayback()
+        
+        
 #main Window
 class MainUi(QtWidgets.QMainWindow):
     switch_window = QtCore.pyqtSignal()
@@ -583,14 +582,17 @@ class MainUi(QtWidgets.QMainWindow):
         self.setWindowFlag(Qt.FramelessWindowHint)
         self.topInfo.hide()
         self.selected="" 
+        self.isViolation = False
+        self.vidFile = None
+        self.w = window
+        self.violationIndex = -1
         self.btnRecord.clicked.connect(self.switch_window.emit)
         self.btnLogout.clicked.connect(self.logout.emit)
         self.btnIpAdd.clicked.connect(self.addIp.emit)
         self.btnCctv.clicked.connect(self.addCctv.emit)
         self.btnPlayback.clicked.connect(self.activePlayback)
         self.btnWatch.clicked.connect(self.activeWatch)
-        self.vidFile = None
-        self.w = window
+       
         #self.date=QDateTime.currentDateTime()
         #self.dateDay.setDate(self.date.date()
         self.roadSetUpImage.setMaximumSize(1280,720)
@@ -762,10 +764,9 @@ class Controller:
         pass
 
     def restart(self): # restart app
-        if isinstance(self.detthread, QThread): 
-            print('runnning det')
+        try:
             self.detthread.quit()
-        else:
+        except:
             print('not running det')
         app.exit(Controller.EXIT_CODE_REBOOT)
         
@@ -805,14 +806,12 @@ class Controller:
         
     def playBack(self):
         try:
-            self.initDet.det.dets.view_img = False
-            # self.w.initDet.det.dets.stop()
-            # self.saveVid()
-            # play playback video here
-            # creat a thread object for playing video
-            self.isViolation = False
-            # if from violation record 
-            if self.isViolation:
+            if self.window.isViolation:
+                # playback from violation record
+                try:
+                    self.initDet.det.dets.view_img = False
+                except:
+                    pass
                 self.pause = True
                 self.violationVideoThread = QThread()
                 self.getVid = videoGet(self)
@@ -822,10 +821,12 @@ class Controller:
                 self.violationVideoThread.finished.connect(self.finishedPlayBack) # execute when the task in thread is finised
                 self.getVid.imgUpdate.connect(self.update_pb_image)
                 self.violationVideoThread.start()
-                pass
-                # playback from violation record
+                self.window.isViolation = False
+                print(f" path {self.newWin.data[self.window.violationIndex]['violationRecord']}")
+                print(f" violation id {self.newWin.data[self.window.violationIndex]['violationID']}, frameStart {self.newWin.data[self.window.violationIndex]['frameStart']}")
             else:
                 # playback from currently playing video
+                self.initDet.det.dets.view_img = False
                 self.vQueue = self.initDet.det.dets.vidFrames.copy()
                 self.pause = True
                 self.nthread = QThread()
@@ -915,7 +916,7 @@ class Controller:
           
 
     def showTable(self):
-        self.newWin=TableUi()
+        self.newWin=TableUi(self)
         # self.newWin.show()
     def showRoadSetup(self):
         # before showing road, execute background modelling and automatic road detection, must be loading
@@ -1281,6 +1282,31 @@ class videoGet(QtCore.QObject):
                 print('paused',end='\r')
                 pass
             
+        self.stop()
+    def runFromViolation(self):
+        file = self.w.newWin.data[self.w.window.violationIndex]['violationRecord']
+        cap = cv2.VideoCapture(file)
+        fps = int(cap.get(cv2.CAP_PROP_FPS))
+        cap.set(cv2.CAP_PROP_POS_FRAMES, int(self.w.newWin.data[self.w.window.violationIndex]['frameStart']))
+        print(fps)
+        if not cap.isOpened():
+            print("Cannot open camera")
+            exit()
+        while True:
+            # Capture frame-by-frame
+            ret, frame = cap.read()
+            # if frame is read correctly ret is True
+            if not ret:
+                print("Can't receive frame (stream end?). Exiting ...")
+                break
+            
+            # Display the resulting frame
+            cv.imshow('frame', frame)
+            if cv.waitKey(int(1000/fps)) == ord('q'):
+                break
+        # When everything done, release the capture
+        cap.release()
+        cv.destroyAllWindows()
         self.stop()
         
     def stop(self):

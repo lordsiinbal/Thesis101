@@ -241,7 +241,7 @@ class det:
                                             t = str(timedelta(seconds=float(t))).split(".")[0]
                                             col = (0,165,255)
                                             
-                                            if self.vehicleInfos['timer'][index] >= 30*fps: # means 5 mins
+                                            if self.vehicleInfos['timer'][index] >= 5*fps: # means 5 mins
                                                 col = (0,0,255)
                                                 if not self.vehicleInfos['isSaved'][index]: # if not yet saved
                                                     #determining if the dataRoadViolation is empty
@@ -260,7 +260,7 @@ class det:
                                                                     'startDateAndTime' :str(datetime.fromtimestamp(self.vehicleInfos['startTime'][index]).strftime("%m/%d%Y, %I:%M:%S %p")),
                                                                     'endDateAndTime' : str(datetime.fromtimestamp(float(int(time_sync()))).strftime("%m/%d%Y, %I:%M:%S %p")),
                                                                     'frameStart' : str(self.vehicleInfos['frameStart'][index]),
-                                                                    'violationRecord' : str(self.save_dir) # filepath of video
+                                                                    'violationRecord' : str(self.save_dir / p.name) # filepath of video
                                                                     
                                                                     
                                                     }
