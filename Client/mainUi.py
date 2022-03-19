@@ -838,6 +838,7 @@ class Controller:
                 self.getVid.imgUpdate.connect(self.update_pb_image)
                 self.nthread.start()
                 self.window.isViolation = False
+                self.window.violationIndex = -1
                 print(f" path {self.newWin.data[self.window.violationIndex]['violationRecord']}")
                 print(f" violation id {self.newWin.data[self.window.violationIndex]['violationID']}, frameStart {self.newWin.data[self.window.violationIndex]['frameStart']}")
             else:
@@ -856,7 +857,6 @@ class Controller:
                 self.nthread.finished.connect(self.finishedPlayBack) # execute when the task in thread is finised
                 self.getVid.imgUpdate.connect(self.update_pb_image)
                 self.nthread.start()
-                self.frameStart = 0
         except Exception as er:
             print('error this',er)
             pass
