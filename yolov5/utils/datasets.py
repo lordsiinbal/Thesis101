@@ -244,7 +244,8 @@ class LoadImages:
         if self.video_flag[self.count]:
             # Read video
             self.mode = 'video'
-            ret_val = self.video_getter.grabbed
+            # ret_val = self.video_getter.grabbed
+            ret_val, img0 = self.cap.read()
             while not ret_val:
                 self.count += 1
                 self.cap.release()
@@ -255,12 +256,13 @@ class LoadImages:
                     self.new_video(path)
                     ret_val, img0 = self.cap.read()
 
-            img0 = self.video_getter.frame
+            # img0 = self.video_getter.frame
             img0 = cv2.resize(img0, (1280,720), interpolation=cv2.INTER_NEAREST)
             # im = img0
             # masking roi
             # img0 = cv2.copyTo(img0, self.mask)
-            self.frame = self.video_getter.frames
+            # self.frame = self.video_getter.frames
+            self.frame += 1 
             s = f'video {self.count + 1}/{self.nf} ({self.frame}/{self.frames}) {path}: '
 
         else:

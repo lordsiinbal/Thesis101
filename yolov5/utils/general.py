@@ -69,7 +69,7 @@ def compute_thresh(w, h):
     thresh = thresh.astype(float)
     return thresh, area
 
-def isStationary(xy, wh, xywhs, confs, clss, PREV_XY, fps, start_time, Bbox, prevBbox):
+def isStationary(xy, wh, xywhs, confs, clss, PREV_XY, fps, frm_id, Bbox, prevBbox):
     xy = np.asarray((xy), dtype=float)
     wh = np.asarray((wh), dtype=float)
     thresh = np.zeros(len(xy), dtype=float)
@@ -101,13 +101,12 @@ def isStationary(xy, wh, xywhs, confs, clss, PREV_XY, fps, start_time, Bbox, pre
     confs = confs[stationary]
     clss = clss[stationary]
     
-    if time.time()-start_time >= 1: # means a second has passed
+    if fps%frm_id == 0: # means a second has passed
         PREV_XY = xy
         prevBbox = Bbox
-        start_time = time.time() # initiate again a new timer
         
     xy = xy[stationary]
-    return xy, xywhs, confs, clss, PREV_XY, start_time, prevBbox
+    return xy, xywhs, confs, clss, PREV_XY, prevBbox
 
 
 def apply_roi_in_scene(roi, im1):

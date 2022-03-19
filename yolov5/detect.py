@@ -204,7 +204,7 @@ class det:
                         
                         if frame_idx > 0:
                             t8 = time_sync()
-                            xy, xywhs, confs, clss, self.PREV_XY, self.start_time, self.PREV_BB = isStationary(xy, wh, xywhs, confs, clss, self.PREV_XY, fps, self.start_time, bbox, self.PREV_BB)
+                            xy, xywhs, confs, clss, self.PREV_XY, self.PREV_BB = isStationary(xy, wh, xywhs, confs, clss, self.PREV_XY, fps, frm_id, bbox, self.PREV_BB)
                             t9 = time_sync()
                             
                             t11 = time_sync()
@@ -234,10 +234,9 @@ class det:
                                             
                                             t = self.vehicleInfos['timer'][index]/fps
                                             t = str(timedelta(seconds=float(t))).split(".")[0]
-                                            
-                                            
                                             col = (0,165,255)
-                                            if self.vehicleInfos['timer'][index] >= 300*fps: # means 5 mins
+                                            
+                                            if self.vehicleInfos['timer'][index] >= 30*fps: # means 5 mins
                                                 col = (0,0,255)
                                                 if not self.vehicleInfos['isSaved'][index]: # if not yet saved
                                                     if self.window.getViolationRecord: #determining if the dataRoadViolation is empty
@@ -257,7 +256,11 @@ class det:
                                                                     'roadID' : self.window.roadIDGlobal,
                                                                     'lengthOfViolation' :  t,
                                                                     'startDateAndTime' :str(datetime.fromtimestamp(self.vehicleInfos['startTime'][index]).strftime("%m/%d%Y, %I:%M:%S %p")),
-                                                                    'endDateAndTime' : str(datetime.fromtimestamp(float(int(time_sync()))).strftime("%m/%d%Y, %I:%M:%S %p"))
+                                                                    'endDateAndTime' : str(datetime.fromtimestamp(float(int(time_sync()))).strftime("%m/%d%Y, %I:%M:%S %p")),
+                                                                    'frameStart' : str(self.vehicleInfos['frameStart'][index]),
+                                                                    'violationRecord' : str(self.save_dir) # filepath of video
+                                                                    
+                                                                    
                                                     }
                                                     save_one_box(bboxes, imc, file = imgName, BGR=True) # saved cropped
                                                     self.saveViolation(data) #calling the saveViolation Function to save the data to the database
@@ -277,17 +280,16 @@ class det:
                                             self.vehicleInfos['timer'].append(0)
                                             self.vehicleInfos['timeStart'].append(str(timedelta(seconds=frm_id/fps)))
                                             t = str(timedelta(seconds=float(int(0)))).split(".")[0]
-                                        c = int(cls)  # integer class
-                                        self.vehicleInfos['class'].append(self.names[c])
-                                        label = f'{id} {self.names[c]}'
-                                        annotator.box_label(bboxes, label, color=(0,165,255))
+                                            c = int(cls)  # integer class
+                                            self.vehicleInfos['class'].append(self.names[c])
+                                            label = f'{id} {self.names[c]}'
+                                            annotator.box_label(bboxes, label, color=(0,165,255))
                                 tss = time_sync()
                                 self.dt[4] += t5 - tim
-                                LOGGER.info(f'Done. Read-frame: ({t1-tim:.3f}), YOLO:({t3 - t2:.3f}s), Tracker:({t5 - t4:.3f}s), Stationary:({t9 - t8:.3f}s), isInsideROI: ({t12-t11:.3f}s) Overall:({t5-tim:.3f}s)')
+                                # LOGGER.info(f'Done. Read-frame: ({t1-tim:.3f}), YOLO:({t3 - t2:.3f}s), Tracker:({t5 - t4:.3f}s), Stationary:({t9 - t8:.3f}s), isInsideROI: ({t12-t11:.3f}s) Overall:({t5-tim:.3f}s)')
                         else:
                             self.PREV_BB = bbox
                             self.PREV_XY = xy 
-                            self.start_time = time()
                     else:
                         tracker.increment_ages()
                         LOGGER.info('No detections')
