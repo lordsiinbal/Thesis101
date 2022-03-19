@@ -8,10 +8,12 @@ class dc_violation(Document):
     vehicleID  = StringField()
     roadName  = StringField()
     roadID = StringField()
-    # violationRecord = FileField()
+    violationRecord = StringField()
     lengthOfViolation  = StringField()
     startDateAndTime = StringField()
     endDateAndTime = StringField()
+    frameStart = StringField()
+    
 
     def to_json(self):
         return{
@@ -19,8 +21,10 @@ class dc_violation(Document):
             "vehicleID": self.vehicleID,
             "roadName": self.roadName,
             "roadID": self.roadID,
-            # "violationRecord": self.violationRecord,
+            "violationRecord": self.violationRecord,
             "lengthOfViolation": self.lengthOfViolation,
             "startDateAndTime": self.startDateAndTime,
-            "endDateAndTime": self.endDateAndTime
+            "endDateAndTime": self.endDateAndTime,
+            "frameStart": self.frameStart
+            
         }

@@ -7,7 +7,7 @@ class dc_playback(Document):
     playbackVideo = StringField()
     duration = StringField()
     roadName = StringField()
-    dateAndTime = DateTimeField()
+    dateAndTime = StringField()
 
     def to_json(self):
         return{

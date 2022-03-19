@@ -150,11 +150,7 @@ def detect_road(img_orig):
         # contours lower than 5% of img size are ignored
         if area < min_size:
             continue
-        # draw the contours that are larger than 5% of img size 
-        if area > (0.5*img_orig.shape[0]*img_orig.shape[1]):
-            kernel_size = 40
-        else:
-            kernel_size = 90
+       
         #resize contour
         cv2.drawContours(bg, [contour], -1, (0,0,255), thickness= -1)
         cv2.drawContours(final_mask, [contour], -1, (255,255,255), thickness= -1)
@@ -169,4 +165,4 @@ def detect_road(img_orig):
     final_mask = cv2.cvtColor(final_mask,cv2.COLOR_BGR2GRAY)
     cnts, _ = cv2.findContours(final_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
-    return cnts, img_orig, kernel_size
+    return cnts, img_orig

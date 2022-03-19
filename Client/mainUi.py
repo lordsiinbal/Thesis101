@@ -138,8 +138,11 @@ class myQLabel(QWidget):
         self.last_x, self.last_y = None, None
         self.eraser_selected=False
         self._size=50
+        self.parentDraw = parent
         
-    def drawROI(self, roi, im):
+        
+    def drawROI(self, roi, im, roadload):
+        self.roadload = roadload
         "For Auto Segmentaion"
         for r in roi:
             bg = np.zeros_like(im)  
@@ -154,12 +157,20 @@ class myQLabel(QWidget):
             #loop through roi location
             pts = [pts[0],pts[1]]
             pts = np.transpose(pts)
-            print(pts)
-            for pt in pts:
-                painter.drawPoint(pt[1],pt[0])
-            painter.end()
-            self.draw.setPixmap(pm)
+            
+            self.drawThread = QThread()
+            self.drawThreadObject = Drawer(pts, painter, pm) # fetch all roads but only ids
+            self.drawThreadObject.moveToThread(self.drawThread)
+            self.drawThread.started.connect(self.drawThreadObject.draw)
+            self.drawThreadObject.finished.connect(self.finishedDrawingROI)
+            self.drawThread.start()
+            
         """End of Auto Segmentation"""
+    def finishedDrawingROI(self, painter, pm):
+        self.drawThread.quit()
+        self.roadload.closeWindow()
+        painter.end()
+        self.draw.setPixmap(pm)
     def paintEvent(self, event):
         """Create QPainter object.This is to prevent
             the chance of the painting being
@@ -275,7 +286,7 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
     
     # execute when all roads were fetched 
     def getAllRoad(self, response):
-        self.newThread.quit()
+        if isinstance(self.newThread, QThread): self.newThread.quit()
         # print('done retrieve')
         toAppend = self.data
         if len(response.json()) >= 1 : # if response has something to append
@@ -329,7 +340,6 @@ class RoadSetUp1(QtWidgets.QMainWindow):#Road Setting Up Ui
             self.gridLayout.addWidget(self.frame,row+1,0,1,1) #added the frame inside grid layout   \
         
         # show window here if done
-        self.rThread.quit()
         self.dThread.quit()
         self.loadingRetrieve.closeWindow()
         self.show()
@@ -563,6 +573,9 @@ class MainUi(QtWidgets.QMainWindow):
     logout=QtCore.pyqtSignal()
     addIp=QtCore.pyqtSignal()
     addCctv=QtCore.pyqtSignal()
+    actPlayBack=QtCore.pyqtSignal()
+    actWatch = QtCore.pyqtSignal()
+    
     def __init__(self, window):
         super(MainUi, self).__init__()
         uic.loadUi(PATH+'/frontEndUi.ui', self)
@@ -622,73 +635,20 @@ class MainUi(QtWidgets.QMainWindow):
     
     
     def activePlayback(self):
-        try:
-            self.w.initDet.det.dets.view_img = False
-            # self.w.initDet.det.dets.stop()
-            self.saveVid()
-            self.vQueue = self.w.initDet.det.dets.vidFrames.copy()
-            # play playback video here
-            # creat a thread object for playing video
-            isViolation = False
-            # if from violation record 
-            if isViolation:
-                pass
-                # playback from violation record
-            else:
-                # playback from currently playing video
-                self.pause = True
-                self.nthread = QThread()
-                self.getVid = videoGet(self)
-                self.getVid.moveToThread(self.nthread)
-                self.nthread.started.connect(self.getVid.run)
-                self.getVid.finished.connect(self.nthread.quit)
-                self.nthread.finished.connect(self.finishedPlayBack) # execute when the task in thread is finised
-                self.getVid.imgUpdate.connect(self.update_image)
-                self.nthread.start()
-        except Exception as er:
-            print(er)
-            pass
-        
-        
         self.image.setMinimumSize(QtCore.QSize(0, 400))
         self.image.setMaximumSize(QtCore.QSize(1280, 720))
         self.stackedWidget.setCurrentWidget(self.playbackPage)
         self.btnWatch.setStyleSheet('background-color:none;border:none')
         self.btnRoadSetup.setStyleSheet('background-color:none;border:none')
         self.btnPlayback.setStyleSheet("color:white;font-size:14px;background-color:#1D1F32;border-left:3px solid #678ADD;")
-        self.btnPlay.clicked.connect(self.pauseOrPlay)
-        
-    def pauseOrPlay(self):
-        try:
-            self.pause = False
-            print('Pause = ',  self.pause)
-            self.getVid.playOrPause(self.pause)
-        except AttributeError:
-            ctypes.windll.user32.MessageBoxW(0, "Please insert a video first", "Nothing to play", 1)
-            
-
-    
-    
-    def update_image(self, qim):
-        self.w.window.image.setPixmap(qim)
-        
-    def finishedPlayBack(self):
-        print('finished playing video')
+        self.actPlayBack.emit()
         
     def activeWatch(self):
-        try:
-            self.getVid.stop()
-            self.nthread.quit()
-            self.pause = True
-            self.w.initDet.det.dets.view_img = True
-        except Exception as er:
-            print(er)
-            pass
         self.stackedWidget.setCurrentWidget(self.watchingPage)
         self.btnPlayback.setStyleSheet('background-color:none;border:none')
         self.btnRoadSetup.setStyleSheet('background-color:none;border:none')
         self.btnWatch.setStyleSheet("color:white;font-size:14px;background-color:#1D1F32;border-left:3px solid #678ADD;")
-        
+        self.actWatch.emit()
     #Function display Video    
     def setUpVideo(self): #Initialize click event
         self.vidFile=QFileDialog.getOpenFileUrl()[0].toString()
@@ -705,18 +665,19 @@ class MainUi(QtWidgets.QMainWindow):
         duration = str(dtime.timedelta(seconds=float(int(duration))))
         self.playbackInfo['duration'].append(duration)
         self.playbackInfo['roadName'].append(self.w.road.label.text())
-        self.playbackInfo['dateAndTime'].append(str(dtime.datetime.fromtimestamp(float(int(time.time()))).strftime("%m/%d, %I:%M:%S %p")))
+        self.playbackInfo['dateAndTime'].append(str(dtime.datetime.fromtimestamp(float(int(time.time()))).strftime("%m/%d%Y, %I:%M:%S %p")))
         # save('playBack', self.playbackInfo) # saved to records/playBackDb.csv
         self.savePlayback(self.playbackInfo)
         self.playbackKeys = ['playbackID', 'playbackVideo','duration', 'roadName', 'dateAndTime']
         self.playbackInfo = {k: [] for k in self.playbackKeys}
-    def activeRoadSetUp(self):
+        
+    def activeRoadSetUp(self, roadLoad):
         self.stackedWidget.setCurrentWidget(self.roadSetupPage)
         self.btnPlayback.setStyleSheet('background-color:none;border:none')
         self.btnWatch.setStyleSheet('background-color:none;border:none')
         self.btnRoadSetup.setStyleSheet("color:white;font-size:14px;background-color:#1D1F32;border-left:3px solid #678ADD;")
         self.image_main.image = QtGui.QImage("images/road.jpg") 
-        self.image_main.drawROI(self.w.ROI, self.w.roadImage)
+        self.image_main.drawROI(self.w.ROI, self.w.roadImage, roadLoad)
         
         
     def enterSize(self):
@@ -801,6 +762,11 @@ class Controller:
         pass
 
     def restart(self): # restart app
+        if isinstance(self.detthread, QThread): 
+            print('runnning det')
+            self.detthread.quit()
+        else:
+            print('not running det')
         app.exit(Controller.EXIT_CODE_REBOOT)
         
     def show_login(self):
@@ -822,10 +788,77 @@ class Controller:
         self.window.btnAddVideo.clicked.connect(self.addVideo)
         self.window.btnDone_paint.clicked.connect(self.settingUpRoad_From_paint)
         self.window.btnCancel_paint.clicked.connect(self.showRoadSetup)
-
+        self.window.actPlayBack.connect(self.playBack)
+        self.window.actWatch.connect(self.watch)
         self.window.show()
         self.login.close()
+    
+    def watch(self):
+        try:
+            self.getVid.stop()
+            self.pause = True
+            self.getVid.playOrPause(False)
+            self.window.btnPlay.disconnect()
+            self.initDet.det.dets.view_img = True
+            print('no err')
+        except Exception as er:
+            print('has err',er)
+            pass
         
+    def playBack(self):
+        try:
+            self.initDet.det.dets.view_img = False
+            # self.w.initDet.det.dets.stop()
+            # self.saveVid()
+            # play playback video here
+            # creat a thread object for playing video
+            self.isViolation = False
+            # if from violation record 
+            if self.isViolation:
+                self.pause = True
+                self.violationVideoThread = QThread()
+                self.getVid = videoGet(self)
+                self.getVid.moveToThread(self.violationVideoThread)
+                self.violationVideoThread.started.connect(self.getVid.runFromViolation)
+                self.getVid.finished.connect(self.violationVideoThread.quit)
+                self.violationVideoThread.finished.connect(self.finishedPlayBack) # execute when the task in thread is finised
+                self.getVid.imgUpdate.connect(self.update_pb_image)
+                self.violationVideoThread.start()
+                pass
+                # playback from violation record
+            else:
+                # playback from currently playing video
+                self.vQueue = self.initDet.det.dets.vidFrames.copy()
+                self.pause = True
+                self.nthread = QThread()
+                self.getVid = videoGet(self)
+                self.getVid.moveToThread(self.nthread)
+                self.nthread.started.connect(self.getVid.run)
+                self.getVid.finished.connect(self.nthread.terminate)
+                self.nthread.finished.connect(self.finishedPlayBack) # execute when the task in thread is finised
+                self.getVid.imgUpdate.connect(self.update_pb_image)
+                self.nthread.start()
+        except Exception as er:
+            print('error this',er)
+            pass
+        
+        self.window.btnPlay.clicked.connect(self.pauseOrPlay)
+        
+    def pauseOrPlay(self):
+        print('pause or play have been called')
+        try:
+            self.pause = not self.pause
+            # print('Pause = ',  self.pause)
+            self.getVid.playOrPause(self.pause, self.isViolation)
+        except AttributeError:
+            ctypes.windll.user32.MessageBoxW(0, "Please insert a video first", "Nothing to play", 1)
+            
+    def finishedPlayBack(self):
+        print('finished playing video')
+
+    def update_pb_image(self, qim):
+        self.window.image.setPixmap(qim)
+     
     def settingUpRoad_From_paint(self):
         #change roi here [..]
         img_orig = self.QImageToCvMat(self.window.image_main.draw.pixmap().toImage())
@@ -915,10 +948,9 @@ class Controller:
     # function to call when the process of bg modelling and road extraction is done using thread
     def finishedInBGModelAndRoad(self):
         
-        self.roadImage, self.ROI, self.k_size =  self.bgAndRoad.bgImage,  self.bgAndRoad.ROI, self.bgAndRoad.k_size
+        self.roadImage, self.ROI =  self.bgAndRoad.bgImage,  self.bgAndRoad.ROI
         if self.roadImage is not NULL:
-            self.window.activeRoadSetUp()
-            self.roadLoad.closeWindow()
+            self.window.activeRoadSetUp(self.roadLoad)
             # self.roadPaint=RoadSetUpPaint()
             # self.roadPaint.switch_window.connect(self.showFinishingUi) # for btn done
             # self.roadPaint.show()
@@ -946,6 +978,7 @@ class Controller:
     #     self.windowRoadSettingUp=roadSettingUp()
     #     self.windowRoadSettingUp.screenLabel.connect(self.showScreenImage)
     def showFinishingUi(self):
+        
         if self.window.vidFile is not None: # hcheck if there's a current vid file
             # initialize detection
             try:
@@ -967,6 +1000,7 @@ class Controller:
                     self.roadIDGlobal = self.road.selectedRoadID
             except:
                 # for btn new
+                self.ROI = self.expandROI()
                 try:
                     # if detection is currently running
                     self.initDet.det.dets.changeROI(self.ROI)
@@ -986,7 +1020,6 @@ class Controller:
                 else:
                     roadID = "R-0000001"
  
-
                 cv.imwrite(str(PATH)+"/images/{}.jpg".format(roadID), self.roadImage) #writing the image with ROI to Client/images path
                 # roadCapturedJPG = str(PATH)+"\\\images\\\\"+roadID+".jpg"
                 #making the data a json type
@@ -1005,7 +1038,38 @@ class Controller:
                 self.saveRoad(data)
         else:
             ctypes.windll.user32.MessageBoxW(0, "Please insert a video first", "Empty Video file", 1)
+    
+    def expandROI(self):
+        min_size = int(self.roadImage.shape[0]*self.roadImage.shape[1]*0.05)
+        contours = self.ROI
+        bg = np.zeros_like(self.roadImage)  
+        for contour in contours:
+            area = cv2.contourArea(contour) 
+            print(f'area {area} < {min_size*0.5} : {area<min_size*0.5}')
+            if area < min_size:
+                continue
+             # draw the contours that are larger than 5% of img size 
+            if area > (0.5*self.roadImage.shape[0]*self.roadImage.shape[1]):
+                kernel_size = 35
+            else:
+                kernel_size = 80
+            cv2.drawContours(bg, [contour], -1, (255,255,255), thickness= -1)
+
+        bg = cv2.cvtColor(bg, cv2.COLOR_BGR2GRAY)
+        kernel  = np.ones((kernel_size,kernel_size), np.uint8)
+        dilated = cv2.dilate(bg, kernel, iterations=1)
+            
+        # pass 1
+        smooth_mask_blurred   = cv2.GaussianBlur(dilated, (21,21), 0)
+        _, smooth_mask_threshed1  = cv2.threshold(smooth_mask_blurred, 128, 255, cv2.THRESH_BINARY)
         
+        # pass 2
+        smooth_mask_blurred   = cv2.GaussianBlur(smooth_mask_threshed1, (21,21), 0)
+        _, smooth_mask_threshed2 =  cv2.threshold(smooth_mask_blurred, 128, 255, cv2.THRESH_BINARY)
+            
+        cnts, _ = cv2.findContours(smooth_mask_threshed2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        return cnts
+    
     #this function will request post to save the data to the database
     def saveRoad(self,data):
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
@@ -1023,7 +1087,14 @@ class Controller:
     def finishedSaveRoad(self,_):
         # print('road saved')
         self.saveRoadThread.quit()
+        
+        # resetting pixmap
+        pixmap = QPixmap(self.window.image_main.parentDraw.width(),self.window.image_main.parentDraw.height()) # width, height
+        newPixmap=pixmap.scaled(1280,720)#scaled the Pixmap
+        newPixmap.fill(Qt.transparent)
+        self.window.image_main.draw.setPixmap(newPixmap)
         self.loadData.closeWindow()
+        self.window.activeWatch()
         try:
             if not self.initDet.det.dets.stopped: # if detection is not stopped
                 #if detection is running, do nothing, don't reinitialize the detection
@@ -1045,7 +1116,6 @@ class Controller:
         if self.initDet.det.dets.nflag:
             self.thread.quit()
             self.windowFinishing.closeWindow() # close loading
-            self.window.activeWatch()
             self.getViolationRecord = response.json()
             print("finished initializing detection models")
             try:
@@ -1059,14 +1129,14 @@ class Controller:
             
 
             # run detection here on separate thread
-            self.thread = QThread()
+            self.detthread = QThread()
             self.runDets = Worker(self)
-            self.runDets.moveToThread(self.thread)
-            self.thread.started.connect(self.runDets.runDet)
-            self.runDets.finished.connect(self.thread.quit)
-            self.thread.finished.connect(self.finishedrunDet) # execute when the task in thread is finised
+            self.runDets.moveToThread(self.detthread)
+            self.detthread.started.connect(self.runDets.runDet)
+            self.runDets.finished.connect(self.detthread.quit)
+            self.detthread.finished.connect(self.finishedrunDet) # execute when the task in thread is finised
             self.runDets.imgUpdate.connect(self.update_image)
-            self.thread.start()
+            self.detthread.start()
             
         else:
             print("ERROR: An error occured while performing detection")
@@ -1144,7 +1214,7 @@ class Worker(QtCore.QObject):
         self.vid = self.w.window.vidFile     
 
     def runBG(self):
-        self.bgImage, self.ROI, self.k_size = processRoad(self.vid, PATH)
+        self.bgImage, self.ROI = processRoad(self.vid, PATH)
         self.finished.emit()
         
     def initDet(self):
@@ -1202,13 +1272,15 @@ class videoGet(QtCore.QObject):
                 QtImg = cvImgtoQtImg(frame)# Convert frame data to PyQt image format
                 qim = QtGui.QPixmap.fromImage(QtImg)
                 timediff = time.time() - now
-                if (timediff<(1.0/(self.w.w.initDet.det.dets.sfps))):
-                    time.sleep((1.0/(self.w.w.initDet.det.dets.sfps)) - timediff)
+                if (timediff<(1.0/(self.w.initDet.det.dets.sfps))):
+                    time.sleep((1.0/(self.w.initDet.det.dets.sfps)) - timediff)
 
                 self.imgUpdate.emit(qim)
-                
+            else:
+                break
             while self.pause:
                 # loop here until pause is lifted
+                print('paused',end='\r')
                 pass
             
         self.stop()
@@ -1218,7 +1290,7 @@ class videoGet(QtCore.QObject):
         self.stopped = True  
         self.finished.emit()   
     
-    def playOrPause(self, val):
+    def playOrPause(self, val, isViolation = False):
         self.pause = val
             
     
@@ -1288,6 +1360,20 @@ class Decoder(QtCore.QObject):
                 cv2.imwrite(r'images/{}.jpg'.format(self.data[x]['roadID']),  numpy.array(roadArr,dtype=numpy.int32)) #writing the array to image with datatype int32
         self.finished.emit() 
 
+class Drawer(QtCore.QObject):  
+    finished = QtCore.pyqtSignal(QtGui.QPainter, QtGui.QPixmap)
+    
+    def __init__(self, pts, painter, pm):
+        super(Drawer, self).__init__()
+        self.pts = pts
+        self.painter = painter
+        self.pm = pm
+        
+        
+    def draw(self):
+        for pt in self.pts:
+                self.painter.drawPoint(pt[1],pt[0])
+        self.finished.emit(self.painter, self.pm)
 if __name__ == '__main__':
 
     currentExitCode = Controller.EXIT_CODE_REBOOT
