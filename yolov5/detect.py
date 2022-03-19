@@ -134,7 +134,6 @@ class det:
         self.window = window
         
     def run(self):
-        self.dataset.begin()
         self.t.start() 
         
         
@@ -147,7 +146,7 @@ class det:
             violationIDLatest = int(violationIDLatest[1])
         else:
             violationIDLatest = 0
-        for frame_idx, (path, img, im0s, vid_cap, s, frm_id, vid_fps, video_getter, ret, tim) in enumerate(self.dataset):
+        for frame_idx, (path, img, im0s, vid_cap, s, frm_id, vid_fps, ret, tim) in enumerate(self.dataset):
             if not self.stopped:
                 self.vid_fps = vid_fps
                 self.frm_id = frm_id
@@ -241,7 +240,7 @@ class det:
                                             t = str(timedelta(seconds=float(t))).split(".")[0]
                                             col = (0,165,255)
                                             
-                                            if self.vehicleInfos['timer'][index] >= 5*fps: # means 5 mins
+                                            if self.vehicleInfos['timer'][index] >= 300*fps: # means 5 mins
                                                 col = (0,0,255)
                                                 if not self.vehicleInfos['isSaved'][index]: # if not yet saved
                                                     #determining if the dataRoadViolation is empty
@@ -325,7 +324,6 @@ class det:
                             self.vidFrames.append(im0)
                 
             else:
-                video_getter.stop() 
                 self.vid_writer.release() #stop from writing video
                 t = tuple(x / self.seen * 1E3 for x in self.dt)  # speeds per image
                 LOGGER.info(f'Speed: %.1fms pre-process, %.1fms inference, %.1fms NMS, %.1fms deep sort update per image at shape {(1, 3, *self.imgsz)}. \nAverage speed of %.1fms per detection' % t)
