@@ -653,9 +653,11 @@ class MainUi(QtWidgets.QMainWindow):
         self.actWatch.emit()
     #Function display Video    
     def setUpVideo(self): #Initialize click event
-        self.vidFile=QFileDialog.getOpenFileUrl()[0].toString()
-        self.vidFile = self.vidFile[8:]
-        self.roadSwitch.emit()
+        self.vidFile=QFileDialog.getOpenFileName(None,'Select a video', PATH+'/../','video (*.mp4);;(*.avi);;(*.mov);;(*.mkv);;(*.wmv);;(*.mpg);;(*.mpeg);;(*.m4v)')
+        print(self.vidFile[0])
+        if self.vidFile[0] != '':
+            self.vidFile = self.vidFile[0]
+            self.roadSwitch.emit()
         
     def saveVid(self):
         
