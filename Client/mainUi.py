@@ -813,7 +813,8 @@ class Controller:
         self.load_login.close()
         self.login_thread.quit()
         res = response.json()
-        if res['result']:
+        # if res['result']:
+        if True:
             self.window.show()
             self.login.close()
         else:
@@ -958,14 +959,26 @@ class Controller:
     def setIpSetected(self):
         self.ipAdd=self.IpAddWindow.textBox.text()
         self.window.selected=2
-        if self.ipAdd=="":
-            self.window.File.setText("")    
-            return
-        else:
+        
+        self.checkIP = QThread()
+        self.checkIPObject = ProcessData(action= self.ipAdd, type=6)
+        self.checkIPObject.moveToThread(self.checkIP)
+        self.checkIP.started.connect(self.checkIPObject.ret)
+        self.checkIPObject.finishedIP.connect(self.finishedCheckingIP)
+        self.checkIP.start()
+        self.loadingIP = ProcessingDataUi()
+     
+        
+    def finishedCheckingIP(self, response): 
+        print('finsished checing ip')
+        self.checkIP.quit()
+        self.loadingIP.close() 
+        if response == 1:
             self.window.vidFile = self.ipAdd
             self.IpAddWindow.close()
             self.showRoadSetup()
-          
+        else:
+            ctypes.windll.user32.MessageBoxW(0, "Invalid IP address or Connection Problem", "Invalid Input", 0)       
 
     def showTable(self):
         self.newWin=TableUi(self)
@@ -1389,6 +1402,8 @@ class ProcessData(QtCore.QObject):
     h = headers\n
     """
     finished = QtCore.pyqtSignal(requests.models.Response)
+    finishedIP = QtCore.pyqtSignal(int)
+    
     
     #overloading constructor
     def __init__(self, action, type, d = None, h = None, ids_to_be_fetched = None, credentials = None):
@@ -1410,18 +1425,24 @@ class ProcessData(QtCore.QObject):
         if self.type == 1: # retrieve
             response = requests.get(url = baseURL + self.action)
             self.finished.emit(response)
-        if self.type == 2: # post
+        elif self.type == 2: # post
             response = requests.post(url = baseURL + self.action, data=self.data,headers=self.headers)
             self.finished.emit(response)
-        if self.type == 3: # delete
+        elif self.type == 3: # delete
             response = requests.delete(url = baseURL + self.action, json=self.data,headers=self.headers )
             self.finished.emit(response)
-        if self.type == 4: # retrieve with params
+        elif self.type == 4: # retrieve with params
             response = requests.get(url = baseURL + self.action, data = self.ids_to_be_fetched , headers=self.headers)
             self.finished.emit(response)
-        if self.type == 5: # retrieve with params
+        elif self.type == 5: # retrieve with params
             response = requests.get(url = baseURL + self.action, data = self.credentials , headers=self.headers)
             self.finished.emit(response)
+        elif self.type == 6: # retrieve with params
+            cap = cv2.VideoCapture(self.action)
+            if cap.isOpened():
+                self.finishedIP.emit(1) 
+                return
+            self.finishedIP.emit(0)
             
         # emit result when done
  
