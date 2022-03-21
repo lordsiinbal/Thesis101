@@ -583,7 +583,8 @@ class MainUi(QtWidgets.QMainWindow):
         self.topInfo.hide()
         self.selected="" 
         self.isViolation = False
-        self.vidFile = None
+        self.vidFile = ''
+        self.tempfile = ''
         self.w = window
         self.violationIndex = -12345678
         self.btnRecord.clicked.connect(self.switch_window.emit)
@@ -653,12 +654,17 @@ class MainUi(QtWidgets.QMainWindow):
         self.actWatch.emit()
     #Function display Video    
     def setUpVideo(self): #Initialize click event
+        temp = self.vidFile
         self.vidFile=QFileDialog.getOpenFileName(None,'Select a video', PATH+'/../','video (*.mp4);;(*.avi);;(*.mov);;(*.mkv);;(*.wmv);;(*.mpg);;(*.mpeg);;(*.m4v)')
-        print(self.vidFile[0])
+        
         if self.vidFile[0] != '':
+            self.tempfile = temp
             self.vidFile = self.vidFile[0]
             self.roadSwitch.emit()
-        
+        else:
+            self.vidFile = temp
+            
+            
     def saveVid(self):
         
         # save playback here
@@ -815,8 +821,7 @@ class Controller:
         self.load_login.close()
         self.login_thread.quit()
         res = response.json()
-        # if res['result']:
-        if True:
+        if res['result']:
             self.window.show()
             self.login.close()
         else:
@@ -975,7 +980,9 @@ class Controller:
         print('finsished checing ip')
         self.checkIP.quit()
         self.loadingIP.close() 
+        temp = self.window.vidFile
         if response == 1:
+            self.window.tempfile = temp
             self.window.vidFile = self.ipAdd
             self.IpAddWindow.close()
             self.showRoadSetup()
@@ -987,6 +994,7 @@ class Controller:
         # self.newWin.show()
     def showRoadSetup(self):
         # before showing road, execute background modelling and automatic road detection, must be loading
+        
         self.road = RoadSetUp1(self)
         self.road.switch_window.connect(self.show_RoadPaint) # for btn new
         # disable new if vidfile has value
@@ -1045,25 +1053,33 @@ class Controller:
     #     self.windowRoadSettingUp.screenLabel.connect(self.showScreenImage)
     def showFinishingUi(self):
         
-        if self.window.vidFile is not None: # hcheck if there's a current vid file
+        if self.window.vidFile: # hcheck if there's a current vid file
             # initialize detection
             try:
                 # fot btn confirm
                 if self.road.flagRoad:
                     self.ROI = self.road.selectedROI
+                    self.road.flagRoad = False
+                    self.roadImage = cv.imread(self.road.selectedRoadImage)
+                    self.roadIDGlobal = self.road.selectedRoadID
+
                     try:
+                        
                         # if detection is currently running
                         self.initDet.det.dets.changeROI(self.road.selectedROI)
                         self.window.label.setText(self.road.selectedRoadName)
+                        # since topInfo only shows if detection is running, check if there is a file changed here...
+                        if self.window.vidFile != self.window.tempfile and self.window.tempfile != '': #file changed
+                            print(f'file changed in confirm {self.window.vidFile}  and {self.window.tempfile}')
+                            self.initDet.det.dets.stop()
+                            self.initializeDetection()
+                            self.window.tempfile = ''
                         
                         print('ROI has been changed in running confirm')
                     except:
                         self.initializeDetection()
                         pass
-                    self.road.flagRoad = False
-                    self.roadImage = cv.imread(self.road.selectedRoadImage)
                     # print('selected road image shape', self.roadImage.shape)
-                    self.roadIDGlobal = self.road.selectedRoadID
             except:
                 # for btn new
                 self.ROI = self.expandROI()
@@ -1163,7 +1179,12 @@ class Controller:
         self.window.activeWatch()
         try:
             if not self.initDet.det.dets.stopped: # if detection is not stopped
-                #if detection is running, do nothing, don't reinitialize the detection
+                if self.window.vidFile != self.window.tempfile and self.window.tempfile != '': #file changed
+                    print('file changed in new', self.window.vidFile, self.window.tempfile)
+                    self.initDet.det.dets.stop()
+                    self.initializeDetection()
+                    self.window.tempfile = ''
+
                 pass
         except:
             self.initializeDetection()
@@ -1192,6 +1213,9 @@ class Controller:
             self.window.btnAddVideo.hide()
             self.window.labelScreen.setMinimumSize(QtCore.QSize(0, 400))
             self.window.frameButtons_2.hide()
+            self.window.topInfo.show()
+            self.activeButton()
+            
             
 
             # run detection here on separate thread
@@ -1241,6 +1265,7 @@ class Controller:
 
         #Closing Road Setting
     def activeButton(self):
+        print(self.window.selected)
         if self.window.selected==1:
             self.window.btnT_cctv.setStyleSheet("background-color:#678ADD")
             self.window.btnT_ipAdd.setStyleSheet("background-color:none")
@@ -1260,7 +1285,7 @@ class Controller:
             self.window.btnT_ipAdd.setStyleSheet("background-color:none")
             self.window.btnT_insertVideo.setStyleSheet("background-color:#678ADD")
             self.window.Selected.setText("Video File Selected:")
-            self.window.File.setText("Path")
+            self.window.File.setText(self.window.vidFile)
             self.window.File.setStyleSheet("color:#678ADD;")
             
 

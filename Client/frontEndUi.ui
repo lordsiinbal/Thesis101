@@ -1688,7 +1688,7 @@ color:white;
                            <number>0</number>
                           </property>
                           <item alignment="Qt::AlignHCenter">
-                           <widget class="QPushButton" name="addSize">
+                           <widget class="QPushButton" name="subSize">
                             <property name="minimumSize">
                              <size>
                               <width>0</width>
@@ -1742,7 +1742,7 @@ color:white;
                            </widget>
                           </item>
                           <item alignment="Qt::AlignHCenter">
-                           <widget class="QPushButton" name="subSize">
+                           <widget class="QPushButton" name="addSize">
                             <property name="minimumSize">
                              <size>
                               <width>0</width>

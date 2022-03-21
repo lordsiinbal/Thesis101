@@ -58,7 +58,7 @@ class Tracks:
         self.thresh = self.computeEucDist(xyxy, wh, False)
         if self.calls == self.n_init:
             self.track_state = TrackState.Confirmed
-            print(f'vehicle id = {self.track_id} has been registered')
+            # print(f'vehicle id = {self.track_id} has been registered')
             self.hash = hash
             self.base_xy = xy
             self.base_thresh = self.computeEucDist(xyxy, self.wh, True)
@@ -77,7 +77,7 @@ class Tracks:
                 self.hash = hash
                 self.base_xy = xy
                 self.is_base_changed =True
-                print(f'id >> {self.track_id} is on the move')
+                # print(f'id >> {self.track_id} is on the move')
             
         self.xyxy = xyxy
         self.last_seen = 0
@@ -90,13 +90,13 @@ class Tracks:
         """
         if self.track_state == TrackState.Tentative:
             # if self.calls > self.n_init:
-            print(f'track id in init state = {self.track_id} is deleted')
+            # print(f'track id in init state = {self.track_id} is deleted')
             self.track_state = TrackState.Deleted
         if self.last_seen > self.max_age:
-            print(f'track id in max age = {self.track_id} is deleted')
+            # print(f'track id in max age = {self.track_id} is deleted')
             self.track_state = TrackState.Deleted
         if self.is_base_changed and self.last_seen > self.max_age/2:
-            print(f'deleted {self.track_id}')
+            # print(f'deleted {self.track_id}')
             self.track_state = TrackState.Deleted
         self.last_seen += 1
         self.missed = True
