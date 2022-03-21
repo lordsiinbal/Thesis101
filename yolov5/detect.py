@@ -134,6 +134,7 @@ class det:
         self.window = window
         
     def run(self):
+        self.video_getter = self.dataset.begin()
         self.t.start() 
         
         
@@ -211,7 +212,7 @@ class det:
                         
                         if frame_idx > 0:
                             t8 = time_sync()
-                            xy, xywhs, confs, clss, self.PREV_XY, self.PREV_BB = isStationary(xy, wh, xywhs, confs, clss, self.PREV_XY, fps, frm_id, bbox, self.PREV_BB)
+                            xy, xywhs, confs, clss, self.PREV_XY, self.PREV_BB, self.time_start = isStationary(xy, wh, xywhs, confs, clss, self.PREV_XY, fps, frm_id, bbox, self.PREV_BB, self.time_start)
                             t9 = time_sync()
                             
                             t11 = time_sync()
@@ -243,7 +244,7 @@ class det:
                                             t = str(timedelta(seconds=float(t))).split(".")[0]
                                             col = (0,165,255)
                                             
-                                            if self.vehicleInfos['timer'][index] >= 300*fps: # means 5 mins
+                                            if self.vehicleInfos['timer'][index] >= 10*fps: # means 5 mins
                                                 col = (0,0,255)
                                                 if not self.vehicleInfos['isSaved'][index]: # if not yet saved
                                                     #determining if the dataRoadViolation is empty
@@ -290,10 +291,11 @@ class det:
                                             annotator.box_label(bboxes, label, color=(0,165,255))
                                 tss = time_sync()
                                 self.dt[4] += t5 - tim
-                                # LOGGER.info(f'Done. Read-frame: ({t1-tim:.3f}), YOLO:({t3 - t2:.3f}s), Tracker:({t5 - t4:.3f}s), Stationary:({t9 - t8:.3f}s), isInsideROI: ({t12-t11:.3f}s) Overall:({t5-tim:.3f}s)')
+                                LOGGER.info(f'Done. Read-frame: ({t1-tim:.3f}), YOLO:({t3 - t2:.3f}s), Tracker:({t5 - t4:.3f}s), Stationary:({t9 - t8:.3f}s), isInsideROI: ({t12-t11:.3f}s) Overall:({t5-tim:.3f}s)')
                         else:
                             self.PREV_BB = bbox
                             self.PREV_XY = xy 
+                            self.time_start = time_sync()
                     else:
                         tracker.increment_ages()
                         LOGGER.info('No detections')
@@ -343,6 +345,7 @@ class det:
             strip_optimizer(self.opt.weights)  # update model (to fix SourceChangeWarning)
 
     def stop(self):
+        self.video_getter.stop()
         self.stopped = True
     
     def saveViolation(self,data):

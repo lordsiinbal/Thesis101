@@ -1,6 +1,8 @@
 from encodings import utf_8
 from flask import jsonify, Blueprint, request
 from mongoengine import *
+from mongoengine import DoesNotExist
+
 import numpy
 import pandas as pd
 
@@ -18,6 +20,18 @@ from app.Models.PlaybackModel import dc_playback
 @get.route('/UserFetchAll', methods=['GET'])
 def UserFetchAll():
     return jsonify(dc_user.objects)
+
+@get.route('/UserFetch', methods=['GET'])
+def UserFetch():
+    credentials = request.get_json()
+    data = {"result":False}
+    try:
+        _ = dc_user.objects.get(username=credentials['username'],password=credentials['password'])
+    except DoesNotExist as er:
+        print("Response: ", er)
+        return jsonify(data)
+    data['result'] = True
+    return jsonify(data)
 
 @get.route('/RoadFetchAll', methods=['GET'])
 def RoadFetchAll():

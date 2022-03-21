@@ -178,7 +178,6 @@ class VideoGet:
         return self
         
     def get(self):
-        
         while not self.stopped:
             now = time.time()
             if not self.grabbed:
@@ -187,7 +186,6 @@ class VideoGet:
                 self.frames += 1
                 (self.grabbed, self.frame) = self.stream.read()
                 timeDiff = time.time() - now
-                # print('%.3f and %.3f' % (timeDiff, 1.0/(self.fps*1.5)), end='\r')
                 if (timeDiff<1.0/(self.fps)):
                     time.sleep((1.0/(self.fps)) - timeDiff)
                 else:
@@ -244,8 +242,8 @@ class LoadImages:
         if self.video_flag[self.count]:
             # Read video
             self.mode = 'video'
-            # ret_val = self.video_getter.grabbed
-            ret_val, img0 = self.cap.read()
+            ret_val = self.video_getter.grabbed
+            # ret_val, img0 = self.cap.read()
             while not ret_val:
                 self.count += 1
                 self.cap.release()
@@ -256,13 +254,14 @@ class LoadImages:
                     self.new_video(path)
                     ret_val, img0 = self.cap.read()
 
-            # img0 = self.video_getter.frame
+            img0 = self.video_getter.frame
+
             img0 = cv2.resize(img0, (1280,720), interpolation=cv2.INTER_NEAREST)
             # im = img0
             # masking roi
             # img0 = cv2.copyTo(img0, self.mask)
-            # self.frame = self.video_getter.frames
-            self.frame += 1 
+            self.frame = self.video_getter.frames
+            # self.frame += 1 
             s = f'video {self.count + 1}/{self.nf} ({self.frame}/{self.frames}) {path}: '
 
         else:
@@ -284,11 +283,16 @@ class LoadImages:
     def new_video(self, path):
         self.path = path
         self.frame = 0
-        self.cap = cv2.VideoCapture(path)
-        self.frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        self.vid_fps = int(self.cap.get(cv2.CAP_PROP_FPS))
+        # self.cap = cv2.VideoCapture(path)
         
-
+        
+    def begin(self):
+        self.video_getter = VideoGet(self.path).start()
+        self.frames = self.video_getter.nframes
+        self.vid_fps = self.video_getter.fps
+        self.cap = self.video_getter.stream
+        return self.video_getter
+        
        
     def __len__(self):
         return self.nf  # number of files
