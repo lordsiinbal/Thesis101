@@ -41,8 +41,6 @@ class bg:
                 frames.append(b)
             if(i==size):
                 self.backgroundFrame = np.median(frames, axis = 0).astype(dtype=np.uint8)
-                cv2.imshow('bg', self.backgroundFrame)
-                cv2.waitKey()
                 break
             i+=1
         
