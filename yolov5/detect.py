@@ -86,6 +86,8 @@ class det:
 
         self.PREV_XY = numpy.zeros([1,2])
         self.PREV_XY = numpy.asarray(self.PREV_XY, dtype=int)
+        self.PREV_BB = numpy.zeros([1,4])
+        self.PREV_BB = numpy.asarray(self.PREV_BB, dtype=int)
 
         
         device = select_device(self.opt.device)
@@ -211,7 +213,7 @@ class det:
                         wh = wh[:, 2:]
                         xy = xy[:, :2]
                         
-                        if frame_idx > 0:
+                        if frame_idx > 0 or self.PREV_BB.any() != 0:
                             t8 = time_sync()
                             xy, xywhs, confs, clss, self.PREV_XY, self.PREV_BB, self.time_start = isStationary(xy, wh, xywhs, confs, clss, self.PREV_XY, fps, frm_id, bbox, self.PREV_BB, self.time_start)
                             t9 = time_sync()
@@ -245,7 +247,7 @@ class det:
                                             t = str(timedelta(seconds=float(t))).split(".")[0]
                                             col = (0,165,255)
                                             
-                                            if self.vehicleInfos['timer'][index] >= 10*fps: # means 5 mins
+                                            if self.vehicleInfos['timer'][index] >= 300*fps: # means 5 mins
                                                 col = (0,0,255)
                                                 if not self.vehicleInfos['isSaved'][index]: # if not yet saved
                                                     #determining if the dataRoadViolation is empty
