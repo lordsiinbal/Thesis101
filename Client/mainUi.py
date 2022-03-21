@@ -791,9 +791,33 @@ class Controller:
         self.window.btnCancel_paint.clicked.connect(self.showRoadSetup)
         self.window.actPlayBack.connect(self.playBack)
         self.window.actWatch.connect(self.watch)
-        self.window.show()
-        self.login.close()
-    
+        # check login info here
+        self.check_credentials()
+            
+    def check_credentials(self):
+        headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+        data = {
+            'username' : self.login.userName.text(),
+            'password' : self.login.password.text(),
+        }
+        self.login_thread = QThread()
+        self.user_login = ProcessData(action= '/UserFetch', type=5, credentials=json.dumps(data), h = headers)
+        self.user_login.moveToThread(self.login_thread)
+        self.login_thread.started.connect(self.user_login.ret)
+        self.user_login.finished.connect(self.is_credentials_exist)
+        self.login_thread.start()
+        self.load_login = ProcessingDataUi()
+        
+        
+    def is_credentials_exist(self, response):
+        self.load_login.close()
+        self.login_thread.quit()
+        res = response.json()
+        if res['result']:
+            self.window.show()
+            self.login.close()
+        else:
+            ctypes.windll.user32.MessageBoxW(0, "Wrong Credentials", "Login Error", 1)
     def watch(self):
         try:
             self.getVid.stop()
@@ -1367,13 +1391,16 @@ class ProcessData(QtCore.QObject):
     finished = QtCore.pyqtSignal(requests.models.Response)
     
     #overloading constructor
-    def __init__(self, action, type, d = None, h = None, ids_to_be_fetched = None):
+    def __init__(self, action, type, d = None, h = None, ids_to_be_fetched = None, credentials = None):
         super(ProcessData, self).__init__()
         if d and h:
             self.data = d
             self.headers = h
         if ids_to_be_fetched and h:
             self.ids_to_be_fetched = ids_to_be_fetched
+            self.headers = h
+        if credentials and h:
+            self.credentials = credentials
             self.headers = h
         self.action = action
         self.type = type
@@ -1391,6 +1418,9 @@ class ProcessData(QtCore.QObject):
             self.finished.emit(response)
         if self.type == 4: # retrieve with params
             response = requests.get(url = baseURL + self.action, data = self.ids_to_be_fetched , headers=self.headers)
+            self.finished.emit(response)
+        if self.type == 5: # retrieve with params
+            response = requests.get(url = baseURL + self.action, data = self.credentials , headers=self.headers)
             self.finished.emit(response)
             
         # emit result when done
