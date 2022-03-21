@@ -134,14 +134,15 @@ class det:
         self.window = window
         
     def run(self):
-        self.video_getter = self.dataset.begin()
+        if not self.webcam:
+            self.video_getter = self.dataset.begin()
         self.t.start() 
         
         
     def detect(self):
         print("it has started")
         self.flag = True
-        tracker = Tracker(n_init=self.dataset.vid_fps, max_age=900, match_thresh=0.7, iou_thresh=0.5)
+        tracker = Tracker(n_init=20, max_age=900, match_thresh=0.7, iou_thresh=0.5)
         if self.window.getViolationRecord:
             violationIDLatest=str(self.window.getViolationRecord[len(self.window.getViolationRecord)-1]['violationID']).split("-")
             violationIDLatest = int(violationIDLatest[1])
@@ -324,7 +325,7 @@ class det:
                                 self.vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
                                 self.keys = ['id', 'startTime', 'finalTime', 'class', 'frameStart', 'timeStart', 'isSaved', 'timer']
                                 self.vehicleInfos = {k: [] for k in self.keys}
-                                tracker = Tracker(n_init=self.dataset.vid_fps, max_age=900, match_thresh=0.7, iou_thresh=0.5)
+                                tracker = Tracker(n_init=20, max_age=900, match_thresh=0.7, iou_thresh=0.5)
                             self.vid_writer.write(im0)
                             self.vidFrames.append(im0)
                 
@@ -345,7 +346,8 @@ class det:
             strip_optimizer(self.opt.weights)  # update model (to fix SourceChangeWarning)
 
     def stop(self):
-        self.video_getter.stop()
+        if not self.webcam:
+            self.video_getter.stop()
         self.stopped = True
     
     def saveViolation(self,data):
