@@ -1,5 +1,6 @@
 from asyncio.windows_events import NULL
 from itertools import count
+from operator import truediv
 from select import select
 from threading import local
 from PyQt5 import QtWidgets, uic
@@ -76,10 +77,10 @@ class myQLabel(QWidget):
         self.eraser_selected=False
         self._size=20
         "For Auto Segmentaion"
-        roi=[[[[312,0]],[[311,1]],[[311,2]],[[310,3]],[[309,3]],[[308,4]],[[307,5]],[[306,6]],[[305,6]],[[304,7]]]]
+        roi=[[[[0,0]],[[311,1]],[[311,2]],[[310,3]],[[309,3]],[[308,4]],[[307,5]],[[306,6]],[[305,6]],[[304,7]]]]
         pm=QtGui.QPixmap(self.draw.pixmap()) 
         painter=QtGui.QPainter(pm)
-        painter.setPen(QPen(QColor(0,255,0),100 ,Qt.SolidLine,Qt.RoundCap,Qt.RoundJoin))
+        painter.setPen(QPen(QColor(0,255,0),1 ,Qt.SolidLine,Qt.RoundCap,Qt.RoundJoin))
         transform=QTransform().scale(pm.width()/self.draw.width(),
                                     pm.height()/self.draw.height())    
         #loop through roi location
@@ -101,6 +102,7 @@ class myQLabel(QWidget):
         self.draw.setPixmap(pm)
         canvasPainter = QtGui.QPainter(self)
         canvasPainter.drawImage(self.rect(), self.image, self.image.rect())
+    
 
     def mousePressEvent(self, event):
         """Handle when mouse is pressed."""
@@ -124,6 +126,7 @@ class myQLabel(QWidget):
             painter.setCompositionMode(QPainter.CompositionMode_Clear)
             painter.eraseRect(eraser)
     def mouseReleaseEvent(self,e):
+        print(e.pos())
         self.last_x=None
         self.last_y=None
 class CctvWindow(QtWidgets.QWidget):
@@ -226,9 +229,10 @@ class TableUi(QtWidgets.QMainWindow):
         self.tableWidget.horizontalHeader().setStretchLastSection(True)
         self.tableWidget.horizontalHeader().setSectionResizeMode(
             QHeaderView.Stretch)
+       
         _translate = QtCore.QCoreApplication.translate
         data=[['01','Violated','San Felipe','0:00:10','01/26/202290/000','01/26/202290/000'],
-              ['02','Violated','SM Area','7 minutes','01/26/202290/000','01/26/202290/000'],
+              ['02','Violated','SM Area','7 minutessfasfasfafasfasfasfasfasfwewgberhgerthtrbtnjbfbgbeggw','01/26/202290/000','01/26/202290/000'],
               ]
         #self.tableWidget.setRowCount(4) 
         #self.tableWidget.setItem(0,0, QTableWidgetItem("Name"))
@@ -238,8 +242,15 @@ class TableUi(QtWidgets.QMainWindow):
                 self.tableWidget.setItem(i,j, QTableWidgetItem(data[i][j]))
                 self.tableWidget.item(i,j).setTextAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
             #Adding BUtton in each row  
-            self.newBtnPlay=QtWidgets.QPushButton(self.tableWidget)
+            self.newPlayPanel=QtWidgets.QLabel(self.tableWidget)
+            self.newPlayPanel.setMaximumHeight(100)
+            #self.newPlayPanel.setStyleSheet("border:2px solid red")
+            self.newPlayPanel.setPixmap(QtGui.QPixmap("images/image 1.jpg"))
+            self.newPlayPanel.setScaledContents(True)
+            self.newBtnPlay=QtWidgets.QPushButton(self.newPlayPanel)
             self.newBtnDelete=QtWidgets.QPushButton(self.tableWidget)
+            self.verticalLayout = QtWidgets.QVBoxLayout(self.newPlayPanel)
+            self.verticalLayout.addWidget(self.newBtnPlay, alignment=QtCore.Qt.AlignCenter)
             self.newBtnPlay.setText("")
             self.newBtnDelete.setText("")
             self.newBtnPlay.setStyleSheet("background-color:none;border:none;color:white;")
@@ -252,15 +263,17 @@ class TableUi(QtWidgets.QMainWindow):
             icon2.addPixmap(QtGui.QPixmap("icon/deleteIcon.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
             self.newBtnPlay.setIcon(icon1)
             self.newBtnDelete.setIcon(icon2)
-            self.newBtnPlay.setIconSize(QtCore.QSize(19, 19))
+            self.newBtnPlay.setIconSize(QtCore.QSize(25, 25))
             self.newBtnDelete.setIconSize(QtCore.QSize(14,15))
-            self.tableWidget.setCellWidget(i,j+1,self.newBtnPlay)
+            self.tableWidget.setCellWidget(i,j+1,self.newPlayPanel)
+            #self.tableWidget.setCellWidget(i,j+2,self.newBtnPlay)
             self.tableWidget.setCellWidget(i,j+2,self.newBtnDelete)
             self.newBtnPlay.clicked.connect(lambda ch, i=i: self.buttonSome(i))
         self.btnDone.clicked.connect(self.close)
+        self.tableWidget.resizeRowsToContents()
     
     def buttonSome(self,i):
-        """print(i)"""
+        print(i)
 #main Window
 class MainUi(QtWidgets.QMainWindow):
     switch_window = QtCore.pyqtSignal()
@@ -504,7 +517,7 @@ class Controller:
             self.window.Selected.setText("IP Address Selected:")    
             self.window.File.setText(self.ipAdd)
             self.window.File.setStyleSheet("color:#678ADD;")
-        else:
+        elif self.window.selected==3:
             self.window.btnT_cctv.setStyleSheet("background-color:none")
             self.window.btnT_ipAdd.setStyleSheet("background-color:none")
             self.window.btnT_insertVideo.setStyleSheet("background-color:#678ADD")
