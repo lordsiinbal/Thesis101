@@ -1,5 +1,6 @@
 from asyncio.windows_events import NULL
 from itertools import count
+from operator import truediv
 from select import select
 from threading import local
 from PyQt5 import QtWidgets, uic
@@ -76,10 +77,10 @@ class myQLabel(QWidget):
         self.eraser_selected=False
         self._size=20
         "For Auto Segmentaion"
-        roi=[[[[312,0]],[[311,1]],[[311,2]],[[310,3]],[[309,3]],[[308,4]],[[307,5]],[[306,6]],[[305,6]],[[304,7]]]]
+        roi=[[[[0,0]],[[311,1]],[[311,2]],[[310,3]],[[309,3]],[[308,4]],[[307,5]],[[306,6]],[[305,6]],[[304,7]]]]
         pm=QtGui.QPixmap(self.draw.pixmap()) 
         painter=QtGui.QPainter(pm)
-        painter.setPen(QPen(QColor(0,255,0),100 ,Qt.SolidLine,Qt.RoundCap,Qt.RoundJoin))
+        painter.setPen(QPen(QColor(0,255,0),1 ,Qt.SolidLine,Qt.RoundCap,Qt.RoundJoin))
         transform=QTransform().scale(pm.width()/self.draw.width(),
                                     pm.height()/self.draw.height())    
         #loop through roi location
@@ -101,6 +102,7 @@ class myQLabel(QWidget):
         self.draw.setPixmap(pm)
         canvasPainter = QtGui.QPainter(self)
         canvasPainter.drawImage(self.rect(), self.image, self.image.rect())
+    
 
     def mousePressEvent(self, event):
         """Handle when mouse is pressed."""
@@ -124,6 +126,7 @@ class myQLabel(QWidget):
             painter.setCompositionMode(QPainter.CompositionMode_Clear)
             painter.eraseRect(eraser)
     def mouseReleaseEvent(self,e):
+        print(e.pos())
         self.last_x=None
         self.last_y=None
 class CctvWindow(QtWidgets.QWidget):
@@ -226,9 +229,10 @@ class TableUi(QtWidgets.QMainWindow):
         self.tableWidget.horizontalHeader().setStretchLastSection(True)
         self.tableWidget.horizontalHeader().setSectionResizeMode(
             QHeaderView.Stretch)
+       
         _translate = QtCore.QCoreApplication.translate
         data=[['01','Violated','San Felipe','0:00:10','01/26/202290/000','01/26/202290/000'],
-              ['02','Violated','SM Area','7 minutes','01/26/202290/000','01/26/202290/000'],
+              ['02','Violated','SM Area','7 minutessfasfasfafasfasfasfasfasfwewgberhgerthtrbtnjbfbgbeggw','01/26/202290/000','01/26/202290/000'],
               ]
         #self.tableWidget.setRowCount(4) 
         #self.tableWidget.setItem(0,0, QTableWidgetItem("Name"))
@@ -238,8 +242,15 @@ class TableUi(QtWidgets.QMainWindow):
                 self.tableWidget.setItem(i,j, QTableWidgetItem(data[i][j]))
                 self.tableWidget.item(i,j).setTextAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
             #Adding BUtton in each row  
-            self.newBtnPlay=QtWidgets.QPushButton(self.tableWidget)
+            self.newPlayPanel=QtWidgets.QLabel(self.tableWidget)
+            self.newPlayPanel.setMaximumHeight(100)
+            #self.newPlayPanel.setStyleSheet("border:2px solid red")
+            self.newPlayPanel.setPixmap(QtGui.QPixmap("images/image 1.jpg"))#image of detected vehicle
+            self.newPlayPanel.setScaledContents(True)
+            self.newBtnPlay=QtWidgets.QPushButton(self.newPlayPanel)
             self.newBtnDelete=QtWidgets.QPushButton(self.tableWidget)
+            self.verticalLayout = QtWidgets.QVBoxLayout(self.newPlayPanel)
+            self.verticalLayout.addWidget(self.newBtnPlay, alignment=QtCore.Qt.AlignCenter)
             self.newBtnPlay.setText("")
             self.newBtnDelete.setText("")
             self.newBtnPlay.setStyleSheet("background-color:none;border:none;color:white;")
@@ -252,15 +263,17 @@ class TableUi(QtWidgets.QMainWindow):
             icon2.addPixmap(QtGui.QPixmap("icon/deleteIcon.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
             self.newBtnPlay.setIcon(icon1)
             self.newBtnDelete.setIcon(icon2)
-            self.newBtnPlay.setIconSize(QtCore.QSize(19, 19))
+            self.newBtnPlay.setIconSize(QtCore.QSize(25, 25))
             self.newBtnDelete.setIconSize(QtCore.QSize(14,15))
-            self.tableWidget.setCellWidget(i,j+1,self.newBtnPlay)
+            self.tableWidget.setCellWidget(i,j+1,self.newPlayPanel)
+            #self.tableWidget.setCellWidget(i,j+2,self.newBtnPlay)
             self.tableWidget.setCellWidget(i,j+2,self.newBtnDelete)
             self.newBtnPlay.clicked.connect(lambda ch, i=i: self.buttonSome(i))
         self.btnDone.clicked.connect(self.close)
+        self.tableWidget.resizeRowsToContents()
     
     def buttonSome(self,i):
-        """print(i)"""
+        print(i)
 #main Window
 class MainUi(QtWidgets.QMainWindow):
     switch_window = QtCore.pyqtSignal()
@@ -272,11 +285,11 @@ class MainUi(QtWidgets.QMainWindow):
         super(MainUi, self).__init__()
         uic.loadUi('frontEndUi.ui', self)
         self.showMaximized()
-        self.setWindowFlag(Qt.FramelessWindowHint) 
+        self.setWindowFlag(Qt.FramelessWindowHint)
+        self.topInfo.hide()
+        self.selected="" 
         self.btnRecord.clicked.connect(self.switch_window.emit)
-        self.btnRoadSetup.clicked.connect(self.setUpVideo)
         self.btnLogout.clicked.connect(self.logout.emit)
-        self.btnAddVideo.clicked.connect(self.setUpVideo)
         self.btnIpAdd.clicked.connect(self.addIp.emit)
         self.btnCctv.clicked.connect(self.addCctv.emit)
         self.btnPlayback.clicked.connect(self.activePlayback)
@@ -286,6 +299,7 @@ class MainUi(QtWidgets.QMainWindow):
         self.verticalLayout.addWidget(self.image_main)
         self.eraserTool.clicked.connect(self.eraseSelected)
         self.drawTool.clicked.connect(self.drawSelected)
+        self.drawTool.setStyleSheet("background-color:#1D1F32")
         self.addSize.clicked.connect(self.addSizeFunction)
         self.subSize.clicked.connect(self.subSizeFunction)
         validatorInt=QIntValidator(0,500)
@@ -349,12 +363,16 @@ class MainUi(QtWidgets.QMainWindow):
         if self.image_main.eraser_selected==True:
             self.cursorForEraser()
     def drawSelected(self):
-         self.image_main.eraser_selected=False
-         self.image_main.setCursor(QtGui.QCursor((QtCore.Qt.ArrowCursor)))
+        self.drawTool.setStyleSheet("background-color:#1D1F32")
+        self.eraserTool.setStyleSheet("background-color:none")
+        self.image_main.eraser_selected=False
+        self.image_main.setCursor(QtGui.QCursor((QtCore.Qt.ArrowCursor)))
 
     def eraseSelected(self):
         self.image_main.eraser_selected=True
         self.cursorForEraser()
+        self.eraserTool.setStyleSheet("background-color:#1D1F32")
+        self.drawTool.setStyleSheet("background-color:none")
         #self.image_main.setOverrideCursor(cursor)
     def cursorForEraser(self):
         
@@ -370,8 +388,6 @@ class MainUi(QtWidgets.QMainWindow):
         
 
     #Function display Video    
-    def setUpVideo(self): #Initialize click event
-        self.roadSwitch.emit()
     
        
 
@@ -400,10 +416,16 @@ class Controller:
         self.window.switch_window.connect(self.showTable)
         self.window.roadSwitch.connect(self.showRoadSetup)
         self.window.addIp.connect(self.showUseIpAdd)
+        self.window.btnRoadSetup.clicked.connect(self.showRoadSetup)
+        self.window.btnT_ipAdd.clicked.connect(self.showUseIpAdd)
+        self.window.btnT_insertVideo.clicked.connect(self.addVideo)
+        self.window.btnT_cctv.clicked.connect(self.showUseCctv)
         self.window.logout.connect(self.show_logout)
         self.window.addCctv.connect(self.showUseCctv)
+        self.window.btnAddVideo.clicked.connect(self.addVideo)
         self.window.btnDone_paint.clicked.connect(self.settingUpRoad_From_paint)
         self.window.btnCancel_paint.clicked.connect(self.showRoadSetup)
+
         self.window.show()
         self.login.close()
     def settingUpRoad_From_paint(self):
@@ -413,25 +435,31 @@ class Controller:
 
     def showUseCctv(self):
         self.cctvWidget=CctvWindow()
+        self.window.selected=1
         self.cctvWidget.show()
         self.cctvWidget.btnDone.clicked.connect(self.setCctvSelected)
     def setCctvSelected(self):
-        self.window.Selected.setText("CCTV is Active:")
+        self.showRoadSetup()
         self.cctvWidget.close()
 
     def showUseIpAdd(self):
         self.IpAddWindow=IpAddWindow()
         self.IpAddWindow.btnDone.clicked.connect(self.setIpSetected)         
         self.IpAddWindow.show()
+    def addVideo(self):
+        self.window.selected=3
+        self.showRoadSetup()
+
     def setIpSetected(self):
-        ipAdd=self.IpAddWindow.textBox.text()
-        if ipAdd==None:
+        self.ipAdd=self.IpAddWindow.textBox.text()
+        self.window.selected=2
+        if self.ipAdd=="":
             self.window.File.setText("")    
             return
         else:
-            self.window.Selected.setText("IP Address Selected:")    
-            self.window.File.setText(ipAdd)
+            
             self.IpAddWindow.close()
+            self.showRoadSetup()
           
 
     def showTable(self):
@@ -466,11 +494,38 @@ class Controller:
     #this function whill display image    
     def showScreenImage(self):
         self.window.labelScreen.setPixmap(QtGui.QPixmap("images/image 1.jpg")) #setting image inside QLabel
-        self.window.labelScreen.setMinimumSize(QtCore.QSize(0, 400))#setting minimum heigth
+        #self.window.labelScreen.setMinimumSize(QtCore.QSize(0, 400))#setting minimum heigth
         self.window.label.setText("San Felipe")
         self.window.verticalLayout_11.addWidget(self.window.frameWatch)#removing center aligment of frameWatch
         self.window.frameButtons_2.hide()
-        #Closing Road Setting 
+        self.activeButton()
+        self.window.topInfo.show()
+
+        #Closing Road Setting
+    def activeButton(self):
+        if self.window.selected==1:
+            self.window.btnT_cctv.setStyleSheet("background-color:#678ADD")
+            self.window.btnT_ipAdd.setStyleSheet("background-color:none")
+            self.window.btnT_insertVideo.setStyleSheet("background-color:none")
+            self.window.Selected.setText("Live CAM Selected:")
+            self.window.File.setText("Live")
+            self.window.File.setStyleSheet("color:red")
+        elif self.window.selected==2:
+            self.window.btnT_cctv.setStyleSheet("background-color:none")
+            self.window.btnT_ipAdd.setStyleSheet("background-color:#678ADD")
+            self.window.btnT_insertVideo.setStyleSheet("background-color:none")
+            self.window.Selected.setText("IP Address Selected:")    
+            self.window.File.setText(self.ipAdd)
+            self.window.File.setStyleSheet("color:#678ADD;")
+        elif self.window.selected==3:
+            self.window.btnT_cctv.setStyleSheet("background-color:none")
+            self.window.btnT_ipAdd.setStyleSheet("background-color:none")
+            self.window.btnT_insertVideo.setStyleSheet("background-color:#678ADD")
+            self.window.Selected.setText("Video File Selected:")
+            self.window.File.setText("Path")
+            self.window.File.setStyleSheet("color:#678ADD;")
+            
+
     def select(self):
         print("Select Image")       
 if __name__ == '__main__':
