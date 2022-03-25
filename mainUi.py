@@ -245,7 +245,7 @@ class TableUi(QtWidgets.QMainWindow):
             self.newPlayPanel=QtWidgets.QLabel(self.tableWidget)
             self.newPlayPanel.setMaximumHeight(100)
             #self.newPlayPanel.setStyleSheet("border:2px solid red")
-            self.newPlayPanel.setPixmap(QtGui.QPixmap("images/image 1.jpg"))
+            self.newPlayPanel.setPixmap(QtGui.QPixmap("images/image 1.jpg"))#image of detected vehicle
             self.newPlayPanel.setScaledContents(True)
             self.newBtnPlay=QtWidgets.QPushButton(self.newPlayPanel)
             self.newBtnDelete=QtWidgets.QPushButton(self.tableWidget)
