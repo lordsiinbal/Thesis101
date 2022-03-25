@@ -53,8 +53,12 @@ class Stationary:
                 # if it already exists, continue to next loop
                 track.mark_missed()
                 continue
+            
             if distances[index_min] < track.thresh: # if true, consider candidate vehicle
-                match = 1 - (track.descriptor - descriptors[index_min])/64
+                descriptors[index_min] = cv2.resize(descriptors[index_min], (track.descriptor.shape[1],track.descriptor.shape[0]))
+                result = cv2.matchTemplate(track.descriptor,descriptors[index_min], cv2.TM_CCORR_NORMED)
+                _, match, _, _ = cv2.minMaxLoc(result, None)
+                # match = 1 - (track.descriptor - descriptors[index_min])/64
                 if match > self.match_thresh:
                     min_dists.append(index_min) 
                     if self.get_iou(track.xyxy, self._xywh_to_xyxy(xywhs[index_min])) > self.iou_thresh: 
@@ -110,8 +114,8 @@ class Stationary:
         for box in bbox_xywh:
             x1, y1, x2, y2 = self._xywh_to_xyxy(box)
             im = ori_img[y1:y2, x1:x2]
-            im = Image.fromarray(im)
-            im = imagehash.phash(im)
+            # im = Image.fromarray(im)
+            # im = imagehash.phash(im)
             descriptors.append(im)
         return descriptors
 

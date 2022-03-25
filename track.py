@@ -126,7 +126,7 @@ def detect(opt):
     PREV_XY = numpy.asarray(PREV_XY, dtype=float)
     start_time = time_sync()
 
-    stationary = Stationary(n_init=dataset.fps, max_age=900, match_thresh = 0.7, iou_thresh = 0.5)
+    stationary = Stationary(n_init=dataset.fps, max_age=900, match_thresh = 0.8, iou_thresh = 0.7)
     
     for frame_idx, (path, img, im0s, vid_cap, s, fps, tim, frm_id) in enumerate(dataset):
         t1 = time_sync()
@@ -204,12 +204,12 @@ def detect(opt):
                     if len(xy) > 0:
                         t4 = time_sync()
                         # outputs = deepsort.update(xywhs.cpu(), confs.cpu(), clss.cpu(), imc) # updating list of tracked stationary vehicles
-                        imcc = cv2.cvtColor(imc, cv2.COLOR_BGR2GRAY)
+                        # imcc = cv2.cvtColor(imc, cv2.COLOR_BGR2GRAY)
                         # imcc = cv2.GaussianBlur(imcc, (3,3),0)
                         # updating list of tracked stationary vehicles
                       
                         outputs = stationary.update(
-                            xy, xywhs.cpu(), clss.cpu(), imcc)
+                            xy, xywhs.cpu(), clss.cpu(), imc)
 
                         t5 = time_sync()
                         dt[3] += t5 - t4
@@ -280,10 +280,10 @@ def detect(opt):
                                     vehicleInfos['class'].append(
                                         names[c])
                                     col = (0, 140, 255)
-                                label = f'{id} - {names[c]} | {t}'
+                                label = f'{id} - {names[c]}'
                                 # label1 = f'{output1[4]} - {names[c]}'
                                 annotator.box_label(bboxes, label, color=col)
-                                annotator.draw_thresh((output[6],output[7]),(output[10],output[11]), output[8], output[9])
+                                # annotator.draw_thresh((output[6],output[7]),(output[10],output[11]), output[8], output[9])
                                 
                                 # annotator.box_label(bboxes, label1, color=(0,255,0))
                                 
