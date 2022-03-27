@@ -14,6 +14,8 @@ class dc_violation(Document):
     endDateAndTime = StringField()
     frameStart = StringField()
     vehicleClass = StringField()
+    vehicleCrop = StringField()
+    
     
     
 
@@ -28,7 +30,9 @@ class dc_violation(Document):
             "startDateAndTime": self.startDateAndTime,
             "endDateAndTime": self.endDateAndTime,
             "frameStart": self.frameStart,
-            "vehicleClass": self.vehicleClass
+            "vehicleClass": self.vehicleClass,
+            "vehicleCrop": self.vehicleCrop
+            
             
             
         }

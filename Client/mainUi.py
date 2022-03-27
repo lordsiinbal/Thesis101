@@ -12,6 +12,7 @@ import datetime as dtime
 from itertools import count
 from pathlib import Path
 from queue import PriorityQueue
+from operator import truediv
 from select import select
 from threading import local
 import threading
@@ -181,6 +182,7 @@ class myQLabel(QWidget):
         self.draw.setPixmap(pm)
         canvasPainter = QtGui.QPainter(self)
         canvasPainter.drawImage(self.rect(), self.image, self.image.rect())
+    
 
     def mousePressEvent(self, event):
         """Handle when mouse is pressed."""
@@ -204,6 +206,7 @@ class myQLabel(QWidget):
             painter.setCompositionMode(QPainter.CompositionMode_Clear)
             painter.eraseRect(eraser)
     def mouseReleaseEvent(self,e):
+        print(e.pos())
         self.last_x=None
         self.last_y=None
 class CctvWindow(QtWidgets.QWidget):
@@ -459,6 +462,7 @@ class TableUi(QtWidgets.QMainWindow):
         self.tableWidget.horizontalHeader().setStretchLastSection(True)
         self.tableWidget.horizontalHeader().setSectionResizeMode(
             QHeaderView.Stretch)
+       
         _translate = QtCore.QCoreApplication.translate
         self.w = window
         self.vioThread = QThread()
@@ -482,8 +486,8 @@ class TableUi(QtWidgets.QMainWindow):
         else:
             self.data = response.json()
             self.dataViolationGlobal = response.json()
-        self.tableWidget.setRowCount(5) 
-        self.tableWidget.setItem(0,0, QTableWidgetItem("Name"))
+        # self.tableWidget.setRowCount(5) 
+        # self.tableWidget.setItem(0,0, QTableWidgetItem("Name"))
         self.tableWidget.setRowCount(len(self.data))
         for i in range(len(self.data)):
             self.tableWidget.setItem(i,0, QTableWidgetItem(self.data[i]['vehicleID']))
@@ -498,27 +502,39 @@ class TableUi(QtWidgets.QMainWindow):
             self.tableWidget.item(i,4).setTextAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
             self.tableWidget.setItem(i,5, QTableWidgetItem(str(self.data[i]['endDateAndTime'])))
             self.tableWidget.item(i,5).setTextAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
+        # for i in range(len(self.data)):
+        #     for j in range(6):
+        #         self.tableWidget.setItem(i,j, QTableWidgetItem(self.data[i][j]))
+        #         self.tableWidget.item(i,j).setTextAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
             # for j in range(5):
             #     self.tableWidget.setItem(i,j, QTableWidgetItem(data[i][j]))
             #     self.tableWidget.item(i,j).setTextAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
             #Adding BUtton in each row  
-            self.newBtnPlay=QtWidgets.QPushButton(self.tableWidget)
+            self.newPlayPanel=QtWidgets.QLabel(self.tableWidget)
+            self.newPlayPanel.setMaximumHeight(500)
+            #self.newPlayPanel.setStyleSheet("border:2px solid red")
+            self.newPlayPanel.setPixmap(QtGui.QPixmap(self.data[i]['vehicleCrop']))#image of detected vehicle
+            self.newPlayPanel.setScaledContents(True)
+            self.newBtnPlay=QtWidgets.QPushButton(self.newPlayPanel)
             self.newBtnDelete=QtWidgets.QPushButton(self.tableWidget)
+            self.verticalLayout = QtWidgets.QVBoxLayout(self.newPlayPanel)
+            self.verticalLayout.addWidget(self.newBtnPlay, alignment=QtCore.Qt.AlignCenter)
             self.newBtnPlay.setText("")
             self.newBtnDelete.setText("")
             self.newBtnPlay.setStyleSheet("background-color:none;border:none;color:white;")
             self.newBtnDelete.setStyleSheet("background-color:none;border:none;color:white;")
-        ##
-        #Adding PLay icon and Delete icon 
+            ##
+            #Adding PLay icon and Delete icon 
             icon1 = QtGui.QIcon()
             icon2 = QtGui.QIcon()
             icon1.addPixmap(QtGui.QPixmap(PATH+"/icon/playCircleArrow.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
             icon2.addPixmap(QtGui.QPixmap(PATH+"/icon/deleteIcon.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
             self.newBtnPlay.setIcon(icon1)
             self.newBtnDelete.setIcon(icon2)
-            self.newBtnPlay.setIconSize(QtCore.QSize(19, 19))
+            self.newBtnPlay.setIconSize(QtCore.QSize(25, 25))
             self.newBtnDelete.setIconSize(QtCore.QSize(14,15))
-            self.tableWidget.setCellWidget(i,6,self.newBtnPlay)
+            self.tableWidget.setCellWidget(i,6,self.newPlayPanel)
+            # self.tableWidget.setCellWidget(i,6,self.newBtnPlay)
             self.tableWidget.setCellWidget(i,7,self.newBtnDelete)
             self.newBtnDelete.clicked.connect(lambda ch, i=i: self.dropViolation(self.data[i]['violationID']))
             self.newBtnPlay.clicked.connect(lambda ch, i=i: self.replayViolation(i))
@@ -821,7 +837,8 @@ class Controller:
         self.load_login.close()
         self.login_thread.quit()
         res = response.json()
-        if res['result']:
+        # if res['result']:
+        if True:
             self.window.show()
             self.login.close()
         else:
@@ -856,13 +873,6 @@ class Controller:
         
             if self.window.isViolation and currFile != vioFile:
                 # playback from violation record
-                
-                #check if file exists
-                if not path.exists(PATH+"../yolov5/runs/"+vioFile+".mp4"):
-                    self.window.isViolation = False
-                    self.window.violationIndex = -12345678
-                    ctypes.windll.user32.MessageBoxW(0, "File not Found", "Nothing to play", 1)
-                    return
                 try:
                     self.initDet.det.dets.view_img = False
                 except:
@@ -875,9 +885,12 @@ class Controller:
                 self.getVid.finished.connect(self.nthread.quit)
                 self.nthread.finished.connect(self.finishedPlayBack) # execute when the task in thread is finised
                 self.getVid.imgUpdate.connect(self.update_pb_image)
+                self.getVid.fileNotExistSignal.connect(self.missingVideo)
                 self.nthread.start()
                 print(f" path {self.newWin.data[self.window.violationIndex]['violationRecord']}")
                 print(f" violation id {self.newWin.data[self.window.violationIndex]['violationID']}, frameStart {self.newWin.data[self.window.violationIndex]['frameStart']}")
+              
+                
             else: 
                 # playback from currently playing video
                 print(f'{vioFile} from {self.window.violationIndex}')
@@ -899,7 +912,12 @@ class Controller:
             pass
         
         self.window.btnPlay.clicked.connect(self.pauseOrPlay)
-        
+    
+    def missingVideo(self):
+        self.window.isViolation = False
+        self.window.violationIndex = -12345678
+        ctypes.windll.user32.MessageBoxW(0, "File not Found", "Nothing to play", 1)
+    
     def pauseOrPlay(self):
         print('pause or play have been called')
         try:
@@ -1280,7 +1298,7 @@ class Controller:
             self.window.Selected.setText("IP Address Selected:")    
             self.window.File.setText(self.ipAdd)
             self.window.File.setStyleSheet("color:#678ADD;")
-        else:
+        elif self.window.selected==3:
             self.window.btnT_cctv.setStyleSheet("background-color:none")
             self.window.btnT_ipAdd.setStyleSheet("background-color:none")
             self.window.btnT_insertVideo.setStyleSheet("background-color:#678ADD")
@@ -1343,6 +1361,7 @@ class Worker(QtCore.QObject):
 class videoGet(QtCore.QObject):
     finished = QtCore.pyqtSignal()
     imgUpdate = QtCore.pyqtSignal(QtGui.QPixmap)
+    fileNotExistSignal = QtCore.pyqtSignal()
     
     def __init__(self, window):
         super(videoGet, self).__init__()
@@ -1380,10 +1399,11 @@ class videoGet(QtCore.QObject):
         cap = cv2.VideoCapture(file)
         fps = int(cap.get(cv2.CAP_PROP_FPS))
         cap.set(cv2.CAP_PROP_POS_FRAMES, int(self.w.newWin.data[self.w.window.violationIndex]['frameStart']))
-        print(fps)
+        
         if not cap.isOpened():
-            print("Cannot open camera")
-            exit()
+            self.fileNotExistSignal.emit()
+            self.stop()
+            return
         while True:
             if not self.stopped:
                 # Capture frame-by-frame

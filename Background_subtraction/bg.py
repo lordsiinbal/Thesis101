@@ -21,6 +21,7 @@ class bg:
         
     
     def sub(self, cap, FOI):
+        print('not live')
         frames = []
         for i,(f) in enumerate(FOI):
             print(i, end='\r')
