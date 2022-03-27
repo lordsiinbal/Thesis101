@@ -52,45 +52,56 @@ data(){
     return{
         roadList:[],
         twentyFour:0,seven:0, thirty:0,
-        chartData:[{
-                name:'',
-                data:{
-                    day1:0,
-                    day2:0,
-                    day3:0,
-                    day4:0,
-                    day5:0,
-                    day6:0,
-                    day7:0,
-                    day8:0,
-                    day9:0,
-                    day10:0,
-                    day11:0,
-                    day12:0,
-                    day13:0,
-                    day14:0,
-                    day15:0,
-                    day16:0,
-                    day17:0,
-                    day18:0,
-                    day19:0,
-                    day20:0,
-                    day21:0,
-                    day22:0,
-                    day23:0,
-                    day24:0,
-                    day25:0,
-                    day26:0,
-                    day27:0,
-                    day28:0,
-                    day29:0,
-                    day30:0,
-                    day31:0,
+        violationDate:null,
+        chartData:[
+                // {
+                // name:'',
+                // data:{
+                //     day1:1,
+                //     day2:2,
+                //     day3:0,
+                //     day4:0,
+                //     day5:0,
+                //     day6:0,
+                //     day7:0,
+                //     day8:0,
+                //     day9:0,
+                //     day10:0,
+                //     day11:0,
+                //     day12:0,
+                //     day13:0,
+                //     day14:0,
+                //     day15:0,
+                //     day16:0,
+                //     day17:0,
+                //     day18:0,
+                //     day19:0,
+                //     day20:0,
+                //     day21:0,
+                //     day22:0,
+                //     day23:0,
+                //     day24:0,
+                //     day25:0,
+                //     day26:0,
+                //     day27:0,
+                //     day28:0,
+                //     day29:0,
+                //     day30:0,
+                //     day31:0,
                     
                     
-                } 
-                },
+                // } 
+                // },
+                // {
+                // name:'road1',
+                // data:{
+                //     day1:9
+                // },
+                // }
+
         ],
+
+        
         violationNumber:"",
         violationRecord:[
             {   
@@ -119,6 +130,7 @@ data(){
 },
 created(){
     this.getViolation();
+    
   },
 methods:{
     diff_hours(dt2, dt1){
@@ -142,8 +154,8 @@ methods:{
             const currentDate = new Date();
             var twentyFour=0,seven=0,thirty=0
             for(var ctr=0;ctr<=this.violationRecord.length-1 ; ctr++){
-            const violationDate = new Date(this.violationRecord[ctr]['endDateAndTime']);
-            var hours = this.diff_hours(currentDate, violationDate)
+            this.violationDate = new Date(this.violationRecord[ctr]['endDateAndTime']);
+            var hours = this.diff_hours(currentDate, this.violationDate)
             if (parseInt(hours)<=24){
                 twentyFour=twentyFour+1;
             }
@@ -170,6 +182,10 @@ methods:{
                 this.hourDifference();
                 this.violation("24");
                 this.roadFilter();
+                this.dataName();
+
+                // //ini ang gibohun mo para ma access mo ang list of list naka 2d array sya
+                // console.log(this.chartData[0]['data'].day1,"day1")
             })
     },
     
@@ -178,24 +194,45 @@ methods:{
         for(var ctr=0;ctr<this.violationRecord.length;ctr++){
             if(this.roadList.includes(this.violationRecord[ctr]['roadID'])==false){
                 this.roadList.push(this.violationRecord[ctr]['roadID']);
-                console.log("road",this.roadList);
+                // console.log("road",this.roadList);
             }
 
         }
         console.log("asd",this.roadList);
     },
-    // Data(){
-    //     for(var ctr=0;ctr<this.roadList.length;ctr++){
-    //        if(this.chartData.includes(this.roadList[ctr])){
-    //             this.chartData[] = 
-    //        }
-    //     }
+    dataName(){
+        this.chartData=[]
+        
+        for(var ctr=0;ctr<this.roadList.length;ctr++){
+         this.chartData.push({name:this.roadList[ctr]})
+        }
+        console.log("qwe3", this.chartData)
+        this.dataDay();
+    },
+    dataDay(){
+        var sortedRecord=this.violationRecord.reverse(function(a,b){
+               return new Date(b.endDateAndTime) - new Date(a.endDateAndTime);
+            });
+        // console.log("sorted",sortedRecord)
+        // console.log("not", this.violationRecord)
 
-    // },
+        console.log(this.chartData[0]['name'])
+        for(var ctr=0; ctr<this.chartData.length;ctr++){
+            this.chartData[ctr].data={};
+            for(var ctr2=0; ctr2<sortedRecord.length;ctr2++){
+                
+                if (this.chartData[ctr]['name'] == sortedRecord[ctr2]['roadID']){
+                    this.chartData[ctr].data[sortedRecord[ctr2]['endDateAndTime']]= sortedRecord[ctr2]['endDateAndTime']                
+                    // console.log("ela",this.violationRecord[ctr]['roadID'])
+                    
+                }
+                
+            }
+            
+        }
+        console.log(this.chartData,"ela")
+    },
 
-
-
-    
 }
 
 }

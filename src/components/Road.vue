@@ -2,12 +2,12 @@
     <div class="container">
 <div class="headContainer">
       <div class="text-white">
-          <h5>100,000</h5>
+          <h5>{{roadNumber}}</h5>
           <h5> Road</h5>
       </div>
       <div>
                 <div class='selection text-white'>
-                    <input type="seach" placeholder="search"/>
+                    <input type="search" v-model="searchQuery" placeholder="Search"/>
                     <button><img src="icons/iconSearch.svg"/></button>
                 </div>
         </div>
@@ -20,10 +20,10 @@
             <th> Road Name</th>
             <th> Screenshot</th>
       </tr>
-      <tr class="containerValue container text-white" v-for="record in roadRecord" :key="record.roadId" >
-            <td> {{record.roadId}}</td>
+      <tr class="containerValue container text-white" v-for="record in resultQuery()" :key="record.roadID" >
+            <td> {{record.roadID}}</td>
             <td> {{record.roadName}}</td>
-            <td> <img :src="record.screenShot"></td>
+            <!-- <td> <img :src="record.screenShot"></td> -->
             
       </tr>
   </table>
@@ -34,22 +34,53 @@
 </template>
 
 <script>
+import api from '../api';
 export default {
 data(){
     return{
-        roadRecord:[
+        searchQuery: null,
+        roadNumber:"",
+        roadRecord1:[
             {   
-                roadId:'R-0000001',
-                roadName:'Cararayan',
-                screenShot:'image/roadImage.jpg',
-            },
-             {   
-                roadId:'R-0000001',
-                roadName:'Cararayan',
-                screenShot:'image/roadImage.jpg',
+                roadID:'',
+                roadName:'',
+                roadBoundaryCoordinates:'',
+                roadCaptured:''
             },
         ]
     }
+},
+created(){
+    this.getRoad();
+
+},
+methods:{
+
+    getRoad(){
+        api
+            .get("/RoadFetchAll")
+            .then((res) => {
+            this.roadRecord1 = res.data;
+
+                console.log(this.roadRecord1[0]);
+
+
+            })
+    },
+     resultQuery() {
+      if (this.searchQuery) {
+        return this.roadRecord1.filter(item => {
+          return this.searchQuery
+            .toLowerCase()
+            .split(" ")
+            .every(v => item.roadName.toLowerCase().includes(v));   
+        });
+      } else {
+          this.roadNumber= this.roadRecord1.length
+        return this.roadRecord1;
+      }
+    }
+
 }
 
 }
