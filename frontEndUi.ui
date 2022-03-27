@@ -569,6 +569,12 @@ color:white;
           </item>
           <item>
            <widget class="QFrame" name="topInfo">
+            <property name="maximumSize">
+             <size>
+              <width>550</width>
+              <height>16777215</height>
+             </size>
+            </property>
             <property name="frameShape">
              <enum>QFrame::StyledPanel</enum>
             </property>
@@ -718,11 +724,17 @@ color:#678ADD;
                 </item>
                 <item>
                  <widget class="QLabel" name="File">
+                  <property name="styleSheet">
+                   <string notr="true"/>
+                  </property>
                   <property name="text">
                    <string/>
                   </property>
                   <property name="alignment">
                    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                  </property>
+                  <property name="wordWrap">
+                   <bool>true</bool>
                   </property>
                  </widget>
                 </item>
