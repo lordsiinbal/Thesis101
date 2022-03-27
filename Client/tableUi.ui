@@ -184,7 +184,7 @@ padding-top:5px;
          </column>
          <column>
           <property name="text">
-           <string>Violation</string>
+           <string>Violation ID</string>
           </property>
           <property name="textAlignment">
            <set>AlignCenter</set>
