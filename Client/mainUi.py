@@ -837,8 +837,7 @@ class Controller:
         self.load_login.close()
         self.login_thread.quit()
         res = response.json()
-        # if res['result']:
-        if True:
+        if res['result']:
             self.window.show()
             self.login.close()
         else:
