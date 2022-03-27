@@ -10,6 +10,7 @@ import json
 import ctypes
 import datetime as dtime
 from itertools import count
+import multiprocessing
 from pathlib import Path
 from queue import PriorityQueue
 from operator import truediv
@@ -502,16 +503,9 @@ class TableUi(QtWidgets.QMainWindow):
             self.tableWidget.item(i,4).setTextAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
             self.tableWidget.setItem(i,5, QTableWidgetItem(str(self.data[i]['endDateAndTime'])))
             self.tableWidget.item(i,5).setTextAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
-        # for i in range(len(self.data)):
-        #     for j in range(6):
-        #         self.tableWidget.setItem(i,j, QTableWidgetItem(self.data[i][j]))
-        #         self.tableWidget.item(i,j).setTextAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
-            # for j in range(5):
-            #     self.tableWidget.setItem(i,j, QTableWidgetItem(data[i][j]))
-            #     self.tableWidget.item(i,j).setTextAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
             #Adding BUtton in each row  
             self.newPlayPanel=QtWidgets.QLabel(self.tableWidget)
-            self.newPlayPanel.setMaximumHeight(500)
+            self.newPlayPanel.setMaximumHeight(100)
             #self.newPlayPanel.setStyleSheet("border:2px solid red")
             self.newPlayPanel.setPixmap(QtGui.QPixmap(self.data[i]['vehicleCrop']))#image of detected vehicle
             self.newPlayPanel.setScaledContents(True)
@@ -539,6 +533,7 @@ class TableUi(QtWidgets.QMainWindow):
             self.newBtnDelete.clicked.connect(lambda ch, i=i: self.dropViolation(self.data[i]['violationID']))
             self.newBtnPlay.clicked.connect(lambda ch, i=i: self.replayViolation(i))
         self.btnDone.clicked.connect(self.close)
+        self.tableWidget.resizeRowsToContents()
         self.show()
     
     def dropViolation(self,violation_ID):
@@ -573,8 +568,6 @@ class TableUi(QtWidgets.QMainWindow):
         self.loadData.closeWindow()
 
     def replayViolation(self,i):
-        print(self.data[i]['violationID'])
-        print(self.data[i]['frameStart'])
         # self.close()
         self.w.window.isViolation = True
         self.w.window.violationIndex = i
@@ -845,8 +838,8 @@ class Controller:
     def watch(self):
         try:
             self.getVid.stop()
+            self.nthread.quit()
             self.pause = True
-            self.getVid.playOrPause(False)
             self.window.btnPlay.disconnect()
             self.initDet.det.dets.view_img = True
         except Exception as er:
@@ -855,11 +848,12 @@ class Controller:
     def playBack(self):
         try:
             try:
-                self.getVid.playOrPause(False)
+                self.window.btnPlay.disconnect()
                 self.getVid.stop()
+                self.nthread.quit()
                 self.nthread.wait()
                 self.pause = True
-                self.window.btnPlay.disconnect()
+                print('aaaaaaaaaa',self.window.violationIndex)
             except Exception as er:
                 print('error ini', er)
                 pass
@@ -869,9 +863,9 @@ class Controller:
                 vioFile = str(self.newWin.data[self.window.violationIndex]['violationRecord']).split('\\')[-1]
             except:
                 vioFile = None
-        
             if self.window.isViolation and currFile != vioFile:
                 # playback from violation record
+                print('in violation')
                 try:
                     self.initDet.det.dets.view_img = False
                 except:
@@ -886,15 +880,12 @@ class Controller:
                 self.getVid.imgUpdate.connect(self.update_pb_image)
                 self.getVid.fileNotExistSignal.connect(self.missingVideo)
                 self.nthread.start()
-                print(f" path {self.newWin.data[self.window.violationIndex]['violationRecord']}")
-                print(f" violation id {self.newWin.data[self.window.violationIndex]['violationID']}, frameStart {self.newWin.data[self.window.violationIndex]['frameStart']}")
-              
+  
                 
             else: 
+                print('in live')
                 # playback from currently playing video
-                print(f'{vioFile} from {self.window.violationIndex}')
                 self.frameStart = int(self.newWin.data[self.window.violationIndex]['frameStart']) if vioFile is not None else 0
-                print(f'frame start of video {self.frameStart}')
                 self.initDet.det.dets.view_img = False
                 self.vQueue = self.initDet.det.dets.vidFrames.copy()
                 self.pause = True
@@ -931,6 +922,8 @@ class Controller:
         self.window.isViolation = False
         self.window.violationIndex = -12345678
         print('finished playing video')
+        
+        
 
     def update_pb_image(self, qim):
         self.window.image.setPixmap(qim)
@@ -1366,12 +1359,11 @@ class videoGet(QtCore.QObject):
         super(videoGet, self).__init__()
         self.w = window
         self.pause = self.w.pause
-        # vid = window.initDet.det.dets.vid_path
-        # # print(vid)
-        # self.stream = cv2.VideoCapture(vid)
-        # (self.grabbed, self.frame) = self.stream.read()
-        # self.fps = int(self.stream.get(cv2.CAP_PROP_FPS))
         self.stopped = False
+        try:
+            self.index = window.window.violationIndex
+        except:
+            pass
      
         
     def run(self):
@@ -1391,18 +1383,17 @@ class videoGet(QtCore.QObject):
             while self.pause:
                 # loop here until pause is lifted
                 print('paused',end='\r')
-            
-        self.stop()
-    def runFromViolation(self):
-        file = self.w.newWin.data[self.w.window.violationIndex]['violationRecord']
-        cap = cv2.VideoCapture(file)
-        fps = int(cap.get(cv2.CAP_PROP_FPS))
-        cap.set(cv2.CAP_PROP_POS_FRAMES, int(self.w.newWin.data[self.w.window.violationIndex]['frameStart']))
+        self.finished.emit()   
         
+    def runFromViolation(self):
+        file = self.w.newWin.data[self.index]['violationRecord']
+        cap = cv2.VideoCapture(file)
         if not cap.isOpened():
             self.fileNotExistSignal.emit()
-            self.stop()
             return
+        fps = int(cap.get(cv2.CAP_PROP_FPS))
+        cap.set(cv2.CAP_PROP_POS_FRAMES, int(self.w.newWin.data[self.index]['frameStart']))
+        
         while True:
             if not self.stopped:
                 # Capture frame-by-frame
@@ -1422,14 +1413,14 @@ class videoGet(QtCore.QObject):
             
             while self.pause:
                 # loop here until pause is lifted
-                print('paused',end='\r')
-            print(end='')
-        self.stop()
+                print('paused', end='\r')
+        self.finished.emit()  
            
     def stop(self):
         print('stopped')
+        self.pause = False
         self.stopped = True  
-        self.finished.emit()   
+        
     
     def playOrPause(self, val):
         self.pause = val
