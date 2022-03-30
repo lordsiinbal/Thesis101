@@ -187,9 +187,10 @@ class VideoGet:
                 (self.grabbed, self.frame) = self.stream.read()
                 timeDiff = time.time() - now
                 if (timeDiff<1.0/(self.fps)):
-                    time.sleep((1.0/(self.fps)) - timeDiff)
+                    time.sleep((1.0/(self.fps))- timeDiff)
                 else:
                     print(' ',  end='\r')
+        self.stream.release()
                  
                 
 
@@ -297,6 +298,68 @@ class LoadImages:
     def __len__(self):
         return self.nf  # number of files
 
+class LoadLiveStreams:
+    # YOLOv5 streamloader, i.e. `python detect.py --source 'rtsp://example.com/media.mp4'  # RTSP, RTMP, HTTP streams`
+    def __init__(self, sources='', img_size=640, stride=32, auto=True):
+        self.mode = 'stream'
+        self.img_size = img_size
+        self.stride = stride
+        self.sources = [sources]
+        s = sources
+        n = 1 # how many sources
+        self.imgs, self.fps, self.frame_num, self.threads = [None] * n, [0] * n, [0] * n, [None] * n
+        self.auto = auto
+        # Start thread to read frames from video stream
+        st = f'{1}/{n}: {s}... '
+        if 'youtube.com/' in s or 'youtu.be/' in s:  # if source is YouTube video
+            check_requirements(('pafy', 'youtube_dl==2020.12.2'))
+            import pafy
+            s = pafy.new(s).getbest(preftype="mp4").url  # YouTube URL
+        self.s = eval(s) if s.isnumeric() else s  # i.e. s = '0' local webcam
+
+
+    def begin(self):
+        self.video_getter = VideoGet(self.s).start()
+        # self.frames = self.video_getter.nframes
+        self.fps = self.video_getter.fps
+        self.cap = self.video_getter.stream
+        w = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        h = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        return self.video_getter
+        
+
+    def __iter__(self):
+        self.count = -1
+        return self
+
+    def __next__(self):
+        t = time.time()
+        self.count += 1
+        ret_val = self.video_getter.grabbed
+        if not ret_val:
+            LOGGER.warning('Error in reading video')
+            raise StopIteration
+        img0 = self.video_getter.frame
+        img0 = cv2.resize(img0, (1280,720), interpolation=cv2.INTER_NEAREST)
+        self.frame = self.video_getter.frames
+
+        # Letterbox
+
+        img = letterbox(img0, self.img_size, stride=self.stride, auto=self.auto)[0]
+
+        # Convert
+        img = img.transpose((2, 0, 1))[::-1]  # HWC to CHW, BGR to RGB
+        img = np.ascontiguousarray(img)
+        return self.sources, img, img0, None, '',self.frame,self.fps,True,t
+
+    def __len__(self):
+        return len(self.sources)  # 1E12 frames = 32 streams at 30 FPS for 30 years
+
+
+def img2label_paths(img_paths):
+    # Define label paths as a function of image paths
+    sa, sb = os.sep + 'images' + os.sep, os.sep + 'labels' + os.sep  # /images/, /labels/ substrings
+    return [sb.join(x.rsplit(sa, 1)).rsplit('.', 1)[0] + '.txt' for x in img_paths]
 
 class LoadWebcam:  # for inference
     # YOLOv5 local webcam dataloader, i.e. `python detect.py --source 0`
@@ -354,7 +417,7 @@ class LoadStreams:
             sources = [sources]
 
         n = len(sources)
-        self.imgs, self.fps, self.vid_fps, self.threads = [None] * n, [0] * n, [0] * n, [None] * n
+        self.imgs, self.fps, self.frame_num, self.threads = [None] * n, [0] * n, [0] * n, [None] * n
         self.sources = [clean_str(x) for x in sources]  # clean source names for later
         self.auto = auto
         for i, s in enumerate(sources):  # index, source
@@ -370,12 +433,12 @@ class LoadStreams:
             w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
             h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
             fps = cap.get(cv2.CAP_PROP_FPS)  # warning: may return 0 or nan
-            self.vid_fps[i] = max(int(cap.get(cv2.CAP_PROP_FRAME_COUNT)), 0) or float('inf')  # infinite stream fallback
+            self.frame_num[i] = max(int(cap.get(cv2.CAP_PROP_FRAME_COUNT)), 0) or float('inf')  # infinite stream fallback
             self.fps[i] = max((fps if math.isfinite(fps) else 0) % 100, 0) or 30  # 30 FPS fallback
 
             _, self.imgs[i] = cap.read()  # guarantee first frame
             self.threads[i] = Thread(target=self.update, args=([i, cap, s]), daemon=True)
-            LOGGER.info(f"{st} Success ({self.vid_fps[i]} frames {w}x{h} at {self.fps[i]:.2f} FPS)")
+            LOGGER.info(f"{st} Success ({self.frame_num[i]} frames {w}x{h} at {self.fps[i]:.2f} FPS)")
             self.threads[i].start()
         LOGGER.info('')  # newline
 
@@ -387,7 +450,7 @@ class LoadStreams:
 
     def update(self, i, cap, stream):
         # Read stream `i` frames in daemon thread
-        n, f, read = 0, self.vid_fps[i], 1  # frame number, frame array, inference every 'read' frame
+        n, f, read = 0, self.frame_num[i], 1  # frame number, frame array, inference every 'read' frame
         while cap.isOpened() and n < f:
             n += 1
             # _, self.imgs[index] = cap.read()
@@ -395,6 +458,7 @@ class LoadStreams:
             if n % read == 0:
                 success, im = cap.retrieve()
                 if success:
+                    im = cv2.resize(im, (1280,720), interpolation=cv2.INTER_NEAREST)
                     self.imgs[i] = im
                 else:
                     LOGGER.warning('WARNING: Video stream unresponsive, please check your IP camera connection.')
@@ -424,7 +488,8 @@ class LoadStreams:
         img = img[..., ::-1].transpose((0, 3, 1, 2))  # BGR to RGB, BHWC to BCHW
         img = np.ascontiguousarray(img)
 
-        return self.sources, img, img0, None, '',self.vid_fps,self.fps,True,t
+        print(len(img0))
+        return self.sources, img, img0, None, '',self.frame_num,self.fps,True,t
 
     def __len__(self):
         return len(self.sources)  # 1E12 frames = 32 streams at 30 FPS for 30 years

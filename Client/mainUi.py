@@ -672,23 +672,6 @@ class MainUi(QtWidgets.QMainWindow):
             self.roadSwitch.emit()
         else:
             self.vidFile = temp
-            
-            
-    def saveVid(self):
-        
-        # save playback here
-        # self.playbackInfo['playbackID'].append(read('playback')+1)
-        self.playbackInfo['playbackID'].append(1)
-        self.playbackInfo['playbackVideo'].append(self.w.initDet.det.dets.vid_path) # si path ini kang video playback nasa detection_module/runs/
-        duration = self.w.initDet.det.dets.frm_id / self.w.initDet.det.dets.vid_fps
-        duration = str(dtime.timedelta(seconds=float(int(duration))))
-        self.playbackInfo['duration'].append(duration)
-        self.playbackInfo['roadName'].append(self.w.road.label.text())
-        self.playbackInfo['dateAndTime'].append(str(dtime.datetime.fromtimestamp(float(int(time.time()))).strftime("%m/%d%Y, %I:%M:%S %p")))
-        # save('playBack', self.playbackInfo) # saved to records/playBackDb.csv
-        self.savePlayback(self.playbackInfo)
-        self.playbackKeys = ['playbackID', 'playbackVideo','duration', 'roadName', 'dateAndTime']
-        self.playbackInfo = {k: [] for k in self.playbackKeys}
         
     def activeRoadSetUp(self, roadLoad):
         self.stackedWidget.setCurrentWidget(self.roadSetupPage)
@@ -840,7 +823,7 @@ class Controller:
                 os.makedirs(newpath)
                 
         else:
-            ctypes.windll.user32.MessageBoxW(0, "Wrong Credentials", "Login Error", 1)
+            ctypes.windll.user32.MessageBoxW(0, "Wrong Credentials", "Login Error", 0)
     def watch(self):
         try:
             self.getVid.stop()
@@ -912,7 +895,7 @@ class Controller:
     def missingVideo(self):
         self.window.isViolation = False
         self.window.violationIndex = -12345678
-        ctypes.windll.user32.MessageBoxW(0, "File not Found", "Nothing to play", 1)
+        ctypes.windll.user32.MessageBoxW(0, "File not Found", "Nothing to play", 0)
     
     def pauseOrPlay(self):
         print('pause or play have been called')
@@ -922,7 +905,7 @@ class Controller:
             self.getVid.playOrPause(self.pause)
         except AttributeError:
             self.window.btnPlay.disconnect()
-            ctypes.windll.user32.MessageBoxW(0, "Please insert a video first", "Nothing to play", 1)
+            ctypes.windll.user32.MessageBoxW(0, "Please insert a video first", "Nothing to play", 0)
             
     def finishedPlayBack(self):
         self.window.isViolation = False
@@ -1017,7 +1000,7 @@ class Controller:
         # # self.road.selectImage.connect(self.select)
         self.road.settingUpRoad.connect(self.showFinishingUi) # for btn confirm new
     def show_RoadPaint(self):
-        if self.window.vidFile is not None:
+        if self.window.vidFile:
             self.road.close()
             self.road.disconnect()
             self.roadLoad = roadSettingUp() # for loading setting up road
@@ -1033,7 +1016,7 @@ class Controller:
             # print("started")
             # print(threading.active_count())
         else:
-            ctypes.windll.user32.MessageBoxW(0, "Please insert a video first", "Empty Video file", 1)
+            ctypes.windll.user32.MessageBoxW(0, "Please insert a video first", "Empty Video file", 0)
     
     # function to call when the process of bg modelling and road extraction is done using thread
     def finishedInBGModelAndRoad(self):
@@ -1060,16 +1043,9 @@ class Controller:
         except:
             pass
         self.restart()
-        # self.window.vidFile = None
-        # self.window.close()
-        # self.logout_Ui.close()
-        # self.login.show()
-    # def showSettingUproad(self):
-    #     self.windowRoadSettingUp=roadSettingUp()
-    #     self.windowRoadSettingUp.screenLabel.connect(self.showScreenImage)
+
     def showFinishingUi(self):
-        
-        if self.window.vidFile: # hcheck if there's a current vid file
+        if self.window.vidFile: # check if there's a current vid file
             # initialize detection
             try:
                 # fot btn confirm
@@ -1078,9 +1054,7 @@ class Controller:
                     self.road.flagRoad = False
                     self.roadImage = cv.imread(self.road.selectedRoadImage)
                     self.roadIDGlobal = self.road.selectedRoadID
-
                     try:
-                        
                         # if detection is currently running
                         self.initDet.det.dets.changeROI(self.road.selectedROI)
                         self.window.label.setText(self.road.selectedRoadName)
@@ -1094,6 +1068,7 @@ class Controller:
                         print('ROI has been changed in running confirm')
                     except:
                         self.initializeDetection()
+                        self.window.activeWatch()
                         pass
                     # print('selected road image shape', self.roadImage.shape)
             except:
@@ -1119,40 +1094,37 @@ class Controller:
                     roadID = "R-0000001"
                     
                 cv.imwrite(str(PATH)+"/images/{}.jpg".format(roadID), self.roadImage) #writing the image with ROI to Client/images path
-                # roadCapturedJPG = str(PATH)+"\\\images\\\\"+roadID+".jpg"
-                #making the data a json type
-
-                
                 data = {
                     'roadID' : roadID,
                     'roadName' : self.window.roadNameTextbox.text(),
                     'roadCaptured' :  self.roadImage.tolist(),
                     'roadBoundaryCoordinates' : pd.Series(self.ROI).to_json(orient='values')
-                    # 
                 }
                 
                 # print(data['roadCaptured'])
                 self.roadIDGlobal = roadID
                 self.saveRoad(data)
         else:
-            ctypes.windll.user32.MessageBoxW(0, "Please insert a video first", "Empty Video file", 1)
+            ctypes.windll.user32.MessageBoxW(0, "Please insert a video first", "Empty Video file", 0)
     
     def expandROI(self):
         min_size = int(self.roadImage.shape[0]*self.roadImage.shape[1]*0.05)
         contours = self.ROI
-        bg = np.zeros_like(self.roadImage)  
+        bg = np.zeros_like(self.roadImage) 
+        
         for contour in contours:
             area = cv2.contourArea(contour) 
             print(f'area {area} < {min_size*0.5} : {area<min_size*0.5}')
             if area < min_size:
                 continue
              # draw the contours that are larger than 5% of img size 
-            if area > (0.5*self.roadImage.shape[0]*self.roadImage.shape[1]):
+            if area > (0.5*self.roadImage.shape[0]*self.roadImage.shape[1]) or len(contours) > 1:
                 kernel_size = 35
             else:
                 kernel_size = 80
             cv2.drawContours(bg, [contour], -1, (255,255,255), thickness= -1)
 
+        # road_surface = cv2.addWeighted(self.roadImage, 1-0.25, bg, 0.25, 0)
         bg = cv2.cvtColor(bg, cv2.COLOR_BGR2GRAY)
         kernel  = np.ones((kernel_size,kernel_size), np.uint8)
         dilated = cv2.dilate(bg, kernel, iterations=1)
@@ -1255,29 +1227,6 @@ class Controller:
     def finishedrunDet(self):        
         print("finished detection for this file")
     
-    
-    # #this function will display image    
-    # def showScreenImage(self):
-    #     data = self.road.selected
-    #     # print(data)
-
-    #     self.window.labelScreen.setPixmap(QtGui.QPixmap("images/image 1.jpg")) #setting image inside QLabel
-    #     self.window.labelScreen.setMinimumSize(QtCore.QSize(0, 400))#setting minimum heigth
-    #     self.window.label.setText(data['roadName'])
-    #     self.window.verticalLayout_11.addWidget(self.window.frameWatch)#removing center aligment of frameWatch
-    #     self.window.btnAddVideo.hide()#hiding button Insert Video
-        #Closing Road Setting 
-        # self.windowFinishing.screenLabel.connect(self.showScreenImage)
-        #self.windowRoadSettingUp.show()
-    #this function whill display image    
-    def showScreenImage(self):
-        self.window.labelScreen.setPixmap(QtGui.QPixmap("images/image 1.jpg")) #setting image inside QLabel
-        #self.window.labelScreen.setMinimumSize(QtCore.QSize(0, 400))#setting minimum heigth
-        self.window.label.setText("San Felipe")
-        self.window.verticalLayout_11.addWidget(self.window.frameWatch)#removing center aligment of frameWatch
-        self.window.frameButtons_2.hide()
-        self.activeButton()
-        self.window.topInfo.show()
 
         #Closing Road Setting
     def activeButton(self):
@@ -1321,6 +1270,7 @@ class Worker(QtCore.QObject):
         self.vid = self.w.window.vidFile     
 
     def runBG(self):
+        print('processing road')
         self.bgImage, self.ROI = processRoad(self.vid, PATH)
         self.finished.emit()
         
@@ -1481,6 +1431,10 @@ class ProcessData(QtCore.QObject):
             response = requests.get(url = baseURL + self.action, data = self.credentials , headers=self.headers)
             self.finished.emit(response)
         elif self.type == 6: # retrieve with params
+            if 'youtube.com/' in self.action or 'youtu.be/' in self.action:  # if source is YouTube video
+                # check_requirements(('pafy', 'youtube_dl==2020.12.2'))
+                import pafy
+                self.action = pafy.new(self.action).getbest(preftype="mp4").url  # YouTube URL
             cap = cv2.VideoCapture(self.action)
             if cap.isOpened():
                 self.finishedIP.emit(1) 
