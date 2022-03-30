@@ -9,13 +9,19 @@ class bg:
     def __init__(self, vid):
         vid = str(vid)
         is_url = vid.lower().startswith(('rtsp://', 'rtmp://', 'http://', 'https://'))
+        if 'youtube.com/' in vid or 'youtu.be/' in vid:  # if source is YouTube video
+                # check_requirements(('pafy', 'youtube_dl==2020.12.2'))
+            import pafy
+            vid = pafy.new(vid).getbest(preftype="mp4").url  # YouTube URL
         cap = cv.VideoCapture(vid)
         size = 20
         FOI = cap.get(cv.CAP_PROP_FRAME_COUNT) * np.random.uniform(size=size) 
         self.backgroundFrame = None
         if not is_url:
+            print('not live')
             t = Thread(target=self.sub, args=(cap, FOI))
         else:
+            print('live or youtube')
             t = Thread(target=self.subLive, args=(cap, size))
         t.start()
         
