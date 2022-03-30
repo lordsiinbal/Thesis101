@@ -833,6 +833,12 @@ class Controller:
         if res['result']:
             self.window.show()
             self.login.close()
+            
+            # check if path exists for road images to be saved
+            newpath = str(PATH)+"/images/" 
+            if not os.path.exists(newpath):
+                os.makedirs(newpath)
+                
         else:
             ctypes.windll.user32.MessageBoxW(0, "Wrong Credentials", "Login Error", 1)
     def watch(self):
@@ -1111,7 +1117,7 @@ class Controller:
                     
                 else:
                     roadID = "R-0000001"
- 
+                    
                 cv.imwrite(str(PATH)+"/images/{}.jpg".format(roadID), self.roadImage) #writing the image with ROI to Client/images path
                 # roadCapturedJPG = str(PATH)+"\\\images\\\\"+roadID+".jpg"
                 #making the data a json type
