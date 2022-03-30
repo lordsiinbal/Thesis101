@@ -247,16 +247,13 @@ class det:
                                             self.vehicleInfos['class'][index] = self.names[c]
                                             t = self.vehicleInfos['timer'][index] / vid_fps
                                             current_time = self.vehicleInfos['timer'][index]
-                            
-                                                
-                                            # print(t)
                                             t = str(timedelta(seconds=float(t))).split(".")[0]
                                             col = (0, 165, 255)
                                             
                                             if current_time >= self.TIMER_MAX:  # means 5 mins
                                                 col = (0, 0, 255)
                                                 if not self.vehicleInfos['isSaved'][index]:  # if not yet saved
-                                                    self.processViolation(c , id, t, index, bboxes, imc, p)
+                                                    self.processViolation(c , id, t, index, bboxes, imc, p, frm_id, vid_fps)
                                                     
                                             label = f'{id} | {self.names[c]}: {t}'
                                             annotator.box_label(bboxes, label, color=col)
@@ -353,15 +350,19 @@ class det:
         r = requests.post(url=baseURL + "/ViolationInsert", data=json.dumps(data), headers=headers)
         # print(r)
 
-    def processViolation(self, c , id, t, index, bboxes, imc, p):
+    def processViolation(self, c , id, t, index, bboxes, imc, p, frm, fps):
         # determining if the dataRoadViolation is empty
         self.violationIDLatest += 1
         violationID = "V-" + str(self.violationIDLatest).zfill(7)
         imgName = self.save_dir / p.name[0:-4] / 'crops' / self.names[c] / f'{id}.jpg'
         if self.webcam:
             vidPath = str(p.name) +'.mp4'
+            startTime = str(datetime.fromtimestamp(self.vehicleInfos['startTime'][index]).strftime("%m/%d/%Y, %I:%M:%S %p"))
+            endTime = str(datetime.fromtimestamp(float(int(time_sync()))).strftime("%m/%d/%Y, %I:%M:%S %p"))
         else:
             vidPath = p.name
+            startTime = str(timedelta(seconds=float(int(self.vehicleInfos['frameStart'][index]/fps)))).split(".")[0]
+            endTime = str(timedelta(seconds=float(int(frm/fps)))).split(".")[0]
         # save violation here
         # making the data a json type
         data = {
@@ -370,8 +371,8 @@ class det:
             'roadName': self.window.window.label.text(),
             'roadID': self.window.roadIDGlobal,
             'lengthOfViolation': t,
-            'startDateAndTime': str(datetime.fromtimestamp(self.vehicleInfos['startTime'][index]).strftime("%m/%d%Y, %I:%M:%S %p")),
-            'endDateAndTime': str(datetime.fromtimestamp(float(int(time_sync()))).strftime("%m/%d%Y, %I:%M:%S %p")),
+            'startDateAndTime': startTime,
+            'endDateAndTime': endTime,
             'frameStart': str(self.vehicleInfos['frameStart'][index]),
             'violationRecord': str(self.save_dir / vidPath),  # filepath of video
             'vehicleClass': str(self.names[c]),
