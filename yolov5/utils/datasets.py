@@ -350,6 +350,7 @@ class LoadLiveStreams:
         # Convert
         img = img.transpose((2, 0, 1))[::-1]  # HWC to CHW, BGR to RGB
         img = np.ascontiguousarray(img)
+        self.sources = [clean_str(x) for x in self.sources]
         return self.sources, img, img0, None, '',self.frame,self.fps,True,t
 
     def __len__(self):

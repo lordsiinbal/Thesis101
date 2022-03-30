@@ -48,7 +48,7 @@ from matplotlib import image, widgets
 from sklearn.feature_selection import SelectFromModel
 from PIL import ImageQt
 import numpy as np
-
+import re
 #NOTE: Si pag save kang road saka playback yaon igdi sa file, control F 'save road' saka 'save playback' ka nalang
 # si pag save kang violation nasa track.py sa detection_module control-F 'save violation' ka nalang ulit
 
@@ -507,6 +507,7 @@ class TableUi(QtWidgets.QMainWindow):
             self.newPlayPanel=QtWidgets.QLabel(self.tableWidget)
             self.newPlayPanel.setMaximumHeight(100)
             #self.newPlayPanel.setStyleSheet("border:2px solid red")
+            print(self.data[i]['vehicleCrop'])
             self.newPlayPanel.setPixmap(QtGui.QPixmap(self.data[i]['vehicleCrop']))#image of detected vehicle
             self.newPlayPanel.setScaledContents(True)
             self.newBtnPlay=QtWidgets.QPushButton(self.newPlayPanel)
@@ -569,6 +570,7 @@ class TableUi(QtWidgets.QMainWindow):
 
     def replayViolation(self,i):
         # self.close()
+        print('path video', self.data[i]['violationRecord'])
         self.w.window.isViolation = True
         self.w.window.violationIndex = i
         self.w.window.activePlayback()
@@ -833,7 +835,12 @@ class Controller:
             self.initDet.det.dets.view_img = True
         except Exception as er:
             pass
-        
+    
+    
+    def clean_str(self, s):
+        # Cleans a string by replacing special characters with underscore _
+        return re.sub(pattern="[|@#!¡·$€%&()=?¿^*;:,¨´><+]", repl="_", string=s)
+
     def playBack(self):
         try:
             try:
@@ -848,10 +855,13 @@ class Controller:
                 pass
             
             currFile = str(self.window.vidFile).split('/')[-1]
+            currFile = self.clean_str(currFile)
             try:
                 vioFile = str(self.newWin.data[self.window.violationIndex]['violationRecord']).split('\\')[-1]
+                vioFile = vioFile.split('.')[0]
             except:
                 vioFile = None
+            print(f'current = {currFile}\nviolation file = {vioFile}')
             if self.window.isViolation and currFile != vioFile:
                 # playback from violation record
                 print('in violation')
@@ -1300,9 +1310,10 @@ class Worker(QtCore.QObject):
             else:
                 f = self.w.initDet.det.dets.f + 1
                 print(end='\r')
-
-        self.finished.emit()
-        
+        try:
+            self.finished.emit()
+        except RuntimeError:
+            exit()
         
 
 # class for video playback getting

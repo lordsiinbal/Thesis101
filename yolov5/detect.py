@@ -139,9 +139,9 @@ class det:
     def run(self):
         self.video_getter = self.dataset.begin()
         if not self.webcam:
-            self.TIMER_MAX = 300 * self.dataset.vid_fps
+            self.TIMER_MAX = 10 * self.dataset.vid_fps
         else:
-            self.TIMER_MAX = 300* self.dataset.fps
+            self.TIMER_MAX = 10* self.dataset.fps
         self.t.start()
 
     def detect(self):
@@ -357,8 +357,11 @@ class det:
         # determining if the dataRoadViolation is empty
         self.violationIDLatest += 1
         violationID = "V-" + str(self.violationIDLatest).zfill(7)
-
         imgName = self.save_dir / p.name[0:-4] / 'crops' / self.names[c] / f'{id}.jpg'
+        if self.webcam:
+            vidPath = str(p.name) +'.mp4'
+        else:
+            vidPath = p.name
         # save violation here
         # making the data a json type
         data = {
@@ -370,12 +373,13 @@ class det:
             'startDateAndTime': str(datetime.fromtimestamp(self.vehicleInfos['startTime'][index]).strftime("%m/%d%Y, %I:%M:%S %p")),
             'endDateAndTime': str(datetime.fromtimestamp(float(int(time_sync()))).strftime("%m/%d%Y, %I:%M:%S %p")),
             'frameStart': str(self.vehicleInfos['frameStart'][index]),
-            'violationRecord': str(self.save_dir / p.name),  # filepath of video
+            'violationRecord': str(self.save_dir / vidPath),  # filepath of video
             'vehicleClass': str(self.names[c]),
             'vehicleCrop': str(imgName)
 
 
         }
+        print(imgName)
         save_one_box(bboxes, imc, file=imgName, BGR=True)  # saved cropped
         self.saveViolation(data)  # calling the saveViolation Function to save the data to the database
         self.vehicleInfos['isSaved'][index] = True
