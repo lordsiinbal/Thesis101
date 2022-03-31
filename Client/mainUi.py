@@ -72,6 +72,13 @@ def cvImgtoQtImg(cvImg):  #Define the function of opencv image to PyQt image
     p = convert_to_Qt_format
     return p
 
+def interval_mapping(image, from_min, from_max, to_min, to_max):
+    # map values from [from_min, from_max] to [to_min, to_max]
+    # image: input array
+        from_range = from_max - from_min
+        to_range = to_max - to_min
+        scaled = np.array((image - from_min) / float(from_range), dtype=float)
+        return to_min + (scaled * to_range)
 
 class FinishingUi(QtWidgets.QWidget):#Finishing Loading UI
     screenLabel=QtCore.pyqtSignal()
@@ -147,6 +154,7 @@ class myQLabel(QWidget):
         self.roadload = roadload
         "For Auto Segmentaion"
         for r in roi:
+            
             bg = np.zeros_like(im)  
             cv2.drawContours(bg, [r], -1, (0,0,255), thickness= -1)
             pts = np.where(bg == 255)
@@ -159,13 +167,14 @@ class myQLabel(QWidget):
             #loop through roi location
             pts = [pts[0],pts[1]]
             pts = np.transpose(pts)
-            
+                
             self.drawThread = QThread()
             self.drawThreadObject = Drawer(pts, painter, pm) # fetch all roads but only ids
             self.drawThreadObject.moveToThread(self.drawThread)
             self.drawThread.started.connect(self.drawThreadObject.draw)
             self.drawThreadObject.finished.connect(self.finishedDrawingROI)
             self.drawThread.start()
+            break
             
         """End of Auto Segmentation"""
     def finishedDrawingROI(self, painter, pm):
@@ -1033,6 +1042,7 @@ class Controller:
         
         self.roadImage, self.ROI =  self.bgAndRoad.bgImage,  self.bgAndRoad.ROI
         if self.roadImage is not NULL:
+            print(len(self.ROI))
             self.window.activeRoadSetUp(self.roadLoad)
             # self.roadPaint=RoadSetUpPaint()
             # self.roadPaint.switch_window.connect(self.showFinishingUi) # for btn done
@@ -1368,6 +1378,7 @@ class videoGet(QtCore.QObject):
                 # if frame is read correctly ret is True
                 if not ret:
                     print("Can't receive frame (stream end?). Exiting ...")
+                    self.fileNotExistSignal.emit()
                     break
                 
                 # Display the resulting frame

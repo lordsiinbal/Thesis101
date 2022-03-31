@@ -45,7 +45,7 @@ if str(ROOT) not in sys.path:
 ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 
 from models.common import DetectMultiBackend
-from utils.datasets import IMG_FORMATS, VID_FORMATS, LoadImages, LoadLiveStreams
+from utils.datasets import IMG_FORMATS, VID_FORMATS, LoadImages, LoadLiveStreams, LoadStreams
 from utils.general import (LOGGER, check_file, check_img_size, check_imshow, check_requirements, colorstr,
                            increment_path, non_max_suppression, print_args, scale_coords, strip_optimizer, xyxy2xywh, isStationary, isInsideROI, apply_roi_in_scene)
 from utils.plots import Annotator, colors, save_one_box
@@ -58,6 +58,14 @@ from Tracker.tracker import Tracker
 from Client.api import baseURL
 import requests
 
+def interval_mapping(image, from_min, from_max, to_min, to_max):
+    # map values from [from_min, from_max] to [to_min, to_max]
+    # image: input array
+        from_range = from_max - from_min
+        to_range = to_max - to_min
+        scaled = numpy.array((image - from_min) / float(from_range), dtype=float)
+        return to_min + (scaled * to_range)
+    
 @torch.no_grad()
 class det:
     """Detection constructor, initializing detection models (yolo and deepsort)\n
@@ -71,7 +79,6 @@ class det:
     def __init__(self, opt, source, window):
         self.opt = opt
         self.frame, self.ret, self.stopped = None, False, False
-        self.vidFrames = []
         self.sfps = 30
         self.start_time = 0
         self.keys = ['id', 'startTime', 'finalTime', 'class', 'frameStart', 'timeStart', 'isSaved', 'timer']
@@ -115,8 +122,6 @@ class det:
             self.dataset = LoadLiveStreams(source, img_size=self.imgsz, stride=stride, auto=pt)
             bs = len(self.dataset)  # batch_size
         else:
-            # self.mask = numpy.zeros(window.roadImage.shape, numpy.uint8)
-            # cv2.drawContours(self.mask, window.ROI, -1, (255,255,255), thickness= -1)
             self.dataset = LoadImages(source, img_size=self.imgsz, stride=stride, auto=pt)
             bs = 1  # batch_size
         self.vid_path, self.vid_writer = [None] * bs, [None] * bs
@@ -134,15 +139,19 @@ class det:
         self.f = 0
         self.t.daemon = True
         self.window = window
+    
+        
   
 
     def run(self):
         self.video_getter = self.dataset.begin()
         if not self.webcam:
-            self.TIMER_MAX = 10 * self.dataset.vid_fps
+            self.TIMER_MAX = 300 * self.dataset.vid_fps
         else:
-            self.TIMER_MAX = 10* self.dataset.fps
+            self.TIMER_MAX = 300* self.dataset.fps
         self.t.start()
+        if not self.webcam:
+            self.vidFrames = [None] * self.dataset.frames
 
     def detect(self):
         print("it has started")
@@ -285,6 +294,7 @@ class det:
                             self.PREV_BB = bbox
                             self.PREV_XY = xy
                             self.time_start = time_sync()
+                            print('hereeeeeeee')
                     else:
                         tracker.increment_ages()
                         LOGGER.info('No detections')
@@ -320,7 +330,7 @@ class det:
                                 self.vehicleInfos = {k: [] for k in self.keys}
                                 tracker = Tracker(n_init=20, max_age=900, match_thresh=0.7, iou_thresh=0.5)
                             self.vid_writer.write(im0)
-                            self.vidFrames.append(im0)
+                            # self.vidFrames[frame_idx] = im0
 
             else:
                 self.vid_writer.release()  # stop from writing video

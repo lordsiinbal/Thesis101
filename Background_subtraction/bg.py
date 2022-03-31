@@ -35,7 +35,9 @@ class bg:
             _, frame = cap.read()
             b = cv.resize(frame,(1280,720), interpolation=cv.INTER_CUBIC)
             frames.append(b)
-        self.backgroundFrame = np.median(frames, axis = 0).astype(dtype=np.uint8)
+        res = np.median(frames, axis = 0).astype(dtype=np.uint8)
+        self.backgroundFrame = cv.fastNlMeansDenoisingColored(res,None,5,5,7,21)
+
         
     def subLive(self, cap, size):
         i = 0
@@ -47,7 +49,8 @@ class bg:
                 b = cv.resize(frame,(1280,720), interpolation=cv.INTER_CUBIC)
                 frames.append(b)
             if(i==size):
-                self.backgroundFrame = np.median(frames, axis = 0).astype(dtype=np.uint8)
+                res = np.median(frames, axis = 0).astype(dtype=np.uint8)
+                self.backgroundFrame = cv.fastNlMeansDenoisingColored(res,None,5,5,7,21)
                 break
             i+=1
         

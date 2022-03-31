@@ -17,6 +17,11 @@ from pathlib import Path
 from threading import Thread
 from zipfile import ZipFile
 
+import imutils
+from imutils.video import VideoStream
+# from multiprocessing import Queue
+from collections import deque
+import queue
 import cv2
 import numpy as np
 import torch
@@ -25,7 +30,7 @@ import yaml
 from PIL import ExifTags, Image, ImageOps
 from torch.utils.data import DataLoader, Dataset, dataloader, distributed
 from tqdm import tqdm
-
+from  vidgear.gears import CamGear
 from utils.augmentations import Albumentations, augment_hsv, copy_paste, letterbox, mixup, random_perspective
 from utils.general import (DATASETS_DIR, LOGGER, NUM_THREADS, check_dataset, check_requirements, check_yaml, clean_str,
                            segments2boxes, xyn2xy, xywh2xyxy, xywhn2xyxy, xyxy2xywhn)
@@ -155,44 +160,134 @@ class _RepeatSampler:
         while True:
             yield from iter(self.sampler)
 
+# bufferless VideoCapture 
+class VideoCapture:
+
+    def __init__(self, name):
+        self.cap = cv2.VideoCapture(name)
+        self.q = queue.Queue()
+        self.retq = queue.Queue()
+        # ret, frame = self.cap.read()
+        # self.q =  deque()
+        # self.retq = deque()
+        # self.q.put(frame)
+        # self.retq.put(ret)        
+        self.frame_number = 0 
+        
+        self.frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        self.fps = int(self.cap.get(cv2.CAP_PROP_FPS))
+        t = Thread(target=self._reader)
+        t.daemon = True
+        self.stopped = False
+        t.start()
+        print("start na")
+        
+
+  # read frames as soon as they are available, keeping only most recent one
+    def _reader(self):
+        while not self.stopped:
+            ret, frame = self.cap.read()
+            if not ret:
+                break
+            if not self.q.empty():
+                try:
+                    self.q.get_nowait()
+                except queue.Empty:
+                    pass
+            self.q.put(frame)
+            self.retq.put(ret)
+            # self.q.append(frame)
+            # self.retq.append(ret)
+            self.frame_number +=1
+            # time.sleep((1.0/(self.fps*3)))
+      
+
+    def read(self):
+        # print('b4 ',len(self.retq))
+        # try:
+        ret, im = self.retq.get(), self.q.get()
+        # except IndexError:
+            # pass
+        # self.retq.remove(ret)
+        # self.q.remove(im)
+        # print('after ',len(self.retq))
+        return  ret, im 
+
+    def stop(self):
+        # with self.retq.mutex:
+        #     self.retq.clear()
+        # with self.q.mutex:
+        #     self.q.clear()
+        self.retq.clear()
+        self.q.clear()
+        self.stopped =True
+
 class VideoGet:
     """
     Class that continuously gets frames from a VideoCapture object
     with a dedicated thread.
     """
 
-    def __init__(self, cap):
-        self.stream = cv2.VideoCapture(cap)
+    def __init__(self, stream, isLive = False):
+        self.isLive = isLive
+        # if isLive:
+        #     self.stream = cv2.VideoCapture(stream.path)
+        #     self.nframes = int(self.stream.get(cv2.CAP_PROP_FRAME_COUNT))
+        #     self.fps = int(self.stream.get(cv2.CAP_PROP_FPS))
+        #     # self.stream = CamGear(stream.path)
+        #     self.frame = self.stream.read()
+        #     # self.grabbed = True if self.frame is not None else False
+          
+
+        # else:
+        self.stream = cv2.VideoCapture(stream.path)
         (self.grabbed, self.frame) = self.stream.read()
-        # self.fps = self.stream.get(cv2.CAP_PROP_FPS)
         self.nframes = int(self.stream.get(cv2.CAP_PROP_FRAME_COUNT))
         self.fps = int(self.stream.get(cv2.CAP_PROP_FPS))
+       
         self.stopped = True
         self.t = Thread(target=self.get, args=())
         self.t.daemon = True # daemon threads run in background 
         self.frames = 0
-
+        
+      
+            
     def start(self):    
         self.stopped = False
         self.t.start()
         return self
         
     def get(self):
+        print(self.fps)
+        # if self.isLive:
+        #     self.stream.start()
         while not self.stopped:
             now = time.time()
+            # print(self.grabbed)
             if not self.grabbed:
                 self.stop()
             else:
+                # if self.isLive:
+                    # self.frames = self.stream.frame_number
+                    # print(self.frames)
+                # else:
                 self.frames += 1
+                # if not self.isLive:
                 (self.grabbed, self.frame) = self.stream.read()
+                # else:
+                #     self.frame = self.stream.read()
+                #     self.grabbed = True if self.frame is not None else False
+                    
                 timeDiff = time.time() - now
                 if (timeDiff<1.0/(self.fps)):
-                    time.sleep((1.0/(self.fps))- timeDiff)
+                    time.sleep(1.0/(self.fps)-timeDiff)
                 else:
                     print(' ',  end='\r')
+        # if self.isLive:
+        #     self.stream.stop()
+        # else:
         self.stream.release()
-                 
-                
+            
 
     def stop(self):
         self.stopped = True
@@ -288,7 +383,7 @@ class LoadImages:
         
         
     def begin(self):
-        self.video_getter = VideoGet(self.path).start()
+        self.video_getter = VideoGet(self).start()
         self.frames = self.video_getter.nframes
         self.vid_fps = self.video_getter.fps
         self.cap = self.video_getter.stream
@@ -315,16 +410,14 @@ class LoadLiveStreams:
             check_requirements(('pafy', 'youtube_dl==2020.12.2'))
             import pafy
             s = pafy.new(s).getbest(preftype="mp4").url  # YouTube URL
-        self.s = eval(s) if s.isnumeric() else s  # i.e. s = '0' local webcam
+        self.path = eval(s) if s.isnumeric() else s  # i.e. s = '0' local webcam
 
 
     def begin(self):
-        self.video_getter = VideoGet(self.s).start()
+        self.video_getter = VideoGet(self, isLive = True).start()
         # self.frames = self.video_getter.nframes
         self.fps = self.video_getter.fps
         self.cap = self.video_getter.stream
-        w = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        h = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         return self.video_getter
         
 
@@ -461,6 +554,8 @@ class LoadStreams:
                 if success:
                     im = cv2.resize(im, (1280,720), interpolation=cv2.INTER_NEAREST)
                     self.imgs[i] = im
+                    cv2.imshow('frame', im)
+                    cv2.waitKey(1)
                 else:
                     LOGGER.warning('WARNING: Video stream unresponsive, please check your IP camera connection.')
                     self.imgs[i] = np.zeros_like(self.imgs[i])
