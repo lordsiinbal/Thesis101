@@ -173,6 +173,9 @@ class VideoCapture:
         
         self.frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
         self.fps = int(self.cap.get(cv2.CAP_PROP_FPS))
+        print('vid fpsssssssssss', self.fps)
+        print('vid framessssss', self.frames)
+        
         t = Thread(target=self._reader)
         t.daemon = True
         self.stopped = False
@@ -196,7 +199,6 @@ class VideoCapture:
             # self.q.append(frame)
             # self.retq.append(ret)
             self.frame_number +=1
-            # time.sleep((1.0/(self.fps*3)))
       
 
     def read(self):
@@ -219,7 +221,7 @@ class VideoCapture:
         self.q.clear()
         self.stopped =True
 
-class VideoGet(object):
+class VideoGet:
     """
     Class that continuously gets frames from a VideoCapture object
     with a dedicated thread.
@@ -227,29 +229,26 @@ class VideoGet(object):
 
     def __init__(self, stream, isLive = False):
         self.isLive = isLive
-        # if isLive:
-        #     self.stream = cv2.VideoCapture(stream.path)
-        #     self.nframes = int(self.stream.get(cv2.CAP_PROP_FRAME_COUNT))
-        #     self.fps = int(self.stream.get(cv2.CAP_PROP_FPS))
-        #     # self.stream = CamGear(stream.path)
-        #     self.frame = self.stream.read()
-        #     # self.grabbed = True if self.frame is not None else False
-          
-
-        # else:
-        self.stream = cv2.VideoCapture(stream.path)
-        if isLive:
-            print('b4 ',self.stream.get(cv2.CAP_PROP_BUFFERSIZE))
-            self.stream.set(cv2.CAP_PROP_BUFFERSIZE, 2)
-            print('after ',self.stream.get(cv2.CAP_PROP_BUFFERSIZE))
-        (self.grabbed, self.frame) = self.stream.read()
-        self.nframes = int(self.stream.get(cv2.CAP_PROP_FRAME_COUNT))
-        self.fps = int(self.stream.get(cv2.CAP_PROP_FPS))
+        if not isLive:
+            self.stream = cv2.VideoCapture(stream.path)
+            (self.grabbed, self.frame) = self.stream.read()
+            self.nframes = int(self.stream.get(cv2.CAP_PROP_FRAME_COUNT))
+            self.fps = int(self.stream.get(cv2.CAP_PROP_FPS))
+        else:
+            self.stream = VideoCapture(stream.path)
+            (self.grabbed, self.frame) = self.stream.read()
+            # self.nframes = int(self.stream.get(cv2.CAP_PROP_FRAME_COUNT))
+            # self.fps = int(self.stream.get(cv2.CAP_PROP_FPS))
+            self.nframes = self.stream.frames
+            self.fps = self.stream.fps
        
         self.stopped = True
         self.t = Thread(target=self.get, args=())
         self.t.daemon = True # daemon threads run in background 
-        self.frames = 0
+        if self.isLive:
+            self.frames = self.stream.frame_number
+        else:
+            self.frames = 0
         
       
             
@@ -259,35 +258,37 @@ class VideoGet(object):
         return self
         
     def get(self):
-        print(self.fps)
-        # if self.isLive:
-        #     self.stream.start()
         while not self.stopped:
             now = time.time()
-            # print(self.grabbed)
             if not self.grabbed:
                 self.stop()
             else:
-                # if self.isLive:
-                    # self.frames = self.stream.frame_number
-                    # print(self.frames)
-                # else:
-                self.frames += 1
-                # if not self.isLive:
+                if self.isLive:
+                    self.frames = self.stream.frame_number
+                    print(self.frames) 
+                else:
+                    self.frames += 1
                 (self.grabbed, self.frame) = self.stream.read()
-                # else:
-                #     self.frame = self.stream.read()
-                #     self.grabbed = True if self.frame is not None else False
-                    
                 timeDiff = time.time() - now
                 if (timeDiff<1.0/(self.fps)):
                     time.sleep(1.0/(self.fps)-timeDiff)
                 else:
+                    # # update frames since it is late
+                    # delay = time.time() - now
+                    # delay = int(np.ceil(delay * self.fps))
+                    # # print(f'delay {delay}')
+                    # for _ in range(delay): # grab frames depending to what delat
+                    #     # print(_)
+                    #     (self.grabbed, self.frame) = self.stream.read()
+                    #     if self.isLive:
+                    #         self.frames = self.stream.frame_number
+                    #     else:
+                    #         self.frames += 1
                     print(' ',  end='\r')
-        # if self.isLive:
-        #     self.stream.stop()
-        # else:
-        self.stream.release()
+        if self.isLive:
+            self.stream.stop()
+        else:
+            self.stream.release()
             
 
     def stop(self):
@@ -415,7 +416,7 @@ class LoadLiveStreams:
 
 
     def begin(self):
-        self.video_getter = VideoGet(self, isLive = True).start()
+        self.video_getter = VideoGet(self, isLive = False).start()
         # self.frames = self.video_getter.nframes
         self.fps = self.video_getter.fps
         self.cap = self.video_getter.stream
