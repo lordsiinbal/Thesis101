@@ -125,7 +125,7 @@ def detect_road(img_orig):
     for c in conts:
         area = cv2.contourArea(c) # getting the area of each contour
         # contours lower than 10% of img size are ignored
-        if area < min_size*0.5:
+        if area < min_size:
             continue
         # draw the contours that are larger than 10% of img size 
         cv2.drawContours(final_mask, [c], -1, (0,0,255), thickness= -1)
@@ -152,8 +152,9 @@ def detect_road(img_orig):
             continue
        
         #resize contour
-        cv2.drawContours(bg, [contour], -1, (0,0,255), thickness= -1)
-        cv2.drawContours(final_mask, [contour], -1, (255,255,255), thickness= -1)
+        hull = cv2.convexHull(contour)
+        cv2.drawContours(bg, [hull], -1, (0,0,255), thickness= -1)
+        cv2.drawContours(final_mask, [hull], -1, (255,255,255), thickness= -1)
     
     # cv2.imshow('final mask', final_mask)
     # blending the red area road surface to the original image
@@ -164,5 +165,6 @@ def detect_road(img_orig):
     
     final_mask = cv2.cvtColor(final_mask,cv2.COLOR_BGR2GRAY)
     cnts, _ = cv2.findContours(final_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    cntsSorted = sorted(cnts, key=lambda x: cv2.contourArea(x))
 
-    return cnts, img_orig
+    return cntsSorted, img_orig
