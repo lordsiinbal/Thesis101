@@ -915,7 +915,7 @@ class Controller:
     def missingVideo(self):
         self.window.isViolation = False
         self.window.violationIndex = -12345678
-        ctypes.windll.user32.MessageBoxW(0, "File not Found", "Nothing to play", 0)
+        ctypes.windll.user32.MessageBoxW(0, "File not Found or Corrupted File", "Nothing to play", 0)
     
     def pauseOrPlay(self):
         print('pause or play have been called')
