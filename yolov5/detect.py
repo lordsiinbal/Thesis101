@@ -140,15 +140,13 @@ class det:
         self.t.daemon = True
         self.window = window
     
-        
-  
 
     def run(self):
         self.video_getter = self.dataset.begin()
         if not self.webcam:
-            self.TIMER_MAX = 300 * self.dataset.vid_fps
+            self.TIMER_MAX = 20 * self.dataset.vid_fps
         else:
-            self.TIMER_MAX = 300* self.dataset.fps
+            self.TIMER_MAX = 20 * self.dataset.fps
         self.t.start()
         if not self.webcam:
             self.vidFrames = [None] * self.dataset.frames
@@ -271,7 +269,7 @@ class det:
                                             annotator.box_label(bboxes, label, color=col)
                                             self.vehicleInfos['timer'][index] = frm_id - \
                                                     self.vehicleInfos['frameStart'][index]
-
+                                            
                                         except ValueError:
                                             self.vehicleInfos['id'].append(id)
                                             t = time_sync()

@@ -865,6 +865,7 @@ class Controller:
             
             currFile = str(self.window.vidFile).split('/')[-1]
             currFile = self.clean_str(currFile)
+            currFile = currFile.split('.')[0]
             try:
                 vioFile = str(self.newWin.data[self.window.violationIndex]['violationRecord']).split('\\')[-1]
                 vioFile = vioFile.split('.')[0]
