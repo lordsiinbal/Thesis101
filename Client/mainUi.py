@@ -1355,8 +1355,10 @@ class videoGet(QtCore.QObject):
                 timediff = time.time() - now
                 if (timediff<(1.0/(self.w.initDet.det.dets.sfps))):
                     time.sleep((1.0/(self.w.initDet.det.dets.sfps)) - timediff)
-
-                self.imgUpdate.emit(qim)
+                try:
+                    self.imgUpdate.emit(qim)
+                except RuntimeError:
+                    exit()     
             else:
                 break
             while self.pause:
@@ -1387,7 +1389,10 @@ class videoGet(QtCore.QObject):
                 QtImg = cvImgtoQtImg(frame)# Convert frame data to PyQt image format
                 qim = QtGui.QPixmap.fromImage(QtImg)
                 time.sleep(1/fps)
-                self.imgUpdate.emit(qim)            
+                try:
+                    self.imgUpdate.emit(qim)
+                except RuntimeError:
+                    exit()       
             else:
                 break
             

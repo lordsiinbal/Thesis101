@@ -144,9 +144,9 @@ class det:
     def run(self):
         self.video_getter = self.dataset.begin()
         if not self.webcam:
-            self.TIMER_MAX = 20 * self.dataset.vid_fps
+            self.TIMER_MAX = 300 * self.dataset.vid_fps
         else:
-            self.TIMER_MAX = 20 * self.dataset.fps
+            self.TIMER_MAX = 300 * self.dataset.fps
         self.t.start()
         if not self.webcam:
             self.vidFrames = [None] * self.dataset.frames
