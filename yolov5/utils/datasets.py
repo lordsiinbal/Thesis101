@@ -17,8 +17,6 @@ from pathlib import Path
 from threading import Thread
 from zipfile import ZipFile
 
-import imutils
-from imutils.video import VideoStream
 # from multiprocessing import Queue
 from collections import deque
 import queue
@@ -30,7 +28,6 @@ import yaml
 from PIL import ExifTags, Image, ImageOps
 from torch.utils.data import DataLoader, Dataset, dataloader, distributed
 from tqdm import tqdm
-from  vidgear.gears import CamGear
 from utils.augmentations import Albumentations, augment_hsv, copy_paste, letterbox, mixup, random_perspective
 from utils.general import (DATASETS_DIR, LOGGER, NUM_THREADS, check_dataset, check_requirements, check_yaml, clean_str,
                            segments2boxes, xyn2xy, xywh2xyxy, xywhn2xyxy, xyxy2xywhn)
@@ -222,7 +219,7 @@ class VideoCapture:
         self.q.clear()
         self.stopped =True
 
-class VideoGet:
+class VideoGet(object):
     """
     Class that continuously gets frames from a VideoCapture object
     with a dedicated thread.
@@ -241,6 +238,10 @@ class VideoGet:
 
         # else:
         self.stream = cv2.VideoCapture(stream.path)
+        if isLive:
+            print('b4 ',self.stream.get(cv2.CAP_PROP_BUFFERSIZE))
+            self.stream.set(cv2.CAP_PROP_BUFFERSIZE, 2)
+            print('after ',self.stream.get(cv2.CAP_PROP_BUFFERSIZE))
         (self.grabbed, self.frame) = self.stream.read()
         self.nframes = int(self.stream.get(cv2.CAP_PROP_FRAME_COUNT))
         self.fps = int(self.stream.get(cv2.CAP_PROP_FPS))

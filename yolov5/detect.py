@@ -152,6 +152,9 @@ class det:
         self.t.start()
         if not self.webcam:
             self.vidFrames = [None] * self.dataset.frames
+        else:
+            self.vidFrames = [] 
+            
 
     def detect(self):
         print("it has started")
@@ -330,7 +333,14 @@ class det:
                                 self.vehicleInfos = {k: [] for k in self.keys}
                                 tracker = Tracker(n_init=20, max_age=900, match_thresh=0.7, iou_thresh=0.5)
                             self.vid_writer.write(im0)
-                            # self.vidFrames[frame_idx] = im0
+                            im0 = cv2.resize(im0, (800,450))
+                            if not self.webcam:
+                                self.vidFrames[frame_idx] = numpy.array(im0, dtype=numpy.uint8)
+                            else:
+                                self.vidFrames.append(numpy.array(im0, dtype=numpy.uint8))
+                            # print(im0.shape)
+                            # print(im0.)
+                            
 
             else:
                 self.vid_writer.release()  # stop from writing video

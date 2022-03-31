@@ -1348,6 +1348,7 @@ class videoGet(QtCore.QObject):
         for frame in replayVideo:
             now = time.time()
             if not self.stopped:
+                frame = cv2.resize(frame, (1280,720))
                 QtImg = cvImgtoQtImg(frame)# Convert frame data to PyQt image format
                 qim = QtGui.QPixmap.fromImage(QtImg)
                 timediff = time.time() - now
