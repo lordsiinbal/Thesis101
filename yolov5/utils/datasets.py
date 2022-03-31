@@ -273,17 +273,17 @@ class VideoGet:
                 if (timeDiff<1.0/(self.fps)):
                     time.sleep(1.0/(self.fps)-timeDiff)
                 else:
-                    # # update frames since it is late
-                    # delay = time.time() - now
-                    # delay = int(np.ceil(delay * self.fps))
-                    # # print(f'delay {delay}')
-                    # for _ in range(delay): # grab frames depending to what delat
-                    #     # print(_)
-                    #     (self.grabbed, self.frame) = self.stream.read()
-                    #     if self.isLive:
-                    #         self.frames = self.stream.frame_number
-                    #     else:
-                    #         self.frames += 1
+                    # update frames since it is late
+                    delay = time.time() - now
+                    delay = int(np.ceil(delay * self.fps))
+                    # print(f'delay {delay}')
+                    for _ in range(delay): # grab frames depending to what delat
+                        # print(_)
+                        (self.grabbed, self.frame) = self.stream.read()
+                        if self.isLive:
+                            self.frames = self.stream.frame_number
+                        else:
+                            self.frames += 1
                     print(' ',  end='\r')
         if self.isLive:
             self.stream.stop()
