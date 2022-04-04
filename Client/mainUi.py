@@ -675,7 +675,7 @@ class MainUi(QtWidgets.QMainWindow):
     #Function display Video    
     def setUpVideo(self): #Initialize click event
         temp = self.vidFile
-        self.vidFile=QFileDialog.getOpenFileName(None,'Select a video', PATH+'/../','video (*.mp4);;(*.avi);;(*.mov);;(*.mkv);;(*.wmv);;(*.mpg);;(*.mpeg);;(*.m4v)')
+        self.vidFile=QFileDialog.getOpenFileName(None,'Select a video', PATH+'/../','video files (*.mp4 *.avi *.mov *.mkv *.wmv *.mpg *.mpeg *.m4v);;')
         
         if self.vidFile[0] != '':
             self.tempfile = temp
