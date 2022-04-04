@@ -162,32 +162,35 @@ class VideoCapture:
 
     def __init__(self, name):
         self.cap = cv2.VideoCapture(name)
-        self.q = queue.Queue()
-        self.retq = queue.Queue()
-        # ret, frame = self.cap.read()
-        # self.q =  deque()
-        # self.retq = deque()
+        # self.q = queue.Queue()
+        # self.retq = queue.Queue()
+        ret, frame = self.cap.read()
+        self.q =  deque()
+        self.retq = deque()
+        self.frameNumbers = deque()
+        
         # self.q.put(frame)
-        # self.retq.put(ret)        
+        # self.retq.put(ret)
+        self.q.append(frame)
+        self.retq.append(ret)
         self.frame_number = 0 
         
         self.frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
         self.fps = int(self.cap.get(cv2.CAP_PROP_FPS))
-        print('vid fpsssssssssss', self.fps)
-        print('vid framessssss', self.frames)
         
         t = Thread(target=self._reader)
         t.daemon = True
         self.stopped = False
         t.start()
-        print("start na")
         
 
   # read frames as soon as they are available, keeping only most recent one
     def _reader(self):
+        print("start na")
+        counter = 0
         while not self.stopped:
-            self.cap.grab()
-            # # ret, frame = self.cap.read()
+            # self.cap.grab()
+            ret, frame = self.cap.read()
             # if not ret:
             #     break
             # if not self.q.empty():
@@ -197,18 +200,30 @@ class VideoCapture:
             #         pass
             # self.q.put(frame)
             # self.retq.put(ret)
-            # self.q.append(frame)
-            # self.retq.append(ret)
-            self.frame_number +=1
+            frame = np.array(frame.copy(),dtype=np.uint8)
+            frame = cv2.resize(frame, (800,450), interpolation=cv2.INTER_NEAREST)
+            self.q.append(frame)
+            self.retq.append(ret)
+            self.frameNumbers.append(counter)
+            counter +=1
+            # cv2.imshow('frame1', frame)
+            # cv2.waitKey(1)
+
+            
       
 
     def read(self):
         # print('b4 ',len(self.retq))
-        # try:
-        # ret, im = self.retq.get(), self.q.get()
-        ret, im = self.cap.retrieve()
-        # except IndexError:
-            # pass
+        try:
+            # ret, im = self.retq.get(), self.q.get()
+            ret, im = self.retq.popleft(), self.q.popleft()
+            self.frame_number = self.frameNumbers.popleft()
+            # cv2.imshow('frame2', im)
+            # cv2.waitKey(1)
+        # ret, im = self.cap.retrieve()
+        except IndexError:
+            print('Index error in reading frame')
+            pass
         # self.retq.remove(ret)
         # self.q.remove(im)
         # print('after ',len(self.retq))
@@ -219,10 +234,12 @@ class VideoCapture:
         #     self.retq.clear()
         # with self.q.mutex:
         #     self.q.clear()
+        self.clearFrames()
+        self.stopped =True
+        
+    def clearFrames(self):
         self.retq.clear()
         self.q.clear()
-        self.stopped =True
-
 class VideoGet:
     """
     Class that continuously gets frames from a VideoCapture object
@@ -260,33 +277,51 @@ class VideoGet:
         return self
         
     def get(self):
+        print('start na 2')
         while not self.stopped:
             now = time.time()
             if not self.grabbed:
                 self.stop()
             else:
                 if self.isLive:
+                    if len(self.stream.retq) == 0:
+                        print(end=' ')
+                        # print('empty frameeeeeeeeeeeeeeeeeeeeeee')
+                        
+                        continue
                     self.frames = self.stream.frame_number
-                    print(self.frames) 
+                    # print(self.frames)
+                    
                 else:
                     self.frames += 1
                 (self.grabbed, self.frame) = self.stream.read()
                 timeDiff = time.time() - now
-                if (timeDiff<1.0/(self.fps)):
-                    time.sleep(1.0/(self.fps)-timeDiff)
-                else:
-                    # update frames since it is late
-                    delay = time.time() - now
-                    delay = int(np.ceil(delay * self.fps))
-                    # print(f'delay {delay}')
-                    for _ in range(delay): # grab frames depending to what delat
-                        # print(_)
-                        (self.grabbed, self.frame) = self.stream.read()
-                        if self.isLive:
-                            self.frames = self.stream.frame_number
-                        else:
-                            self.frames += 1
-                    print(' ',  end='\r')
+                # if not self.isLive:
+                #     if (round(timeDiff,2)<round((1.0/(self.fps)),2)):
+                #         time.sleep(round(((1.0/(self.fps*2.0))-timeDiff),2))
+                #         # cv2.waitKey(25)
+                #         # cv2.waitKey(int(round((1.0/(self.fps)-timeDiff),2)*1000))
+                        
+                #         # print(f'sleep for {((1.0/self.fps)-timeDiff):.2f}s')
+                #     else:
+                #             # update frames since it is late
+                #             # delay = time.time() - now
+                #             # delay = int(np.ceil(delay * self.fps))
+                #             # # print(f'delay {delay}')
+                #             # for _ in range(delay): # grab frames depending to what delat
+                #             #     # print(_)
+                #             #     (self.grabbed, self.frame) = self.stream.read()
+                #             #     if self.isLive:
+                #             #         self.frames = self.stream.frame_number
+                #             #     else:
+                #             #         self.frames += 1
+                #         print(' ',  end='\r')
+                # else:
+                # if (round(timeDiff,2)<round((1.0/(self.fps*2.0)),2)):
+                time.sleep(round((1.0/(self.fps*2.0)),2))
+
+                # else:
+                    # print(' ',  end='\r')
         if self.isLive:
             self.stream.stop()
         else:
@@ -418,7 +453,7 @@ class LoadLiveStreams:
 
 
     def begin(self):
-        self.video_getter = VideoGet(self, isLive = False).start()
+        self.video_getter = VideoGet(self, isLive = True).start()
         # self.frames = self.video_getter.nframes
         self.fps = self.video_getter.fps
         self.cap = self.video_getter.stream

@@ -85,8 +85,6 @@ class Tracker:
                                               self.max_age, (xywhs[i][0].item(), xywhs[i][1].item())))
                     self.next_id += 1
                     continue
-
-
         return outputs
 
     def _xywh_to_xyxy(self, bbox_xywh=[]):

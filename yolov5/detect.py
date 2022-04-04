@@ -331,15 +331,12 @@ class det:
                                 self.vehicleInfos = {k: [] for k in self.keys}
                                 tracker = Tracker(n_init=20, max_age=900, match_thresh=0.7, iou_thresh=0.5)
                             self.vid_writer.write(im0)
-                            im0 = cv2.resize(im0, (800,450))
+                            im0 = numpy.array(im0, dtype = numpy.uint8)
+                            im0 = cv2.resize(im0, (640,320))
                             if not self.webcam:
-                                self.vidFrames[frame_idx] = numpy.array(im0, dtype=numpy.uint8)
+                                self.vidFrames[frame_idx] = im0
                             else:
-                                self.vidFrames.append(numpy.array(im0, dtype=numpy.uint8))
-                            # print(im0.shape)
-                            # print(im0.)
-                            
-
+                                self.vidFrames.append(im0)
             else:
                 self.vid_writer.release()  # stop from writing video
                 t = tuple(x / self.seen * 1E3 for x in self.dt)  # speeds per image
