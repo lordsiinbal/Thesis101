@@ -186,16 +186,17 @@ class VideoCapture:
   # read frames as soon as they are available, keeping only most recent one
     def _reader(self):
         while not self.stopped:
-            ret, frame = self.cap.read()
-            if not ret:
-                break
-            if not self.q.empty():
-                try:
-                    self.q.get_nowait()
-                except queue.Empty:
-                    pass
-            self.q.put(frame)
-            self.retq.put(ret)
+            self.cap.grab()
+            # # ret, frame = self.cap.read()
+            # if not ret:
+            #     break
+            # if not self.q.empty():
+            #     try:
+            #         self.q.get_nowait()
+            #     except queue.Empty:
+            #         pass
+            # self.q.put(frame)
+            # self.retq.put(ret)
             # self.q.append(frame)
             # self.retq.append(ret)
             self.frame_number +=1
@@ -204,7 +205,8 @@ class VideoCapture:
     def read(self):
         # print('b4 ',len(self.retq))
         # try:
-        ret, im = self.retq.get(), self.q.get()
+        # ret, im = self.retq.get(), self.q.get()
+        ret, im = self.cap.retrieve()
         # except IndexError:
             # pass
         # self.retq.remove(ret)

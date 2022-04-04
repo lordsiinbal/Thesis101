@@ -152,9 +152,9 @@ def detect_road(img_orig):
             continue
        
         #resize contour
-        hull = cv2.convexHull(contour)
-        cv2.drawContours(bg, [hull], -1, (0,0,255), thickness= -1)
-        cv2.drawContours(final_mask, [hull], -1, (255,255,255), thickness= -1)
+        # hull = cv2.convexHull(contour)
+        cv2.drawContours(bg, [contour], -1, (0,0,255), thickness= -1)
+        cv2.drawContours(final_mask, [contour], -1, (255,255,255), thickness= -1)
     
     # cv2.imshow('final mask', final_mask)
     # blending the red area road surface to the original image
