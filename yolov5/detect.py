@@ -38,6 +38,7 @@ import numpy
 import torch
 import torch.backends.cudnn as cudnn
 
+tmp = TemporaryFile()
 FILE = Path(__file__).resolve()
 ROOT = FILE.parents[0]  # YOLOv5 root directory
 if str(ROOT) not in sys.path:
@@ -95,7 +96,7 @@ class det:
         self.PREV_XY = numpy.asarray(self.PREV_XY, dtype=int)
         self.PREV_BB = numpy.zeros([1, 4])
         self.PREV_BB = numpy.asarray(self.PREV_BB, dtype=int)
-
+        
         device = select_device(self.opt.device)
 
         # Directories
@@ -278,6 +279,8 @@ class det:
                                             self.vehicleInfos['isSaved'].append(False)
                                             self.vehicleInfos['timer'].append(0)
                                             self.vehicleInfos['frameStart'].append(frm_id)
+                                            self.vehicleInfos['frameStartToSave'].append(frame_idx)
+                                            
                                                 # self.vehicleInfos['timer'].append(time_sync())
                                                 # self.vehicleInfos['frameStart'].append(time_sync())
                                                 
@@ -330,9 +333,11 @@ class det:
                                              'frameStart', 'timeStart', 'isSaved', 'timer']
                                 self.vehicleInfos = {k: [] for k in self.keys}
                                 tracker = Tracker(n_init=20, max_age=900, match_thresh=0.7, iou_thresh=0.5)
+                                # tmp = Path('temp.npy').open('ab')
+                                
                             self.vid_writer.write(im0)
                             im0 = numpy.array(im0, dtype = numpy.uint8)
-                            im0 = cv2.resize(im0, (640,320))
+                            im0 = cv2.resize(im0, (800,450))
                             if not self.webcam:
                                 self.vidFrames[frame_idx] = im0
                             else:
@@ -388,7 +393,7 @@ class det:
             'lengthOfViolation': t,
             'startDateAndTime': startTime,
             'endDateAndTime': endTime,
-            'frameStart': str(self.vehicleInfos['frameStart'][index]),
+            'frameStart': str(self.vehicleInfos['frameStartToSave'][index]),
             'violationRecord': str(self.save_dir / vidPath),  # filepath of video
             'vehicleClass': str(self.names[c]),
             'vehicleCrop': str(imgName)

@@ -201,7 +201,7 @@ class VideoCapture:
             # self.q.put(frame)
             # self.retq.put(ret)
             frame = np.array(frame.copy(),dtype=np.uint8)
-            frame = cv2.resize(frame, (800,450), interpolation=cv2.INTER_NEAREST)
+            frame = cv2.resize(frame, (1280,720), interpolation=cv2.INTER_NEAREST)
             self.q.append(frame)
             self.retq.append(ret)
             self.frameNumbers.append(counter)
