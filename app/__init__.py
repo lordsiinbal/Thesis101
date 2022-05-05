@@ -12,6 +12,7 @@ from app.Controllers.DeleteController import delete
 from .database import db
  
 def create_app(config_file = 'settings.py'):
+    print("hellow ")
     app =Flask(__name__)
     CORS(app, supports_credentials=True)
     app.config["MONGODB_HOST"]= 'mongodb+srv://topetope:topetope1024_@cluster0.hicig.mongodb.net/db_detectCore?retryWrites=true&w=majority'
