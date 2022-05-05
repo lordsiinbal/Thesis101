@@ -1140,7 +1140,7 @@ class Controller:
                 continue
              # draw the contours that are larger than 5% of img size 
             if area > (0.5*self.roadImage.shape[0]*self.roadImage.shape[1]) or len(contours) > 1:
-                kernel_size = 35
+                kernel_size = 40
             else:
                 kernel_size = 80
             cv2.drawContours(bg, [contour], -1, (255,255,255), thickness= -1)

@@ -277,7 +277,6 @@ class VideoGet:
         return self
         
     def get(self):
-        print('start na 2')
         while not self.stopped:
             now = time.time()
             if not self.grabbed:
@@ -286,42 +285,13 @@ class VideoGet:
                 if self.isLive:
                     if len(self.stream.retq) == 0:
                         print(end=' ')
-                        # print('empty frameeeeeeeeeeeeeeeeeeeeeee')
-                        
                         continue
                     self.frames = self.stream.frame_number
-                    # print(self.frames)
-                    
                 else:
                     self.frames += 1
                 (self.grabbed, self.frame) = self.stream.read()
                 timeDiff = time.time() - now
-                # if not self.isLive:
-                #     if (round(timeDiff,2)<round((1.0/(self.fps)),2)):
-                #         time.sleep(round(((1.0/(self.fps*2.0))-timeDiff),2))
-                #         # cv2.waitKey(25)
-                #         # cv2.waitKey(int(round((1.0/(self.fps)-timeDiff),2)*1000))
-                        
-                #         # print(f'sleep for {((1.0/self.fps)-timeDiff):.2f}s')
-                #     else:
-                #             # update frames since it is late
-                #             # delay = time.time() - now
-                #             # delay = int(np.ceil(delay * self.fps))
-                #             # # print(f'delay {delay}')
-                #             # for _ in range(delay): # grab frames depending to what delat
-                #             #     # print(_)
-                #             #     (self.grabbed, self.frame) = self.stream.read()
-                #             #     if self.isLive:
-                #             #         self.frames = self.stream.frame_number
-                #             #     else:
-                #             #         self.frames += 1
-                #         print(' ',  end='\r')
-                # else:
-                # if (round(timeDiff,2)<round((1.0/(self.fps*2.0)),2)):
                 time.sleep(round((1.0/(self.fps*2.0)),2))
-
-                # else:
-                    # print(' ',  end='\r')
         if self.isLive:
             self.stream.stop()
         else:

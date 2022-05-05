@@ -1728,7 +1728,7 @@ color:white;
                              </size>
                             </property>
                             <property name="text">
-                             <string>20</string>
+                             <string>50</string>
                             </property>
                             <property name="echoMode">
                              <enum>QLineEdit::Normal</enum>

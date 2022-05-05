@@ -38,7 +38,7 @@ import numpy
 import torch
 import torch.backends.cudnn as cudnn
 
-tmp = TemporaryFile()
+
 FILE = Path(__file__).resolve()
 ROOT = FILE.parents[0]  # YOLOv5 root directory
 if str(ROOT) not in sys.path:
@@ -82,7 +82,7 @@ class det:
         self.frame, self.ret, self.stopped = None, False, False
         self.sfps = 30
         self.start_time = 0
-        self.keys = ['id', 'startTime', 'finalTime', 'class', 'frameStart', 'timeStart', 'isSaved', 'timer']
+        self.keys = ['id', 'startTime', 'finalTime', 'class', 'frameStart', 'timeStart', 'isSaved', 'timer','frameStartToSave']
         self.vehicleInfos = {k: [] for k in self.keys}
         source = str(source)
         self.save_img = not self.opt.nosave and not source.endswith('.txt')  # save inference images
@@ -330,7 +330,7 @@ class det:
                                 self.vid_writer = cv2.VideoWriter(
                                     save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
                                 self.keys = ['id', 'startTime', 'finalTime', 'class',
-                                             'frameStart', 'timeStart', 'isSaved', 'timer']
+                                             'frameStart', 'timeStart', 'isSaved', 'timer', 'frameStartToSave']
                                 self.vehicleInfos = {k: [] for k in self.keys}
                                 tracker = Tracker(n_init=20, max_age=900, match_thresh=0.7, iou_thresh=0.5)
                                 # tmp = Path('temp.npy').open('ab')
