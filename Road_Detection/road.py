@@ -160,7 +160,6 @@ def detect_road(img_orig):
     # blending the red area road surface to the original image
     alpha = 0.25
     road_surface = cv2.addWeighted(img_orig, 1-alpha, bg, alpha, 0)
-    
     # print(kernel_size)
     
     final_mask = cv2.cvtColor(final_mask,cv2.COLOR_BGR2GRAY)

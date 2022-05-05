@@ -78,7 +78,7 @@ class Tracker:
                 distances = [self.distance(xy, self.xyxy_to_xy(ct.xyxy)) for ct in currentTracks] # distances with current tracks       
                 index_min = numpy.argmin(distances)
                 if distances[index_min] > currentTracks[index_min].base_thresh: # means outside the thresh of nearest track, meaning new vehicle
-                    # new vehicle
+                    # new track vehicle
                     self.tracks.append(Tracks(hashes[i], self._xywh_to_xyxy(xywhs[i]), 
                                               self.next_id, clss[i], self._n_init, 
                                               (xywhs[i][2].item(), xywhs[i][3].item()), 
@@ -120,7 +120,9 @@ class Tracker:
         """initialize first detection as track, only happens if track is empty"""
         for i, (desc) in enumerate(desc):
             self.tracks.append(Tracks(desc, self._xywh_to_xyxy(
-                xywhs[i]), self.next_id, clss[i], self._n_init, (xywhs[i][2].item(), xywhs[i][3].item()), self.max_age, (xywhs[i][0].item(), xywhs[i][1].item())))
+                                        xywhs[i]), self.next_id, clss[i], self._n_init, 
+                                        (xywhs[i][2].item(), xywhs[i][3].item()), self.max_age, 
+                                        (xywhs[i][0].item(), xywhs[i][1].item())))
             self.next_id += 1
 
     def isEmptyTracks(self):
