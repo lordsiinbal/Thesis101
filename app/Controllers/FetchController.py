@@ -1,10 +1,7 @@
-from encodings import utf_8
 from flask import jsonify, Blueprint, request
 from mongoengine import *
 from mongoengine import DoesNotExist
 
-import numpy
-import pandas as pd
 
 
 get = Blueprint('get',__name__)
