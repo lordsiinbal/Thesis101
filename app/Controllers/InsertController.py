@@ -2,8 +2,6 @@
 import os
 from flask import  request, jsonify, Blueprint
 from mongoengine import *
-import cv2
-import numpy as np
 
 post = Blueprint('post',__name__)
 
